@@ -11,7 +11,11 @@ export default function ImageCreditsPage() {
       <p>Cập nhật ngày 22.10.2026</p>
       <section>
         <h2>Hình ảnh trong bản trải nghiệm</h2>
-        <p>Website là dự án demo. Một số hình ảnh được tham khảo từ các website bên thứ ba, không phải ảnh do HÀ NHI FASHION tự chụp và chưa được xác minh là ảnh hàng hóa do HÀ NHI cung cấp. Quyền đối với ảnh, nhãn hiệu và thiết kế thuộc về các chủ sở hữu tương ứng. Việc xuất hiện trên website không thể hiện quan hệ hợp tác, đại lý hay sự bảo trợ của các thương hiệu nguồn.</p>
+        <p>Website là dự án demo phục vụ việc học tập và thực hành xây dựng website, không sử dụng cho mục đích thương mại. Một số hình ảnh được tham khảo từ các website bên thứ ba, không phải ảnh do HÀ NHI FASHION tự chụp và chưa được xác minh là ảnh hàng hóa do HÀ NHI cung cấp. Quyền đối với ảnh, nhãn hiệu và thiết kế thuộc về các chủ sở hữu tương ứng. Việc xuất hiện trên website không thể hiện quan hệ hợp tác, đại lý hay sự bảo trợ của các thương hiệu nguồn.</p>
+      </section>
+      <section>
+        <h2>Lời cảm ơn</h2>
+        <p>Xin chân thành cảm ơn các tác giả, chủ sở hữu hình ảnh và các nguồn LSOUL, SAINT AND SOFIA, Pexels đã tạo ra những hình ảnh được tham khảo trong quá trình học tập. Việc ghi nhận này không hàm ý các bên đã cấp phép, hợp tác hay bảo trợ cho dự án.</p>
       </section>
       <section>
         <h2>Ghi nguồn không phải giấy phép</h2>

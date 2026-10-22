@@ -4,7 +4,7 @@
 
 ## Nguồn ảnh và bản quyền
 
-Ảnh tham khảo bên thứ ba thuộc chủ sở hữu tương ứng. Ghi nguồn và mục đích demo không thay thế giấy phép sử dụng. Chưa xác minh quyền tái sử dụng ảnh thương hiệu; cần xin phép hoặc thay ảnh trước khi công khai/kinh doanh. Xem [hồ sơ nguồn ảnh và trạng thái quyền](THIRD_PARTY_IMAGES.md) và trang `/nguon-anh` trên website. Giấy phép mã nguồn không cấp quyền với ảnh bên thứ ba.
+Dự án phục vụ việc học tập và thực hành xây dựng website, không sử dụng cho mục đích thương mại. Xin chân thành cảm ơn các tác giả, chủ sở hữu hình ảnh và các nguồn ảnh được ghi nhận trong dự án. Ảnh tham khảo bên thứ ba thuộc chủ sở hữu tương ứng. Ghi nguồn và mục đích demo không thay thế giấy phép sử dụng. Chưa xác minh quyền tái sử dụng ảnh thương hiệu; cần xin phép hoặc thay ảnh trước khi công khai/kinh doanh. Xem [hồ sơ nguồn ảnh và trạng thái quyền](THIRD_PARTY_IMAGES.md) và trang `/nguon-anh` trên website. Giấy phép mã nguồn không cấp quyền với ảnh bên thứ ba.
 
 ## Mở ứng dụng
 

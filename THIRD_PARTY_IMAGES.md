@@ -1,6 +1,10 @@
 # Nguồn ảnh và quyền sử dụng
 
-Dự án HÀ NHI FASHION là bản demo. Ảnh bên thứ ba không được tuyên bố là ảnh tự chụp hoặc ảnh hàng hóa đã xác minh của HÀ NHI. Tên thương hiệu không hàm ý quan hệ đại lý, hợp tác hay bảo trợ.
+Dự án HÀ NHI FASHION là bản demo phục vụ việc học tập và thực hành xây dựng website, không sử dụng cho mục đích thương mại. Ảnh bên thứ ba không được tuyên bố là ảnh tự chụp hoặc ảnh hàng hóa đã xác minh của HÀ NHI. Tên thương hiệu không hàm ý quan hệ đại lý, hợp tác hay bảo trợ.
+
+## Lời cảm ơn
+
+Xin chân thành cảm ơn các tác giả, chủ sở hữu hình ảnh và các nguồn LSOUL, SAINT AND SOFIA, Pexels đã tạo ra những hình ảnh được tham khảo trong quá trình học tập. Lời cảm ơn không hàm ý đã được cấp phép, hợp tác hay bảo trợ.
 
 ## Nguồn đã ghi nhận
 
