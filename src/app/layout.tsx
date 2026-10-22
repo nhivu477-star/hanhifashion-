@@ -176,10 +176,11 @@ export default async function RootLayout({
                 </div>
               </div>
               <div className="footer-bottom">
-                <span>© {new Date().getFullYear()} HÀ NHI FASHION</span>
+                <span>© {new Date().getFullYear()} HÀ NHI FASHION · Ảnh bên thứ ba thuộc chủ sở hữu tương ứng.</span>
                 <div>
                   <Link href="/chinh-sach-bao-mat">Bảo mật</Link>
                   <Link href="/dieu-khoan-su-dung">Điều khoản</Link>
+                  <Link href="/nguon-anh">Nguồn ảnh &amp; bản quyền</Link>
                 </div>
               </div>
             </footer>

@@ -1,6 +1,10 @@
 # HÀ NHI FASHION — website bán hàng local
 
-Ứng dụng Next.js, React, TypeScript, Prisma và SQLite. Chế độ **LOCAL E-COMMERCE DEMO**: vận chuyển thủ công, COD/thanh toán/hoàn tiền mô phỏng. Không kết nối hãng thật, chuyển tiền thật, push GitHub hoặc deploy. Giữ chính sách lỗi đủ 72 giờ từ lúc nhận hàng.
+Ứng dụng Next.js, React, TypeScript, Prisma và SQLite. Chế độ **LOCAL E-COMMERCE DEMO**: vận chuyển thủ công, COD/thanh toán/hoàn tiền mô phỏng. Không kết nối hãng vận chuyển hoặc chuyển tiền thật. Giữ chính sách lỗi đủ 72 giờ từ lúc nhận hàng.
+
+## Nguồn ảnh và bản quyền
+
+Ảnh tham khảo bên thứ ba thuộc chủ sở hữu tương ứng. Ghi nguồn và mục đích demo không thay thế giấy phép sử dụng. Chưa xác minh quyền tái sử dụng ảnh thương hiệu; cần xin phép hoặc thay ảnh trước khi công khai/kinh doanh. Xem [hồ sơ nguồn ảnh và trạng thái quyền](THIRD_PARTY_IMAGES.md) và trang `/nguon-anh` trên website. Giấy phép mã nguồn không cấp quyền với ảnh bên thứ ba.
 
 ## Mở ứng dụng
 

@@ -670,7 +670,7 @@ export function ProductCard({ product: p }: { product: any }) {
             ) : null}
             <WishButton id={p.id} />
           </div>
-          <p className="photo-brand-caption">HN FASHION</p>
+          <p className="photo-brand-caption"><Link href="/nguon-anh">Ảnh tham khảo · Nguồn &amp; bản quyền</Link></p>
           <Link href={href} className="product-name">
             {p.name}
           </Link>
@@ -966,7 +966,7 @@ export function Gallery({ images }: { images: any[] }) {
               <ChevronRight />
             </button>
           </div>
-          <p className="photo-brand-caption">HN FASHION</p>
+          <p className="photo-brand-caption"><Link href="/nguon-anh">Ảnh tham khảo · Nguồn &amp; bản quyền</Link></p>
           <div className="thumbnails">
             {images.map((img, i) => (
               <button
