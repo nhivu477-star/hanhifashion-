@@ -1,0 +1,912 @@
+{
+  "version": "2026-10-19",
+  "scope": "LOCAL E-COMMERCE DEMO",
+  "useCases": [
+    {
+      "id": "AUTH-01",
+      "name": "Đăng ký",
+      "actors": "Guest → CUSTOMER",
+      "preconditions": "Không có tài khoản cùng email",
+      "mainFlow": "Nhập hồ sơ và mật khẩu hợp lệ → tạo tài khoản → đăng nhập",
+      "alternativeFlows": "Email khác chữ hoa/thường được chuẩn hóa; wishlist được hợp nhất",
+      "exceptionFlows": "Email trùng, điện thoại sai, mật khẩu ngắn/không khớp; chèn role không được nâng quyền",
+      "postconditions": "User duy nhất; passwordHash bcrypt; phiên HttpOnly; không lộ mật khẩu",
+      "stateTransitions": "Guest → CUSTOMER",
+      "evidence": [
+        "business:BA-AUTH-02",
+        "browser:customer login"
+      ]
+    },
+    {
+      "id": "AUTH-02",
+      "name": "Đăng nhập / đăng xuất",
+      "actors": "Mọi tài khoản hoạt động",
+      "preconditions": "Thông tin đăng nhập hợp lệ; tài khoản chưa bị khóa",
+      "mainFlow": "Đăng nhập → cookie → đúng trang theo quyền; đăng xuất → xóa phiên",
+      "alternativeFlows": "returnTo nội bộ hợp lệ; ADMIN/SELLER/BUYER có điểm đến riêng",
+      "exceptionFlows": "Sai mật khẩu, khóa, returnTo bên ngoài, phiên cũ/hết hạn",
+      "postconditions": "Không tái sử dụng phiên bị thu hồi; không nâng quyền từ client",
+      "stateTransitions": "Anonymous ↔ Authenticated",
+      "evidence": [
+        "business:BA-AUTH-02",
+        "rbac:13 ",
+        "rbac:24 ",
+        "browser:login destination"
+      ]
+    },
+    {
+      "id": "AUTH-03",
+      "name": "Quên / đặt lại mật khẩu",
+      "actors": "Guest với token bí mật một lần",
+      "preconditions": "Token còn hạn 30 phút, chưa dùng",
+      "mainFlow": "Tạo mail local → dùng token → đổi hash → thu hồi phiên",
+      "alternativeFlows": "Email không tồn tại nhận cùng thông báo; retry sau rollback",
+      "exceptionFlows": "Token hết hạn, đã dùng; hai yêu cầu đồng thời chỉ một thành công",
+      "postconditions": "Claim token + hash + thu hồi phiên + audit cùng transaction",
+      "stateTransitions": "UNUSED → USED",
+      "evidence": [
+        "business:BA-AUTH-03",
+        "business:BA-AUTH-04",
+        "business:BA-AUTH-06"
+      ]
+    },
+    {
+      "id": "AUTH-04",
+      "name": "Đổi mật khẩu",
+      "actors": "Tài khoản đăng nhập",
+      "preconditions": "Mật khẩu hiện tại đúng; tài khoản hoạt động",
+      "mainFlow": "Kiểm tra mật khẩu → đổi → thu hồi tất cả phiên",
+      "alternativeFlows": "Đăng nhập lại bằng mật khẩu mới",
+      "exceptionFlows": "Sai mật khẩu cũ, phiên hết hạn, lỗi audit, hai lần đổi tranh chấp",
+      "postconditions": "CAS hash cũ; hash và thu hồi phiên/audit atomic",
+      "stateTransitions": "Authenticated → Reauthentication required",
+      "evidence": [
+        "business:BA-AUTH-05"
+      ]
+    },
+    {
+      "id": "AUTH-05",
+      "name": "Hồ sơ / địa chỉ",
+      "actors": "Khách sở hữu hồ sơ",
+      "preconditions": "Đăng nhập; địa chỉ thuộc userId",
+      "mainFlow": "Xem/sửa hồ sơ; thêm/sửa/xóa địa chỉ",
+      "alternativeFlows": "Chưa có địa chỉ; nhiều địa chỉ",
+      "exceptionFlows": "Truy cập ID người khác; điện thoại/địa chỉ sai; phiên hết hạn",
+      "postconditions": "Không thay chủ sở hữu; không ghi địa chỉ người khác",
+      "stateTransitions": "Existing → Updated / Deleted",
+      "evidence": [
+        "business:BA-AUTH-02",
+        "business:BA-CUSTOMER-03"
+      ]
+    },
+    {
+      "id": "CAT-01",
+      "name": "Tìm kiếm / xem / lọc sản phẩm",
+      "actors": "Guest, Customer",
+      "preconditions": "Sản phẩm/danh mục hoạt động; mode bán kiểm readiness",
+      "mainFlow": "Tìm không dấu → lọc kết hợp → xem màu/size/giá",
+      "alternativeFlows": "Không kết quả; phân trang; hết hàng",
+      "exceptionFlows": "Slug không tồn tại, query không hợp lệ, ảnh thiếu",
+      "postconditions": "Không lộ sản phẩm ẩn; giá hiển thị theo variant/sale/base",
+      "stateTransitions": "Active visible / Archived hidden",
+      "evidence": [
+        "phase5:26 ",
+        "browser:responsive"
+      ]
+    },
+    {
+      "id": "CAT-02",
+      "name": "Thêm / sửa sản phẩm",
+      "actors": "products.create / products.update",
+      "preconditions": "Danh mục hợp lệ; SKU/slug duy nhất; ảnh local có thật",
+      "mainFlow": "Gửi form → validate → ghi sản phẩm/ảnh → audit → đọc lại",
+      "alternativeFlows": "Giá thường/giá sale; gallery nhiều ảnh",
+      "exceptionFlows": "Giá không dương, sale ≥ base, SKU trùng, danh mục sai, audit thất bại",
+      "postconditions": "Product + ảnh + audit atomic; đơn cũ không đổi",
+      "stateTransitions": "New → Active; Active → Updated",
+      "evidence": [
+        "phase5:03 ",
+        "business:BA-PRODUCT-01",
+        "order:12 ",
+        "browser:SELLER:"
+      ]
+    },
+    {
+      "id": "CAT-03",
+      "name": "Ẩn / xóa mềm sản phẩm",
+      "actors": "products.archive",
+      "preconditions": "Sản phẩm tồn tại",
+      "mainFlow": "Đặt active=false; ẩn mua mới",
+      "alternativeFlows": "Giữ trang quản trị/lịch sử đơn; giỏ cũ có thể xóa",
+      "exceptionFlows": "Vai trò không có archive; mua sản phẩm đã ẩn",
+      "postconditions": "Không xóa OrderItem/ledger; trả hàng cũ vẫn đối chiếu được",
+      "stateTransitions": "Active → Archived → Active",
+      "evidence": [
+        "business:BA-PRODUCT-02",
+        "browser:Retired products"
+      ]
+    },
+    {
+      "id": "CAT-04",
+      "name": "Biến thể / SKU / giá",
+      "actors": "products.update; inventory.adjust khi đổi tồn",
+      "preconditions": "SKU duy nhất; size/màu thuộc sản phẩm",
+      "mainFlow": "Tạo/sửa SKU, override giá, ghi movement khi đổi tồn",
+      "alternativeFlows": "Giá override rỗng dùng sale/base; thêm size",
+      "exceptionFlows": "SKU trùng, stock âm/quá giới hạn, chuyển variant sang sản phẩm khác",
+      "postconditions": "Variant + movement + audit atomic; historical SKU snapshot không đổi",
+      "stateTransitions": "New → Configured → Updated",
+      "evidence": [
+        "phase5:02 ",
+        "rbac:02 ",
+        "browser:SELLER:"
+      ]
+    },
+    {
+      "id": "CAT-05",
+      "name": "Màu / gallery / gợi ý phối",
+      "actors": "products.update",
+      "preconditions": "Ảnh local hợp lệ; màu và target cùng catalog hợp lệ",
+      "mainFlow": "Lưu màu/ảnh/position hoặc outfit → invalidate publication",
+      "alternativeFlows": "Đổi tên màu cập nhật variant; xóa outfit hợp lệ",
+      "exceptionFlows": "Màu khác sản phẩm, file sai, outfit tự trỏ hoặc hàng hết",
+      "postconditions": "Ghi cấu hình + invalidation + audit atomic",
+      "stateTransitions": "PENDING_ASSETS after catalogue change",
+      "evidence": [
+        "business:BA-CATALOG-02",
+        "business:BA-CATALOG-03",
+        "phase5:04 "
+      ]
+    },
+    {
+      "id": "CAT-06",
+      "name": "Danh mục / bộ sưu tập",
+      "actors": "products.update",
+      "preconditions": "Slug duy nhất; cấu trúc cha/con hợp lệ",
+      "mainFlow": "Thêm/sửa và gán sản phẩm → refresh tìm kiếm",
+      "alternativeFlows": "Danh mục con; collection nhiều sản phẩm",
+      "exceptionFlows": "Vòng/self-parent; chuyển cha sai; FK sản phẩm không tồn tại",
+      "postconditions": "Danh mục/collection + liên kết + audit atomic",
+      "stateTransitions": "New → Active → Hidden",
+      "evidence": [
+        "business:BA-CATALOG-01",
+        "browser:Admin consistency"
+      ]
+    },
+    {
+      "id": "CAT-07",
+      "name": "Bảng size / xuất bản",
+      "actors": "products.update / products.publish",
+      "preconditions": "Ma trận đo hợp lệ; READY cần ảnh/hàng/tồn được xác minh",
+      "mainFlow": "Cấu hình bảng riêng/kế thừa; duyệt readiness và publication",
+      "alternativeFlows": "Bảng category; bản nháp giữ được thiếu dữ liệu",
+      "exceptionFlows": "Dữ liệu JSON sai, ảnh tham chiếu/chưa xác minh, tồn chưa rõ nguồn",
+      "postconditions": "Không tự giả bằng chứng hàng thật; audit trong transaction",
+      "stateTransitions": "DRAFT ↔ PENDING_ASSETS → READY",
+      "evidence": [
+        "business:BA-CATALOG-02",
+        "phase5:01 "
+      ]
+    },
+    {
+      "id": "CAT-08",
+      "name": "Upload / thư viện ảnh",
+      "actors": "media.upload / products.update",
+      "preconditions": "Ảnh raster local an toàn và được phép dùng",
+      "mainFlow": "Decode/reencode → lưu file; metadata → liên kết ảnh",
+      "alternativeFlows": "Ảnh development/reference tách ảnh sản phẩm",
+      "exceptionFlows": "SVG/file giả, traversal, quá dung lượng; xóa ảnh còn tham chiếu",
+      "postconditions": "Không xóa ảnh snapshot đơn; quyền kiểm tra trước parse; metadata audited",
+      "stateTransitions": "PENDING → APPROVED / REJECTED",
+      "evidence": [
+        "phase5:06 ",
+        "phase5:07 ",
+        "phase5:08 ",
+        "phase5:valid raster"
+      ]
+    },
+    {
+      "id": "INV-01",
+      "name": "Nhập / xuất kho",
+      "actors": "inventory.adjust",
+      "preconditions": "SKU tồn tại; quantity nguyên dương; lý do/ngày/nhà cung cấp hợp lệ",
+      "mainFlow": "Form IN/OUT → CAS stock → movement + audit",
+      "alternativeFlows": "Retry cùng key cùng nội dung trả lại kết quả",
+      "exceptionFlows": "OUT quá tồn; date tương lai; key khác nội dung",
+      "postconditions": "Không âm tồn; delta đúng; chỉ một movement mỗi eventKey",
+      "stateTransitions": "stock N → N ± quantity",
+      "evidence": [
+        "browser:stock forms",
+        "business:BA-DATA-01"
+      ]
+    },
+    {
+      "id": "INV-02",
+      "name": "Điều chỉnh / lịch sử tồn",
+      "actors": "inventory.adjust / inventory.movements.read",
+      "preconditions": "SKU tồn tại; số tồn nguyên không âm",
+      "mainFlow": "Điều chỉnh số kiểm đếm có lý do; xem movement theo SKU",
+      "alternativeFlows": "Tồn 0; phân trang; không có lịch sử",
+      "exceptionFlows": "Mất quyền, số âm, tranh chấp ghi, lỗi giữa transaction",
+      "postconditions": "Movement delta=after-before; ghi actor/time/reason; không sửa ledger cũ",
+      "stateTransitions": "Current stock → Counted stock",
+      "evidence": [
+        "rbac:03 ",
+        "browser:SELLER:",
+        "browser:stock forms"
+      ]
+    },
+    {
+      "id": "CART-01",
+      "name": "Thêm / sửa / xóa giỏ",
+      "actors": "Khách đăng nhập, giỏ riêng",
+      "preconditions": "Sản phẩm/màu/danh mục hoạt động; tồn đủ",
+      "mainFlow": "Thêm hoặc increment → sửa lượng → xóa",
+      "alternativeFlows": "Xóa hàng đã ẩn; tắt analytics; retry sau lỗi",
+      "exceptionFlows": "Lượng >99, thiếu tồn, key khác payload, guest/hết phiên",
+      "postconditions": "Receipt độc lập analytics; mutation atomic; không thay tồn khi chỉ thêm giỏ",
+      "stateTransitions": "Empty ↔ Populated",
+      "evidence": [
+        "business:BA-CART-01",
+        "business:BA-CART-02",
+        "business:BA-CART-03",
+        "business:BA-CART-04",
+        "business:BA-CART-05",
+        "business:BA-CART-06"
+      ]
+    },
+    {
+      "id": "CART-02",
+      "name": "Wishlist / hợp nhất sau login",
+      "actors": "Guest local; khách sở hữu wishlist",
+      "preconditions": "Sản phẩm tồn tại/được hoạt động khi thêm",
+      "mainFlow": "Lưu wishlist → đăng nhập → merge; xóa mục",
+      "alternativeFlows": "Thêm lặp là no-op; xóa sản phẩm đã ẩn",
+      "exceptionFlows": "ID không tồn tại; người khác không sửa được wishlist",
+      "postconditions": "Unique wishlist/product; không đổi giỏ của tài khoản khác",
+      "stateTransitions": "Local → Account wishlist",
+      "evidence": [
+        "browser:Retired products",
+        "order:11 "
+      ]
+    },
+    {
+      "id": "CHECKOUT-01",
+      "name": "Báo giá",
+      "actors": "Khách đăng nhập",
+      "preconditions": "Giỏ không rỗng; địa chỉ vùng VN; giá/tồn hợp lệ",
+      "mainFlow": "Server tính subtotal-discount+shipping",
+      "alternativeFlows": "Không voucher; giảm phần trăm/tối đa; miễn ship theo net",
+      "exceptionFlows": "Voucher sai/hết hạn/chưa bắt đầu/cạn lượt; giá 0; vùng ngoài VN",
+      "postconditions": "VND integer; không nhận giá client; quote không trừ tồn/lượt",
+      "stateTransitions": "Cart → Quote",
+      "evidence": [
+        "order:01 ",
+        "business:BA-PROMO-01",
+        "business:BA-PROMO-02",
+        "browser:unsupported shipping"
+      ]
+    },
+    {
+      "id": "CHECKOUT-02",
+      "name": "Đặt COD",
+      "actors": "Khách đăng nhập",
+      "preconditions": "Quote hợp lệ; key UUID; tồn và lượt voucher còn đủ tại commit",
+      "mainFlow": "CAS tồn/lượt → order/items/payment/history/audit → xóa giỏ",
+      "alternativeFlows": "Địa chỉ lưu sẵn; nhiều dòng; đơn không giảm giá",
+      "exceptionFlows": "Tranh mua đơn vị cuối; tranh lượt voucher; lỗi giữa giao dịch",
+      "postconditions": "Tất cả transaction; không âm tồn; payment UNPAID; snapshot lịch sử",
+      "stateTransitions": "Cart → PENDING / UNPAID",
+      "evidence": [
+        "order:03 ",
+        "order:05 ",
+        "business:BA-PROMO-03",
+        "browser:customer login"
+      ]
+    },
+    {
+      "id": "CHECKOUT-03",
+      "name": "Retry checkout",
+      "actors": "Chủ cart tạo yêu cầu",
+      "preconditions": "Key đã gắn với cart và payload chuẩn hóa",
+      "mainFlow": "Retry cùng key → cùng order",
+      "alternativeFlows": "Mất response sau commit; gọi đồng thời",
+      "exceptionFlows": "Key của cart khác; đổi địa chỉ/voucher khi dùng lại key",
+      "postconditions": "Một order/payment/trừ tồn; không xóa giỏ mới khi replay",
+      "stateTransitions": "Committed → Same result",
+      "evidence": [
+        "order:04 ",
+        "order:17 ",
+        "business:BA-CHECKOUT-01"
+      ]
+    },
+    {
+      "id": "ORDER-01",
+      "name": "Danh sách / chi tiết / tra cứu",
+      "actors": "orders.read; khách sở hữu; guest capability tối thiểu",
+      "preconditions": "Đơn tồn tại; đúng ownership/quyền",
+      "mainFlow": "Tìm mã → xem snapshot/timeline thực",
+      "alternativeFlows": "Tra cứu mã+phone chỉ dữ liệu tối thiểu",
+      "exceptionFlows": "ID/code khác khách; token sai; không lộ address/email/token",
+      "postconditions": "UI/API/DB khớp tổng tiền/trạng thái; public allowlist",
+      "stateTransitions": "Read only",
+      "evidence": [
+        "order:11 ",
+        "order:14 ",
+        "shipping:14 ",
+        "browser:customer login"
+      ]
+    },
+    {
+      "id": "ORDER-02",
+      "name": "Xác nhận / từ chối / đóng gói",
+      "actors": "orders.manage; orders.cancel cho hủy",
+      "preconditions": "Trạng thái đầu hợp lệ; lý do khi hủy/giao nhận",
+      "mainFlow": "PENDING→CONFIRMED→PROCESSING; từ chối dùng CANCELLED",
+      "alternativeFlows": "Đường giao nhận thủ công trước có shipment",
+      "exceptionFlows": "Nhảy bước, lùi trạng thái, khách tự đóng gói",
+      "postconditions": "CAS + history + audit; không tự ghi PAID từ status",
+      "stateTransitions": "Theo order-state-machine.md",
+      "evidence": [
+        "order:09 ",
+        "rbac:05 ",
+        "browser:customer login"
+      ]
+    },
+    {
+      "id": "ORDER-03",
+      "name": "Hủy toàn bộ",
+      "actors": "orders.cancel hoặc owner trước chuẩn bị",
+      "preconditions": "UNPAID; chưa giao hoặc hàng chuyển hoàn đã về",
+      "mainFlow": "Cancel → hoàn lượng còn lại → release voucher một lần",
+      "alternativeFlows": "Retry CANCELLED no-op; trả về rồi hủy",
+      "exceptionFlows": "Đã PAID; đang giao/chưa hoàn về; khách hủy muộn",
+      "postconditions": "Hoàn tồn/coupon/history/audit atomic; paid dùng refund flow",
+      "stateTransitions": "PENDING/CONFIRMED/PROCESSING/RETURNED→CANCELLED",
+      "evidence": [
+        "order:06 ",
+        "order:07 ",
+        "order:16 ",
+        "business:BA-PARTIAL-07"
+      ]
+    },
+    {
+      "id": "ORDER-04",
+      "name": "Hủy một phần",
+      "actors": "orders.cancel hoặc CUSTOMER sở hữu",
+      "preconditions": "Chỉ được mở sau quyết định phê duyệt chính sách tài chính riêng; hiện đang khóa trên database chính. Các ca positive chỉ chạy với policy fixture trên DB thử nghiệm.",
+      "mainFlow": "Chọn dòng/lượng → phân bổ net đã chốt → hoàn tồn → cập nhật COD",
+      "alternativeFlows": "Nhiều lần hủy, retry/cạnh tranh, sau đó hủy toàn bộ",
+      "exceptionFlows": "Lặp dòng, vượt lượng, full removal, paid/prepared/shipment, ID чуж",
+      "postconditions": "Giữ originalQuantity/unitPrice; giảm discount đúng VND; payment=order.total; audit atomic",
+      "stateTransitions": "Order status unchanged; remaining quantity decreases",
+      "evidence": [
+        "business:BA-PARTIAL-01",
+        "business:BA-PARTIAL-02",
+        "business:BA-PARTIAL-03",
+        "business:BA-PARTIAL-04",
+        "business:BA-PARTIAL-05",
+        "business:BA-PARTIAL-06",
+        "business:BA-PARTIAL-07",
+        "business:BA-PARTIAL-08",
+        "business:BA-PARTIAL-09",
+        "browser:Business acceptance UI: customer partial",
+        "browser:Business acceptance UI: admin customer"
+      ]
+    },
+    {
+      "id": "SHIP-01",
+      "name": "Tạo hồ sơ giao nhận nội bộ",
+      "actors": "shipping.create",
+      "preconditions": "PROCESSING, UNPAID, COD payment khớp; chưa có shipment",
+      "mainFlow": "Tạo HN-SHIP-* và snapshot nhận hàng",
+      "alternativeFlows": "Thông số kiện hợp lệ; thông tin tùy chọn",
+      "exceptionFlows": "Đơn sai trạng thái/đã có kiện; input parcel sai; carrier thật bị chặn",
+      "postconditions": "Một shipment/order; không trừ tồn lần hai",
+      "stateTransitions": "None→PENDING",
+      "evidence": [
+        "shipping:01 ",
+        "shipping:02 ",
+        "browser:customer login"
+      ]
+    },
+    {
+      "id": "SHIP-02",
+      "name": "Bàn giao / giao thành công",
+      "actors": "shipping.update",
+      "preconditions": "Trạng thái shipment đầu hợp lệ",
+      "mainFlow": "PENDING→READY_FOR_PICKUP→PICKED_UP→IN_TRANSIT→DELIVERED",
+      "alternativeFlows": "Retry trạng thái đã ghi không tạo side effect",
+      "exceptionFlows": "Nhảy bước; thiếu lý do; sửa order trực tiếp khi đã có kiện",
+      "postconditions": "Order/shipment/event khớp; giao thành công vẫn UNPAID",
+      "stateTransitions": "Theo shipping-state-machine.md",
+      "evidence": [
+        "shipping:03 ",
+        "shipping:04 ",
+        "shipping:05 ",
+        "browser:customer login"
+      ]
+    },
+    {
+      "id": "SHIP-03",
+      "name": "Giao thất bại / giao lại / chuyển hoàn",
+      "actors": "shipping.failures.manage + shipping.update",
+      "preconditions": "Kiện đang giao; lý do và trạng thái hợp lệ",
+      "mainFlow": "Failure→retry hoặc returning→returned",
+      "alternativeFlows": "Hủy trước pickup; retry event",
+      "exceptionFlows": "Đánh delivered từ returned; hoàn tồn trước hàng về",
+      "postconditions": "Không hoàn tồn tại cả RETURNED và CANCELLED; timeline thật",
+      "stateTransitions": "DELIVERY_FAILED / RETURNING / RETURNED",
+      "evidence": [
+        "shipping:06 ",
+        "shipping:07 ",
+        "shipping:18 "
+      ]
+    },
+    {
+      "id": "COD-01",
+      "name": "Ghi nhận thu COD",
+      "actors": "cod.collection.confirm",
+      "preconditions": "Đã giao; payment COD đúng tổng; chứng từ và nguồn thu",
+      "mainFlow": "Thêm collection ledger → tính collected → payment PAID khi đủ",
+      "alternativeFlows": "Thu từng phần; thiếu/thừa tiền hiển thị lệch",
+      "exceptionFlows": "Sai provider/amount/date; trùng key khác payload; thu trước giao",
+      "postconditions": "Append-only; không nhân đôi từ retry; không ghi PAID từ delivery",
+      "stateTransitions": "UNPAID→PAID when actual recorded collected sufficient",
+      "evidence": [
+        "shipping:08 ",
+        "order:08 ",
+        "browser:customer login"
+      ]
+    },
+    {
+      "id": "COD-02",
+      "name": "Chuyển tiền COD",
+      "actors": "cod.remittance.record",
+      "preconditions": "Có collection; chứng từ hợp lệ",
+      "mainFlow": "Ghi remittance → outstanding thay đổi",
+      "alternativeFlows": "Chuyển từng phần, chưa đủ tiền",
+      "exceptionFlows": "Chưa thu, số âm không phải correction, ngày tương lai",
+      "postconditions": "Không cộng lại doanh thu từ tiền chuyển về",
+      "stateTransitions": "OUTSTANDING→PARTIAL→READY",
+      "evidence": [
+        "shipping:09 ",
+        "shipping:10 "
+      ]
+    },
+    {
+      "id": "COD-03",
+      "name": "Đối soát / sai lệch",
+      "actors": "cod.reconcile",
+      "preconditions": "Collected/remitted/expected và fees khớp hoặc có tranh chấp",
+      "mainFlow": "Đối chiếu ledger → reconcile hoặc dispute có ghi chú",
+      "alternativeFlows": "Thiếu/thừa; tiếp tục bổ sung chứng từ",
+      "exceptionFlows": "Đối soát khi còn lệch, không quyền, thao tác đồng thời",
+      "postconditions": "Một settlement hợp lệ; audit; outstanding không bị xóa để che lệch",
+      "stateTransitions": "PENDING/PARTIAL/DISPUTED→RECONCILED",
+      "evidence": [
+        "shipping:11 ",
+        "shipping:12 ",
+        "shipping:16 ",
+        "analytics:22 "
+      ]
+    },
+    {
+      "id": "COD-04",
+      "name": "Điều chỉnh chứng từ",
+      "actors": "Quyền collection/remittance tương ứng",
+      "preconditions": "Chứng từ gốc tồn tại; correction link + evidence",
+      "mainFlow": "Thêm bút toán bù có tham chiếu → tính lại",
+      "alternativeFlows": "Chứng từ sai được bù; ledger gốc giữ nguyên",
+      "exceptionFlows": "Bù quá giới hạn, key khác nội dung, số thu dưới khoản refund đã giữ",
+      "postconditions": "Không sửa/xóa ledger; không hoàn vượt thực thu",
+      "stateTransitions": "Settlement recomputed / disputed",
+      "evidence": [
+        "shipping:13 ",
+        "returns:21 "
+      ]
+    },
+    {
+      "id": "RETURN-01",
+      "name": "Gửi yêu cầu lỗi / trả một phần",
+      "actors": "CUSTOMER sở hữu đơn",
+      "preconditions": "DELIVERED/COMPLETED; mốc nhận thật; trong đủ 72h",
+      "mainFlow": "Chọn dòng/lượng, lý do lỗi, REFUND/EXCHANGE → REQUESTED",
+      "alternativeFlows": "Đúng mốc 72h; nhiều hồ sơ cho lượng còn lại; ảnh không bắt buộc",
+      "exceptionFlows": "Quá 72h/thiếu mốc, sai chủ, vượt lượng/claim đồng thời, key khác payload",
+      "postconditions": "Claim lượng/amount snapshot; không sửa shipment gốc",
+      "stateTransitions": "None→REQUESTED",
+      "evidence": [
+        "returns:01 ",
+        "returns:02 ",
+        "returns:03 ",
+        "returns:04 ",
+        "returns:05 ",
+        "returns:26 "
+      ]
+    },
+    {
+      "id": "RETURN-02",
+      "name": "Xem xét / duyệt / từ chối",
+      "actors": "returns.review",
+      "preconditions": "Hồ sơ hiện hữu và cạnh chuyển hợp lệ",
+      "mainFlow": "REQUESTED→UNDER_REVIEW→APPROVED/REJECTED",
+      "alternativeFlows": "Từ chối trước nhận giải phóng lượng claim",
+      "exceptionFlows": "Nhảy bước; tự duyệt bởi khách; thiếu lý do",
+      "postconditions": "History/audit; không tự hoàn tiền khi duyệt",
+      "stateTransitions": "Theo returns-state-machine.md",
+      "evidence": [
+        "returns:08 ",
+        "returns:09 ",
+        "rbac:08 "
+      ]
+    },
+    {
+      "id": "RETURN-03",
+      "name": "Nhận / kiểm hàng / hoàn tồn",
+      "actors": "returns.inspect; inventory.adjust khi SELLABLE",
+      "preconditions": "Hồ sơ APPROVED→RECEIVED; kết luận từng dòng",
+      "mainFlow": "Nhận không cộng tồn; kiểm SELLABLE cộng đúng lượng một lần",
+      "alternativeFlows": "REVIEW kiểm thêm; DAMAGED cách ly; REJECTED không hoàn",
+      "exceptionFlows": "Ghi đè kết luận cuối, thiếu quyền tồn, hai inspect đồng thời",
+      "postconditions": "Inspection+movement+audit atomic; không trùng hoàn tồn",
+      "stateTransitions": "RECEIVED→INSPECTED/INSPECTION_FAILED",
+      "evidence": [
+        "returns:10 ",
+        "returns:11 ",
+        "returns:12 ",
+        "returns:13 ",
+        "returns:14 ",
+        "returns:15 "
+      ]
+    },
+    {
+      "id": "RETURN-04",
+      "name": "Đổi SKU và giao hàng thay thế",
+      "actors": "returns.exchange; shipping.update",
+      "preconditions": "Lỗi đã xác minh; hàng thay thế giá lịch sử bằng nhau; tồn đủ",
+      "mainFlow": "Allocate SKU → trừ tồn → giao kiện đổi nội bộ",
+      "alternativeFlows": "SKU khác size/màu là khắc phục lỗi đã thống nhất; thiếu hàng chuyển refund",
+      "exceptionFlows": "Hết tồn, SKU sai/giá lệch, hai allocate tranh đơn vị cuối",
+      "postconditions": "Không sửa item/shipment gốc; atomic và audit",
+      "stateTransitions": "INSPECTED→EXCHANGE_PENDING→COMPLETED/CLOSED",
+      "evidence": [
+        "returns:16 ",
+        "returns:17 ",
+        "returns:18 "
+      ]
+    },
+    {
+      "id": "RETURN-05",
+      "name": "Hoàn tiền một phần / nhiều hồ sơ",
+      "actors": "refunds.approve / refunds.execute",
+      "preconditions": "Hàng đã kiểm hợp lệ; payment có tiền đã thu còn có thể hoàn",
+      "mainFlow": "Prepare → APPROVED → SIMULATED_COMPLETED",
+      "alternativeFlows": "Hoàn một số lượng; phí ship theo quyết định hợp lệ; reject/cancel khoản chưa hoàn",
+      "exceptionFlows": "Số client chèn, vượt paid/refund cap, hai xác nhận đồng thời",
+      "postconditions": "Tổng giữ/hoàn ≤ thực thu; không xóa COD; số hàng net đúng snapshot/rounding",
+      "stateTransitions": "PENDING→APPROVED→SIMULATED_COMPLETED",
+      "evidence": [
+        "returns:19 ",
+        "returns:20 ",
+        "returns:21 ",
+        "analytics:05 ",
+        "analytics:06 ",
+        "analytics:23 ",
+        "browser:customer login"
+      ]
+    },
+    {
+      "id": "RETURN-06",
+      "name": "Ảnh lỗi / lịch sử riêng tư",
+      "actors": "Chủ hồ sơ; returns.read/inspect",
+      "preconditions": "Đúng quyền; ảnh JPEG/PNG/WebP ≤2MB",
+      "mainFlow": "Xem timeline và ảnh lỗi qua endpoint riêng",
+      "alternativeFlows": "Không ảnh vẫn có thể gửi claim",
+      "exceptionFlows": "Chủ khác, ảnh giả/SVG/quá pixel, public access",
+      "postconditions": "Reencode bỏ metadata; không public evidence hoặc ghi chú nội bộ",
+      "stateTransitions": "Read only / private evidence",
+      "evidence": [
+        "returns:22 ",
+        "returns:23 ",
+        "returns:28 ",
+        "rbac:12 "
+      ]
+    },
+    {
+      "id": "CUSTOMER-01",
+      "name": "Hồ sơ khách / lịch sử mua",
+      "actors": "customers.read; quyền riêng để mở đơn/returns/support",
+      "preconditions": "Đúng CUSTOMER; phân trang",
+      "mainFlow": "Danh sách → hồ sơ → đơn và số đã thu → yêu cầu hỗ trợ",
+      "alternativeFlows": "Khách chưa mua/chưa hỗ trợ; quyền chỉ đọc",
+      "exceptionFlows": "ID nhân viên, ID không tồn tại, Seller không customers.read",
+      "postconditions": "Select allowlist, không password/token; support theo userId thật",
+      "stateTransitions": "Read only",
+      "evidence": [
+        "business:BA-CUSTOMER-01",
+        "browser:Business acceptance UI: admin customer"
+      ]
+    },
+    {
+      "id": "CUSTOMER-02",
+      "name": "Tiếp nhận hỗ trợ",
+      "actors": "Guest hoặc user gửi; inquiries.read/manage xử lý",
+      "preconditions": "Thông tin liên hệ/lý do hợp lệ",
+      "mainFlow": "Gửi → inquiry NEW; đọc và giải quyết",
+      "alternativeFlows": "Guest không gán userId; email liên hệ khác tài khoản vẫn gán tác giả đăng nhập",
+      "exceptionFlows": "Nội dung ngắn, ID/email giả không được ghép vào lịch sử người khác",
+      "postconditions": "Không backfill userId bằng email; ghi thay đổi status có audit",
+      "stateTransitions": "NEW→READ→RESOLVED",
+      "evidence": [
+        "business:BA-CUSTOMER-01",
+        "browser:Admin consistency"
+      ]
+    },
+    {
+      "id": "CUSTOMER-03",
+      "name": "Khóa / mở khách hàng",
+      "actors": "customers.manage",
+      "preconditions": "CUSTOMER; không phải chính tài khoản thao tác",
+      "mainFlow": "Khóa→thu hồi phiên; mở cho đăng nhập mới",
+      "alternativeFlows": "Retry trạng thái cùng kết quả; lịch sử mua vẫn giữ",
+      "exceptionFlows": "Khóa staff qua endpoint khách, không quyền, lỗi audit",
+      "postconditions": "Status/version/sessions/audit atomic; mở không hồi sinh token cũ",
+      "stateTransitions": "Active↔Disabled",
+      "evidence": [
+        "business:BA-CUSTOMER-02",
+        "browser:BUYER:"
+      ]
+    },
+    {
+      "id": "PROMO-01",
+      "name": "Thêm / sửa / vô hiệu voucher",
+      "actors": "promotions.manage",
+      "preconditions": "Code chuẩn hóa/duy nhất; số/range hợp lệ",
+      "mainFlow": "Lưu rule, thời điểm bắt đầu/hết, quota, active",
+      "alternativeFlows": "FIXED/PERCENT/cap; ngày đơn chỉ áp dụng đến hết ngày VN",
+      "exceptionFlows": "PERCENT>100, start>end, ngày không tồn tại, usageLimit<used",
+      "postconditions": "Audit atomic; không sửa snapshot đơn đã đặt",
+      "stateTransitions": "Active↔Inactive; Scheduled→Effective→Expired",
+      "evidence": [
+        "business:BA-PROMO-01",
+        "business:BA-PROMO-02",
+        "business:BA-PROMO-04",
+        "browser:Business acceptance UI: scheduled"
+      ]
+    },
+    {
+      "id": "PROMO-02",
+      "name": "Áp mã / tranh lượt",
+      "actors": "Khách checkout",
+      "preconditions": "Mã hoạt động trong thời gian, min đạt, used<limit",
+      "mainFlow": "Quote kiểm rule; checkout CAS used trong cùng transaction",
+      "alternativeFlows": "Hủy toàn bộ release đúng một lượt; hủy phần giữ redemption",
+      "exceptionFlows": "Mã sai/hết/chưa mở/cạn; hai khách tranh lượt cuối",
+      "postconditions": "Không tăng used khi order thất bại; không tăng quá quota",
+      "stateTransitions": "used N→N+1 or rollback",
+      "evidence": [
+        "business:BA-PROMO-03",
+        "order:06 ",
+        "order:07 "
+      ]
+    },
+    {
+      "id": "STAFF-01",
+      "name": "Tạo / sửa / khóa tài khoản",
+      "actors": "staff.* / accounts.manage",
+      "preconditions": "Không tự nâng quyền; actor có grant phù hợp",
+      "mainFlow": "Tạo ADMIN/SELLER/BUYER hoặc role được phép; sửa, khóa/mở",
+      "alternativeFlows": "Legacy roles giữ tương thích",
+      "exceptionFlows": "Email trùng, role client không cho phép, khóa chính mình, loại SUPER_ADMIN cuối",
+      "postconditions": "Role/status/version/session/audit atomic; mật khẩu không log",
+      "stateTransitions": "Active↔Disabled; Role assigned",
+      "evidence": [
+        "rbac:14 ",
+        "rbac:15 ",
+        "rbac:16 ",
+        "rbac:17 ",
+        "rbac:26 ",
+        "browser:ADMIN account management"
+      ]
+    },
+    {
+      "id": "STAFF-02",
+      "name": "RBAC / chống leo quyền",
+      "actors": "Mọi role; default deny",
+      "preconditions": "Phiên active/version đúng; quyền tại backend/service",
+      "mainFlow": "Menu/form theo quyền; API/service xác minh riêng",
+      "alternativeFlows": "Vai trò chuyên biệt chỉ được nhóm việc tương ứng",
+      "exceptionFlows": "Ẩn UI nhưng gọi API trực tiếp; role giả; hết phiên; sửa ID ngoài scope",
+      "postconditions": "Không thay dữ liệu khi denied; denial audit không chứa bí mật",
+      "stateTransitions": "Authorized / Denied",
+      "evidence": [
+        "rbac:01 ",
+        "rbac:04 ",
+        "rbac:10 ",
+        "rbac:11 ",
+        "rbac:24 ",
+        "browser:staff role",
+        "browser:SELLER:"
+      ]
+    },
+    {
+      "id": "STAFF-03",
+      "name": "Nhật ký thao tác",
+      "actors": "audit.read",
+      "preconditions": "Nhân viên có quyền đọc nhật ký",
+      "mainFlow": "Lọc/xem audit theo actor/resource/result",
+      "alternativeFlows": "Bản ghi cũ thiếu actor được giữ",
+      "exceptionFlows": "Không có API sửa/xóa audit; token/password/PII nhạy cảm phải loại",
+      "postconditions": "Read only; financial ledger không bị viết lại",
+      "stateTransitions": "Append-only",
+      "evidence": [
+        "rbac:20 ",
+        "rbac:27 ",
+        "phase5:25 "
+      ]
+    },
+    {
+      "id": "ANALYTICS-01",
+      "name": "Doanh thu / số đơn / trạng thái",
+      "actors": "analytics.read và quyền section",
+      "preconditions": "Khoảng ngày VN hợp lệ; dữ liệu đơn thật local",
+      "mainFlow": "Tổng quan → chart doanh thu và trạng thái theo ngày",
+      "alternativeFlows": "Ngày rỗng=0, daily/monthly; cửa sổ mặc định; mobile",
+      "exceptionFlows": "Khoảng đảo/ngày sai/>366; section vượt quyền",
+      "postconditions": "VND chính xác; unpaid COD không coi đã thu; giữ layout Tổng quan đã duyệt",
+      "stateTransitions": "Read only",
+      "evidence": [
+        "analytics:01 ",
+        "analytics:02 ",
+        "analytics:03 ",
+        "analytics:04 ",
+        "analytics:07 ",
+        "analytics:08 ",
+        "browser:Admin redesign: compact"
+      ]
+    },
+    {
+      "id": "ANALYTICS-02",
+      "name": "Sản phẩm / khách / cohort",
+      "actors": "analytics.products.read / analytics.customers.read",
+      "preconditions": "Bộ lọc hợp lệ; snapshot dòng",
+      "mainFlow": "Ranking sản phẩm/màu/size và cohort mua lần đầu/quay lại",
+      "alternativeFlows": "Partial cancellation dùng remaining units, ordered/canceled từ originalQuantity",
+      "exceptionFlows": "Không giả khách hoặc dữ liệu lịch sử",
+      "postconditions": "Tổng hàng/giảm/refund nhất quán; tài chính khách theo quyền",
+      "stateTransitions": "Read only",
+      "evidence": [
+        "analytics:09 ",
+        "analytics:10 ",
+        "analytics:11 ",
+        "analytics:12 ",
+        "analytics:25 ",
+        "business:BA-DATA-01"
+      ]
+    },
+    {
+      "id": "ANALYTICS-03",
+      "name": "Tồn / giá vốn / lợi nhuận",
+      "actors": "analytics.inventory.read / analytics.profit.read / analytics.costs.manage",
+      "preconditions": "Nguồn tồn/giá vốn xác minh; cost effective date",
+      "mainFlow": "Xem tồn SKU; nhập giá vốn có audit; tính COGS từ snapshot",
+      "alternativeFlows": "Thiếu cost để NULL và nêu độ phủ; không hồi gán tùy tiện",
+      "exceptionFlows": "Role thiếu quyền, giá vốn âm, chi phí lịch sử thiếu nguồn",
+      "postconditions": "Đọc report không thay tồn; không tự tạo lãi khi thiếu cost",
+      "stateTransitions": "Known / Unknown costs",
+      "evidence": [
+        "analytics:20 ",
+        "analytics:21 ",
+        "analytics:24 ",
+        "analytics:30 "
+      ]
+    },
+    {
+      "id": "ANALYTICS-04",
+      "name": "Funnel / giỏ bỏ dở / attribution",
+      "actors": "analytics.funnel.read / analytics.marketing.read",
+      "preconditions": "First-party visitor consent/session; event type hợp lệ",
+      "mainFlow": "Ghi attempt/success theo thực tế → cohort/order attribution",
+      "alternativeFlows": "Opt-out; phiên mới; không có lịch sử",
+      "exceptionFlows": "Event key khác nội dung; campaign chứa PII; bộ lọc không hỗ trợ",
+      "postconditions": "Không hồi dựng giả; không lưu raw search/PII; giỏ đã mua loại bỏ",
+      "stateTransitions": "Session→Cart→Checkout→Order",
+      "evidence": [
+        "analytics:13 ",
+        "analytics:14 ",
+        "analytics:15 ",
+        "analytics:16 ",
+        "analytics:17 ",
+        "analytics:18 ",
+        "analytics:19 ",
+        "analytics:26 "
+      ]
+    },
+    {
+      "id": "ANALYTICS-05",
+      "name": "COD / đối chiếu dữ liệu",
+      "actors": "analytics.finance.read",
+      "preconditions": "Dữ liệu payment/shipment/refund hiện có",
+      "mainFlow": "Tách bán hàng/thực thu/chuyển về/refund; phát hiện lệch",
+      "alternativeFlows": "Chưa đối soát, pending refund, legacy thiếu nguồn",
+      "exceptionFlows": "Không tự sửa ledger để report khớp",
+      "postconditions": "Không đếm COD remittance hai lần; refund pending chưa realized",
+      "stateTransitions": "Read only / discrepancy flagged",
+      "evidence": [
+        "analytics:22 ",
+        "analytics:23 ",
+        "analytics:32 "
+      ]
+    },
+    {
+      "id": "ANALYTICS-06",
+      "name": "Lọc / phân trang / xuất CSV-Excel",
+      "actors": "Quyền section + analytics.export",
+      "preconditions": "Bộ lọc hợp lệ; giữ scope quyền",
+      "mainFlow": "Chọn report/time → UI/API cùng tập → stream CSV hoặc .xlsx",
+      "alternativeFlows": "Không dữ liệu; nhiều trang; Unicode/formula-like text",
+      "exceptionFlows": "Format lạ, ngày sai, role không export hoặc không section",
+      "postconditions": "CSV injection escaped; XLSX string literal, kiểu số/ngày; private no-store; bounded pages",
+      "stateTransitions": "Read only + export audit",
+      "evidence": [
+        "analytics:27 ",
+        "analytics:28 ",
+        "analytics:29 ",
+        "analytics:31 ",
+        "business:BA-REPORT-01",
+        "business:BA-REPORT-02",
+        "browser:Business acceptance UI: scheduled"
+      ]
+    },
+    {
+      "id": "SETTINGS-01",
+      "name": "Thông tin cửa hàng / ngôn ngữ / tiền tệ",
+      "actors": "content.manage; user sở hữu preference",
+      "preconditions": "Giá trị form/config/rate hợp lệ",
+      "mainFlow": "Lưu form atomic; preference SSR/cookie/DB thống nhất",
+      "alternativeFlows": "Guest→login adopt; English/Vietnamese; currency tham khảo",
+      "exceptionFlows": "Email/url/phone/sizeGuide sai; role tài chính bị giới hạn",
+      "postconditions": "Không đổi tiền VND của checkout/ledger; validate toàn bộ trước ghi",
+      "stateTransitions": "Existing→Updated",
+      "evidence": [
+        "business:BA-SETTINGS-01",
+        "business:BA-SETTINGS-02",
+        "browser:Localization:"
+      ]
+    },
+    {
+      "id": "SETTINGS-02",
+      "name": "Thông tin chính sách bán / đổi trả",
+      "actors": "content.manage",
+      "preconditions": "Nội dung bổ sung không thay rule lỗi 72 giờ",
+      "mainFlow": "Sửa hướng dẫn → lưu audit → trang công khai cập nhật",
+      "alternativeFlows": "Rỗng dùng nội dung nền; nhiều dòng",
+      "exceptionFlows": "HTML/script chỉ là text; không dùng nội dung để đổi engine policy",
+      "postconditions": "Giữ phiên bản rule 72h và snapshot hồ sơ cũ; không tự sửa policy cốt lõi",
+      "stateTransitions": "Existing instructions→Updated",
+      "evidence": [
+        "business:BA-SETTINGS-03",
+        "browser:Business acceptance UI: scheduled"
+      ]
+    },
+    {
+      "id": "SYSTEM-01",
+      "name": "Lỗi / retry / recovery / backup",
+      "actors": "Người dùng đúng quyền; vận hành local",
+      "preconditions": "Database local có bản sao; không ghi vào main khi test",
+      "mainFlow": "Lỗi trước commit rollback; sau commit retry receipt; backup→restore kiểm chứng",
+      "alternativeFlows": "SQLite contention retry tối đa 3; thông báo lỗi có requestId",
+      "exceptionFlows": "Audit fail, duplicate request, timeout, FK/unique violation",
+      "postconditions": "Không tồn/tiền/ledger dở dang; main history giữ nguyên",
+      "stateTransitions": "Failure→Rollback→Retry→Committed",
+      "evidence": [
+        "business:BA-CART-06",
+        "business:BA-PARTIAL-08",
+        "business:BA-SETTINGS-02",
+        "phase5:29 ",
+        "browser:customer login"
+      ]
+    }
+  ]
+}

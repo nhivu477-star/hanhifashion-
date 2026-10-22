@@ -1,0 +1,2153 @@
+{
+  "version": "2026-10-20",
+  "sourceDocument": "/Users/duyanh/Downloads/Nhóm 4-Lớp 1.docx",
+  "sourceChapters": "1–2; mẫu quy trình, không áp dụng máy móc cấu trúc CSDL/ngoại vi trong Word",
+  "scope": "LOCAL E-COMMERCE DEMO; PROJECT_SPEC + các chính sách HÀ NHI đã duyệt",
+  "useCases": [
+    {
+      "id": "UC01",
+      "name": "Đăng ký tài khoản",
+      "mappedBusinessFunctions": [
+        "AUTH-01"
+      ],
+      "applicableScope": "Tài khoản mua hàng dùng role CUSTOMER tương ứng BUYER; email là định danh đăng nhập duy nhất. SĐT là thông tin liên hệ, không ép unique vì dữ liệu cửa hàng hiện có và không dùng đăng nhập bằng SĐT. Đăng ký hiện tự đăng nhập; không tự cấp quyền từ payload.",
+      "requiredEvidence": [
+        "business:^BA-AUTH-02",
+        "business:^BA-AUDIT-01",
+        "browser:^Business acceptance UI: registration"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "UC01-M",
+          "group": "Luồng chính",
+          "given": "Không có tài khoản cùng email",
+          "when": "Nhập hồ sơ và mật khẩu hợp lệ → tạo tài khoản → đăng nhập",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC01-A",
+          "group": "Luồng phụ áp dụng",
+          "given": "Không có tài khoản cùng email",
+          "when": "Email khác chữ hoa/thường được chuẩn hóa; wishlist được hợp nhất",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC01-E",
+          "group": "Ngoại lệ",
+          "given": "Không có tài khoản cùng email",
+          "when": "Email trùng, điện thoại sai, mật khẩu ngắn/không khớp; chèn role không được nâng quyền",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC01-P",
+          "group": "Quyền",
+          "given": "Không có tài khoản cùng email",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "Guest → CUSTOMER",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC01-I",
+          "group": "Toàn vẹn và hậu điều kiện",
+          "given": "Không có tài khoản cùng email",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "User duy nhất; passwordHash bcrypt; phiên HttpOnly; không lộ mật khẩu",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC01-U",
+          "group": "UI/API/DB và trạng thái",
+          "given": "Không có tài khoản cùng email",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "Guest → CUSTOMER",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        }
+      ]
+    },
+    {
+      "id": "UC02",
+      "name": "Đăng nhập và xác thực",
+      "mappedBusinessFunctions": [
+        "AUTH-02",
+        "AUTH-03",
+        "AUTH-04"
+      ],
+      "applicableScope": "Áp dụng các luồng hợp lệ trong module hiện hữu, theo PROJECT_SPEC và RBAC hiện tại.",
+      "requiredEvidence": [
+        "business:^BA-AUTH-01",
+        "business:^BA-AUTH-02",
+        "business:^BA-AUTH-03",
+        "business:^BA-AUTH-04",
+        "business:^BA-AUTH-05",
+        "business:^BA-AUTH-06",
+        "rbac:^24 ",
+        "browser:^SELLER:",
+        "browser:^BUYER:"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "UC02-M",
+          "group": "Luồng chính",
+          "given": "Thông tin đăng nhập hợp lệ; tài khoản chưa bị khóa; Token còn hạn 30 phút, chưa dùng; Mật khẩu hiện tại đúng; tài khoản hoạt động",
+          "when": "Đăng nhập → cookie → đúng trang theo quyền; đăng xuất → xóa phiên; Tạo mail local → dùng token → đổi hash → thu hồi phiên; Kiểm tra mật khẩu → đổi → thu hồi tất cả phiên",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC02-A",
+          "group": "Luồng phụ áp dụng",
+          "given": "Thông tin đăng nhập hợp lệ; tài khoản chưa bị khóa; Token còn hạn 30 phút, chưa dùng; Mật khẩu hiện tại đúng; tài khoản hoạt động",
+          "when": "returnTo nội bộ hợp lệ; ADMIN/SELLER/BUYER có điểm đến riêng; Email không tồn tại nhận cùng thông báo; retry sau rollback; Đăng nhập lại bằng mật khẩu mới",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC02-E",
+          "group": "Ngoại lệ",
+          "given": "Thông tin đăng nhập hợp lệ; tài khoản chưa bị khóa; Token còn hạn 30 phút, chưa dùng; Mật khẩu hiện tại đúng; tài khoản hoạt động",
+          "when": "Sai mật khẩu, khóa, returnTo bên ngoài, phiên cũ/hết hạn; Token hết hạn, đã dùng; hai yêu cầu đồng thời chỉ một thành công; Sai mật khẩu cũ, phiên hết hạn, lỗi audit, hai lần đổi tranh chấp",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC02-P",
+          "group": "Quyền",
+          "given": "Thông tin đăng nhập hợp lệ; tài khoản chưa bị khóa; Token còn hạn 30 phút, chưa dùng; Mật khẩu hiện tại đúng; tài khoản hoạt động",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "Mọi tài khoản hoạt động; Guest với token bí mật một lần; Tài khoản đăng nhập",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC02-I",
+          "group": "Toàn vẹn và hậu điều kiện",
+          "given": "Thông tin đăng nhập hợp lệ; tài khoản chưa bị khóa; Token còn hạn 30 phút, chưa dùng; Mật khẩu hiện tại đúng; tài khoản hoạt động",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "Không tái sử dụng phiên bị thu hồi; không nâng quyền từ client; Claim token + hash + thu hồi phiên + audit cùng transaction; CAS hash cũ; hash và thu hồi phiên/audit atomic",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC02-U",
+          "group": "UI/API/DB và trạng thái",
+          "given": "Thông tin đăng nhập hợp lệ; tài khoản chưa bị khóa; Token còn hạn 30 phút, chưa dùng; Mật khẩu hiện tại đúng; tài khoản hoạt động",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "Anonymous ↔ Authenticated; UNUSED → USED; Authenticated → Reauthentication required",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        }
+      ]
+    },
+    {
+      "id": "UC03",
+      "name": "Quản lý thông tin cá nhân",
+      "mappedBusinessFunctions": [
+        "AUTH-05",
+        "SETTINGS-01"
+      ],
+      "applicableScope": "Email đăng nhập không đổi qua form hồ sơ; sửa tên/SĐT và địa chỉ riêng, địa chỉ mặc định, mật khẩu, ngôn ngữ/tiền tệ. Không sửa snapshot địa chỉ đơn cũ.",
+      "requiredEvidence": [
+        "business:^BA-CUSTOMER-03",
+        "business:^BA-ADDRESS-01",
+        "business:^BA-AUDIT-01",
+        "browser:^Business acceptance UI: registration",
+        "browser:^Localization:"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "UC03-M",
+          "group": "Luồng chính",
+          "given": "Đăng nhập; địa chỉ thuộc userId; Giá trị form/config/rate hợp lệ",
+          "when": "Xem/sửa hồ sơ; thêm/sửa/xóa địa chỉ; Lưu form atomic; preference SSR/cookie/DB thống nhất",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC03-A",
+          "group": "Luồng phụ áp dụng",
+          "given": "Đăng nhập; địa chỉ thuộc userId; Giá trị form/config/rate hợp lệ",
+          "when": "Chưa có địa chỉ; nhiều địa chỉ; Guest→login adopt; English/Vietnamese; currency tham khảo",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC03-E",
+          "group": "Ngoại lệ",
+          "given": "Đăng nhập; địa chỉ thuộc userId; Giá trị form/config/rate hợp lệ",
+          "when": "Truy cập ID người khác; điện thoại/địa chỉ sai; phiên hết hạn; Email/url/phone/sizeGuide sai; role tài chính bị giới hạn",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC03-P",
+          "group": "Quyền",
+          "given": "Đăng nhập; địa chỉ thuộc userId; Giá trị form/config/rate hợp lệ",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "Khách sở hữu hồ sơ; content.manage; user sở hữu preference",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC03-I",
+          "group": "Toàn vẹn và hậu điều kiện",
+          "given": "Đăng nhập; địa chỉ thuộc userId; Giá trị form/config/rate hợp lệ",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "Không thay chủ sở hữu; không ghi địa chỉ người khác; Không đổi tiền VND của checkout/ledger; validate toàn bộ trước ghi",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC03-U",
+          "group": "UI/API/DB và trạng thái",
+          "given": "Đăng nhập; địa chỉ thuộc userId; Giá trị form/config/rate hợp lệ",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "Existing → Updated / Deleted; Existing→Updated",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        }
+      ]
+    },
+    {
+      "id": "UC04",
+      "name": "Xem danh sách sản phẩm",
+      "mappedBusinessFunctions": [
+        "CAT-01",
+        "CAT-08"
+      ],
+      "applicableScope": "Preview local có ảnh tham chiếu, không coi là hàng/ảnh đã xác minh thương mại. Chế độ commercial vẫn kiểm publication/readiness.",
+      "requiredEvidence": [
+        "phase5:^01 ",
+        "phase5:^05 ",
+        "phase5:^26 ",
+        "browser:^responsive"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "UC04-M",
+          "group": "Luồng chính",
+          "given": "Sản phẩm/danh mục hoạt động; mode bán kiểm readiness; Ảnh raster local an toàn và được phép dùng",
+          "when": "Tìm không dấu → lọc kết hợp → xem màu/size/giá; Decode/reencode → lưu file; metadata → liên kết ảnh",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC04-A",
+          "group": "Luồng phụ áp dụng",
+          "given": "Sản phẩm/danh mục hoạt động; mode bán kiểm readiness; Ảnh raster local an toàn và được phép dùng",
+          "when": "Không kết quả; phân trang; hết hàng; Ảnh development/reference tách ảnh sản phẩm",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC04-E",
+          "group": "Ngoại lệ",
+          "given": "Sản phẩm/danh mục hoạt động; mode bán kiểm readiness; Ảnh raster local an toàn và được phép dùng",
+          "when": "Slug không tồn tại, query không hợp lệ, ảnh thiếu; SVG/file giả, traversal, quá dung lượng; xóa ảnh còn tham chiếu",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC04-P",
+          "group": "Quyền",
+          "given": "Sản phẩm/danh mục hoạt động; mode bán kiểm readiness; Ảnh raster local an toàn và được phép dùng",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "Guest, Customer; media.upload / products.update",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC04-I",
+          "group": "Toàn vẹn và hậu điều kiện",
+          "given": "Sản phẩm/danh mục hoạt động; mode bán kiểm readiness; Ảnh raster local an toàn và được phép dùng",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "Không lộ sản phẩm ẩn; giá hiển thị theo variant/sale/base; Không xóa ảnh snapshot đơn; quyền kiểm tra trước parse; metadata audited",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC04-U",
+          "group": "UI/API/DB và trạng thái",
+          "given": "Sản phẩm/danh mục hoạt động; mode bán kiểm readiness; Ảnh raster local an toàn và được phép dùng",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "Active visible / Archived hidden; PENDING → APPROVED / REJECTED",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        }
+      ]
+    },
+    {
+      "id": "UC05",
+      "name": "Tìm kiếm và lọc sản phẩm",
+      "mappedBusinessFunctions": [
+        "CAT-01"
+      ],
+      "applicableScope": "Áp dụng các luồng hợp lệ trong module hiện hữu, theo PROJECT_SPEC và RBAC hiện tại.",
+      "requiredEvidence": [
+        "business:^BA-SEARCH-01",
+        "phase5:^26 ",
+        "browser:^responsive"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "UC05-M",
+          "group": "Luồng chính",
+          "given": "Sản phẩm/danh mục hoạt động; mode bán kiểm readiness",
+          "when": "Tìm không dấu → lọc kết hợp → xem màu/size/giá",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC05-A",
+          "group": "Luồng phụ áp dụng",
+          "given": "Sản phẩm/danh mục hoạt động; mode bán kiểm readiness",
+          "when": "Không kết quả; phân trang; hết hàng",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC05-E",
+          "group": "Ngoại lệ",
+          "given": "Sản phẩm/danh mục hoạt động; mode bán kiểm readiness",
+          "when": "Slug không tồn tại, query không hợp lệ, ảnh thiếu",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC05-P",
+          "group": "Quyền",
+          "given": "Sản phẩm/danh mục hoạt động; mode bán kiểm readiness",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "Guest, Customer",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC05-I",
+          "group": "Toàn vẹn và hậu điều kiện",
+          "given": "Sản phẩm/danh mục hoạt động; mode bán kiểm readiness",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "Không lộ sản phẩm ẩn; giá hiển thị theo variant/sale/base",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC05-U",
+          "group": "UI/API/DB và trạng thái",
+          "given": "Sản phẩm/danh mục hoạt động; mode bán kiểm readiness",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "Active visible / Archived hidden",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        }
+      ]
+    },
+    {
+      "id": "UC06",
+      "name": "Xem chi tiết sản phẩm",
+      "mappedBusinessFunctions": [
+        "CAT-04",
+        "CAT-05",
+        "CAT-07"
+      ],
+      "applicableScope": "Áp dụng các luồng hợp lệ trong module hiện hữu, theo PROJECT_SPEC và RBAC hiện tại.",
+      "requiredEvidence": [
+        "business:^BA-CATALOG-02",
+        "business:^BA-CATALOG-03",
+        "phase5:^04 ",
+        "browser:^customer login"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "UC06-M",
+          "group": "Luồng chính",
+          "given": "SKU duy nhất; size/màu thuộc sản phẩm; Ảnh local hợp lệ; màu và target cùng catalog hợp lệ; Ma trận đo hợp lệ; READY cần ảnh/hàng/tồn được xác minh",
+          "when": "Tạo/sửa SKU, override giá, ghi movement khi đổi tồn; Lưu màu/ảnh/position hoặc outfit → invalidate publication; Cấu hình bảng riêng/kế thừa; duyệt readiness và publication",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC06-A",
+          "group": "Luồng phụ áp dụng",
+          "given": "SKU duy nhất; size/màu thuộc sản phẩm; Ảnh local hợp lệ; màu và target cùng catalog hợp lệ; Ma trận đo hợp lệ; READY cần ảnh/hàng/tồn được xác minh",
+          "when": "Giá override rỗng dùng sale/base; thêm size; Đổi tên màu cập nhật variant; xóa outfit hợp lệ; Bảng category; bản nháp giữ được thiếu dữ liệu",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC06-E",
+          "group": "Ngoại lệ",
+          "given": "SKU duy nhất; size/màu thuộc sản phẩm; Ảnh local hợp lệ; màu và target cùng catalog hợp lệ; Ma trận đo hợp lệ; READY cần ảnh/hàng/tồn được xác minh",
+          "when": "SKU trùng, stock âm/quá giới hạn, chuyển variant sang sản phẩm khác; Màu khác sản phẩm, file sai, outfit tự trỏ hoặc hàng hết; Dữ liệu JSON sai, ảnh tham chiếu/chưa xác minh, tồn chưa rõ nguồn",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC06-P",
+          "group": "Quyền",
+          "given": "SKU duy nhất; size/màu thuộc sản phẩm; Ảnh local hợp lệ; màu và target cùng catalog hợp lệ; Ma trận đo hợp lệ; READY cần ảnh/hàng/tồn được xác minh",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "products.update; inventory.adjust khi đổi tồn; products.update; products.update / products.publish",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC06-I",
+          "group": "Toàn vẹn và hậu điều kiện",
+          "given": "SKU duy nhất; size/màu thuộc sản phẩm; Ảnh local hợp lệ; màu và target cùng catalog hợp lệ; Ma trận đo hợp lệ; READY cần ảnh/hàng/tồn được xác minh",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "Variant + movement + audit atomic; historical SKU snapshot không đổi; Ghi cấu hình + invalidation + audit atomic; Không tự giả bằng chứng hàng thật; audit trong transaction",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC06-U",
+          "group": "UI/API/DB và trạng thái",
+          "given": "SKU duy nhất; size/màu thuộc sản phẩm; Ảnh local hợp lệ; màu và target cùng catalog hợp lệ; Ma trận đo hợp lệ; READY cần ảnh/hàng/tồn được xác minh",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "New → Configured → Updated; PENDING_ASSETS after catalogue change; DRAFT ↔ PENDING_ASSETS → READY",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        }
+      ]
+    },
+    {
+      "id": "UC07",
+      "name": "Thêm sản phẩm vào giỏ hàng",
+      "mappedBusinessFunctions": [
+        "CART-01"
+      ],
+      "applicableScope": "Áp dụng các luồng hợp lệ trong module hiện hữu, theo PROJECT_SPEC và RBAC hiện tại.",
+      "requiredEvidence": [
+        "business:^BA-CART-01",
+        "business:^BA-CART-02",
+        "business:^BA-CART-03",
+        "business:^BA-CART-04",
+        "business:^BA-CART-05",
+        "business:^BA-CART-06",
+        "browser:^customer login"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "UC07-M",
+          "group": "Luồng chính",
+          "given": "Sản phẩm/màu/danh mục hoạt động; tồn đủ",
+          "when": "Thêm hoặc increment → sửa lượng → xóa",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC07-A",
+          "group": "Luồng phụ áp dụng",
+          "given": "Sản phẩm/màu/danh mục hoạt động; tồn đủ",
+          "when": "Xóa hàng đã ẩn; tắt analytics; retry sau lỗi",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC07-E",
+          "group": "Ngoại lệ",
+          "given": "Sản phẩm/màu/danh mục hoạt động; tồn đủ",
+          "when": "Lượng >99, thiếu tồn, key khác payload, guest/hết phiên",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC07-P",
+          "group": "Quyền",
+          "given": "Sản phẩm/màu/danh mục hoạt động; tồn đủ",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "Khách đăng nhập, giỏ riêng",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC07-I",
+          "group": "Toàn vẹn và hậu điều kiện",
+          "given": "Sản phẩm/màu/danh mục hoạt động; tồn đủ",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "Receipt độc lập analytics; mutation atomic; không thay tồn khi chỉ thêm giỏ",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC07-U",
+          "group": "UI/API/DB và trạng thái",
+          "given": "Sản phẩm/màu/danh mục hoạt động; tồn đủ",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "Empty ↔ Populated",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        }
+      ]
+    },
+    {
+      "id": "UC08",
+      "name": "Quản lý giỏ hàng",
+      "mappedBusinessFunctions": [
+        "CART-01",
+        "CART-02"
+      ],
+      "applicableScope": "Áp dụng các luồng hợp lệ trong module hiện hữu, theo PROJECT_SPEC và RBAC hiện tại.",
+      "requiredEvidence": [
+        "business:^BA-CART-07",
+        "business:^BA-CART-04",
+        "order:^11 ",
+        "browser:^Retired products"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "UC08-M",
+          "group": "Luồng chính",
+          "given": "Sản phẩm/màu/danh mục hoạt động; tồn đủ; Sản phẩm tồn tại/được hoạt động khi thêm",
+          "when": "Thêm hoặc increment → sửa lượng → xóa; Lưu wishlist → đăng nhập → merge; xóa mục",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC08-A",
+          "group": "Luồng phụ áp dụng",
+          "given": "Sản phẩm/màu/danh mục hoạt động; tồn đủ; Sản phẩm tồn tại/được hoạt động khi thêm",
+          "when": "Xóa hàng đã ẩn; tắt analytics; retry sau lỗi; Thêm lặp là no-op; xóa sản phẩm đã ẩn",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC08-E",
+          "group": "Ngoại lệ",
+          "given": "Sản phẩm/màu/danh mục hoạt động; tồn đủ; Sản phẩm tồn tại/được hoạt động khi thêm",
+          "when": "Lượng >99, thiếu tồn, key khác payload, guest/hết phiên; ID không tồn tại; người khác không sửa được wishlist",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC08-P",
+          "group": "Quyền",
+          "given": "Sản phẩm/màu/danh mục hoạt động; tồn đủ; Sản phẩm tồn tại/được hoạt động khi thêm",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "Khách đăng nhập, giỏ riêng; Guest local; khách sở hữu wishlist",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC08-I",
+          "group": "Toàn vẹn và hậu điều kiện",
+          "given": "Sản phẩm/màu/danh mục hoạt động; tồn đủ; Sản phẩm tồn tại/được hoạt động khi thêm",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "Receipt độc lập analytics; mutation atomic; không thay tồn khi chỉ thêm giỏ; Unique wishlist/product; không đổi giỏ của tài khoản khác",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC08-U",
+          "group": "UI/API/DB và trạng thái",
+          "given": "Sản phẩm/màu/danh mục hoạt động; tồn đủ; Sản phẩm tồn tại/được hoạt động khi thêm",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "Empty ↔ Populated; Local → Account wishlist",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        }
+      ]
+    },
+    {
+      "id": "UC09",
+      "name": "Đặt hàng",
+      "mappedBusinessFunctions": [
+        "CHECKOUT-01",
+        "CHECKOUT-02",
+        "CHECKOUT-03"
+      ],
+      "applicableScope": "Chỉ COD nội bộ theo PROJECT_SPEC; phương thức khác không được trình bày như thanh toán thật. Địa chỉ VN, tiền giao dịch VND.",
+      "requiredEvidence": [
+        "order:^01 ",
+        "order:^03 ",
+        "order:^04 ",
+        "order:^05 ",
+        "order:^17 ",
+        "business:^BA-CHECKOUT-01",
+        "business:^BA-PROMO-03",
+        "browser:^customer login"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "UC09-M",
+          "group": "Luồng chính",
+          "given": "Giỏ không rỗng; địa chỉ vùng VN; giá/tồn hợp lệ; Quote hợp lệ; key UUID; tồn và lượt voucher còn đủ tại commit; Key đã gắn với cart và payload chuẩn hóa",
+          "when": "Server tính subtotal-discount+shipping; CAS tồn/lượt → order/items/payment/history/audit → xóa giỏ; Retry cùng key → cùng order",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC09-A",
+          "group": "Luồng phụ áp dụng",
+          "given": "Giỏ không rỗng; địa chỉ vùng VN; giá/tồn hợp lệ; Quote hợp lệ; key UUID; tồn và lượt voucher còn đủ tại commit; Key đã gắn với cart và payload chuẩn hóa",
+          "when": "Không voucher; giảm phần trăm/tối đa; miễn ship theo net; Địa chỉ lưu sẵn; nhiều dòng; đơn không giảm giá; Mất response sau commit; gọi đồng thời",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC09-E",
+          "group": "Ngoại lệ",
+          "given": "Giỏ không rỗng; địa chỉ vùng VN; giá/tồn hợp lệ; Quote hợp lệ; key UUID; tồn và lượt voucher còn đủ tại commit; Key đã gắn với cart và payload chuẩn hóa",
+          "when": "Voucher sai/hết hạn/chưa bắt đầu/cạn lượt; giá 0; vùng ngoài VN; Tranh mua đơn vị cuối; tranh lượt voucher; lỗi giữa giao dịch; Key của cart khác; đổi địa chỉ/voucher khi dùng lại key",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC09-P",
+          "group": "Quyền",
+          "given": "Giỏ không rỗng; địa chỉ vùng VN; giá/tồn hợp lệ; Quote hợp lệ; key UUID; tồn và lượt voucher còn đủ tại commit; Key đã gắn với cart và payload chuẩn hóa",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "Khách đăng nhập; Chủ cart tạo yêu cầu",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC09-I",
+          "group": "Toàn vẹn và hậu điều kiện",
+          "given": "Giỏ không rỗng; địa chỉ vùng VN; giá/tồn hợp lệ; Quote hợp lệ; key UUID; tồn và lượt voucher còn đủ tại commit; Key đã gắn với cart và payload chuẩn hóa",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "VND integer; không nhận giá client; quote không trừ tồn/lượt; Tất cả transaction; không âm tồn; payment UNPAID; snapshot lịch sử; Một order/payment/trừ tồn; không xóa giỏ mới khi replay",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC09-U",
+          "group": "UI/API/DB và trạng thái",
+          "given": "Giỏ không rỗng; địa chỉ vùng VN; giá/tồn hợp lệ; Quote hợp lệ; key UUID; tồn và lượt voucher còn đủ tại commit; Key đã gắn với cart và payload chuẩn hóa",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "Cart → Quote; Cart → PENDING / UNPAID; Committed → Same result",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        }
+      ]
+    },
+    {
+      "id": "UC10",
+      "name": "Thanh toán và COD",
+      "mappedBusinessFunctions": [
+        "COD-01",
+        "COD-02",
+        "COD-03",
+        "COD-04"
+      ],
+      "applicableScope": "Thu COD, chuyển tiền về và đối soát mô phỏng độc lập; không kết nối cổng thanh toán hoặc xác thực tiền thật.",
+      "requiredEvidence": [
+        "shipping:^08 ",
+        "shipping:^09 ",
+        "shipping:^10 ",
+        "shipping:^11 ",
+        "shipping:^12 ",
+        "shipping:^13 ",
+        "shipping:^15 ",
+        "shipping:^16 ",
+        "browser:^customer login"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "UC10-M",
+          "group": "Luồng chính",
+          "given": "Đã giao; payment COD đúng tổng; chứng từ và nguồn thu; Có collection; chứng từ hợp lệ; Collected/remitted/expected và fees khớp hoặc có tranh chấp; Chứng từ gốc tồn tại; correction link + evidence",
+          "when": "Thêm collection ledger → tính collected → payment PAID khi đủ; Ghi remittance → outstanding thay đổi; Đối chiếu ledger → reconcile hoặc dispute có ghi chú; Thêm bút toán bù có tham chiếu → tính lại",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC10-A",
+          "group": "Luồng phụ áp dụng",
+          "given": "Đã giao; payment COD đúng tổng; chứng từ và nguồn thu; Có collection; chứng từ hợp lệ; Collected/remitted/expected và fees khớp hoặc có tranh chấp; Chứng từ gốc tồn tại; correction link + evidence",
+          "when": "Thu từng phần; thiếu/thừa tiền hiển thị lệch; Chuyển từng phần, chưa đủ tiền; Thiếu/thừa; tiếp tục bổ sung chứng từ; Chứng từ sai được bù; ledger gốc giữ nguyên",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC10-E",
+          "group": "Ngoại lệ",
+          "given": "Đã giao; payment COD đúng tổng; chứng từ và nguồn thu; Có collection; chứng từ hợp lệ; Collected/remitted/expected và fees khớp hoặc có tranh chấp; Chứng từ gốc tồn tại; correction link + evidence",
+          "when": "Sai provider/amount/date; trùng key khác payload; thu trước giao; Chưa thu, số âm không phải correction, ngày tương lai; Đối soát khi còn lệch, không quyền, thao tác đồng thời; Bù quá giới hạn, key khác nội dung, số thu dưới khoản refund đã giữ",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC10-P",
+          "group": "Quyền",
+          "given": "Đã giao; payment COD đúng tổng; chứng từ và nguồn thu; Có collection; chứng từ hợp lệ; Collected/remitted/expected và fees khớp hoặc có tranh chấp; Chứng từ gốc tồn tại; correction link + evidence",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "cod.collection.confirm; cod.remittance.record; cod.reconcile; Quyền collection/remittance tương ứng",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC10-I",
+          "group": "Toàn vẹn và hậu điều kiện",
+          "given": "Đã giao; payment COD đúng tổng; chứng từ và nguồn thu; Có collection; chứng từ hợp lệ; Collected/remitted/expected và fees khớp hoặc có tranh chấp; Chứng từ gốc tồn tại; correction link + evidence",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "Append-only; không nhân đôi từ retry; không ghi PAID từ delivery; Không cộng lại doanh thu từ tiền chuyển về; Một settlement hợp lệ; audit; outstanding không bị xóa để che lệch; Không sửa/xóa ledger; không hoàn vượt thực thu",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC10-U",
+          "group": "UI/API/DB và trạng thái",
+          "given": "Đã giao; payment COD đúng tổng; chứng từ và nguồn thu; Có collection; chứng từ hợp lệ; Collected/remitted/expected và fees khớp hoặc có tranh chấp; Chứng từ gốc tồn tại; correction link + evidence",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "UNPAID→PAID when actual recorded collected sufficient; OUTSTANDING→PARTIAL→READY; PENDING/PARTIAL/DISPUTED→RECONCILED; Settlement recomputed / disputed",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        }
+      ]
+    },
+    {
+      "id": "UC11",
+      "name": "Theo dõi đơn hàng",
+      "mappedBusinessFunctions": [
+        "ORDER-01"
+      ],
+      "applicableScope": "Áp dụng các luồng hợp lệ trong module hiện hữu, theo PROJECT_SPEC và RBAC hiện tại.",
+      "requiredEvidence": [
+        "order:^11 ",
+        "order:^14 ",
+        "shipping:^14 ",
+        "returns:^23 ",
+        "browser:^BUYER:"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "UC11-M",
+          "group": "Luồng chính",
+          "given": "Đơn tồn tại; đúng ownership/quyền",
+          "when": "Tìm mã → xem snapshot/timeline thực",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC11-A",
+          "group": "Luồng phụ áp dụng",
+          "given": "Đơn tồn tại; đúng ownership/quyền",
+          "when": "Tra cứu mã+phone chỉ dữ liệu tối thiểu",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC11-E",
+          "group": "Ngoại lệ",
+          "given": "Đơn tồn tại; đúng ownership/quyền",
+          "when": "ID/code khác khách; token sai; không lộ address/email/token",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC11-P",
+          "group": "Quyền",
+          "given": "Đơn tồn tại; đúng ownership/quyền",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "orders.read; khách sở hữu; guest capability tối thiểu",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC11-I",
+          "group": "Toàn vẹn và hậu điều kiện",
+          "given": "Đơn tồn tại; đúng ownership/quyền",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "UI/API/DB khớp tổng tiền/trạng thái; public allowlist",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC11-U",
+          "group": "UI/API/DB và trạng thái",
+          "given": "Đơn tồn tại; đúng ownership/quyền",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "Read only",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        }
+      ]
+    },
+    {
+      "id": "UC12",
+      "name": "Hủy đơn hàng",
+      "mappedBusinessFunctions": [
+        "ORDER-03"
+      ],
+      "applicableScope": "Hủy toàn bộ theo quy tắc hiện hành; hủy một phần bị khóa chờ duyệt chính sách. Đơn đang giao đi theo shipment/return, không hoàn tồn tùy tiện.",
+      "requiredEvidence": [
+        "order:^06 ",
+        "order:^07 ",
+        "order:^16 ",
+        "business:^BA-POLICY-01",
+        "browser:^customer login"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "UC12-M",
+          "group": "Luồng chính",
+          "given": "UNPAID; chưa giao hoặc hàng chuyển hoàn đã về",
+          "when": "Cancel → hoàn lượng còn lại → release voucher một lần",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC12-A",
+          "group": "Luồng phụ áp dụng",
+          "given": "UNPAID; chưa giao hoặc hàng chuyển hoàn đã về",
+          "when": "Retry CANCELLED no-op; trả về rồi hủy",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC12-E",
+          "group": "Ngoại lệ",
+          "given": "UNPAID; chưa giao hoặc hàng chuyển hoàn đã về",
+          "when": "Đã PAID; đang giao/chưa hoàn về; khách hủy muộn",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC12-P",
+          "group": "Quyền",
+          "given": "UNPAID; chưa giao hoặc hàng chuyển hoàn đã về",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "orders.cancel hoặc owner trước chuẩn bị",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC12-I",
+          "group": "Toàn vẹn và hậu điều kiện",
+          "given": "UNPAID; chưa giao hoặc hàng chuyển hoàn đã về",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "Hoàn tồn/coupon/history/audit atomic; paid dùng refund flow",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC12-U",
+          "group": "UI/API/DB và trạng thái",
+          "given": "UNPAID; chưa giao hoặc hàng chuyển hoàn đã về",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "PENDING/CONFIRMED/PROCESSING/RETURNED→CANCELLED",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        }
+      ]
+    },
+    {
+      "id": "UC13",
+      "name": "Xem và tiếp nhận đơn mới",
+      "mappedBusinessFunctions": [
+        "ORDER-01",
+        "ORDER-02"
+      ],
+      "applicableScope": "Dùng danh sách trạng thái, lọc ngày, tìm mã, ưu tiên và phân công trong module hiện tại; không thêm hệ thống nhân sự hoặc chấm công.",
+      "requiredEvidence": [
+        "order:^14 ",
+        "rbac:^05 ",
+        "business:^BA-ASSIGN-01",
+        "browser:^SELLER:"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "UC13-M",
+          "group": "Luồng chính",
+          "given": "Đơn tồn tại; đúng ownership/quyền; Trạng thái đầu hợp lệ; lý do khi hủy/giao nhận",
+          "when": "Tìm mã → xem snapshot/timeline thực; PENDING→CONFIRMED→PROCESSING; từ chối dùng CANCELLED",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC13-A",
+          "group": "Luồng phụ áp dụng",
+          "given": "Đơn tồn tại; đúng ownership/quyền; Trạng thái đầu hợp lệ; lý do khi hủy/giao nhận",
+          "when": "Tra cứu mã+phone chỉ dữ liệu tối thiểu; Đường giao nhận thủ công trước có shipment",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC13-E",
+          "group": "Ngoại lệ",
+          "given": "Đơn tồn tại; đúng ownership/quyền; Trạng thái đầu hợp lệ; lý do khi hủy/giao nhận",
+          "when": "ID/code khác khách; token sai; không lộ address/email/token; Nhảy bước, lùi trạng thái, khách tự đóng gói",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC13-P",
+          "group": "Quyền",
+          "given": "Đơn tồn tại; đúng ownership/quyền; Trạng thái đầu hợp lệ; lý do khi hủy/giao nhận",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "orders.read; khách sở hữu; guest capability tối thiểu; orders.manage; orders.cancel cho hủy",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC13-I",
+          "group": "Toàn vẹn và hậu điều kiện",
+          "given": "Đơn tồn tại; đúng ownership/quyền; Trạng thái đầu hợp lệ; lý do khi hủy/giao nhận",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "UI/API/DB khớp tổng tiền/trạng thái; public allowlist; CAS + history + audit; không tự ghi PAID từ status",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC13-U",
+          "group": "UI/API/DB và trạng thái",
+          "given": "Đơn tồn tại; đúng ownership/quyền; Trạng thái đầu hợp lệ; lý do khi hủy/giao nhận",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "Read only; Theo order-state-machine.md",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        }
+      ]
+    },
+    {
+      "id": "UC14",
+      "name": "Xác nhận đơn hàng",
+      "mappedBusinessFunctions": [
+        "ORDER-02"
+      ],
+      "applicableScope": "Checkout đã trừ tồn và giữ snapshot; xác nhận không trừ lại. Không dùng tồn còn lại sau khi đã xuất để kết luận đơn mua đơn vị cuối là thiếu hàng.",
+      "requiredEvidence": [
+        "order:^09 ",
+        "order:^13 ",
+        "rbac:^05 ",
+        "browser:^customer login"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "UC14-M",
+          "group": "Luồng chính",
+          "given": "Trạng thái đầu hợp lệ; lý do khi hủy/giao nhận",
+          "when": "PENDING→CONFIRMED→PROCESSING; từ chối dùng CANCELLED",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC14-A",
+          "group": "Luồng phụ áp dụng",
+          "given": "Trạng thái đầu hợp lệ; lý do khi hủy/giao nhận",
+          "when": "Đường giao nhận thủ công trước có shipment",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC14-E",
+          "group": "Ngoại lệ",
+          "given": "Trạng thái đầu hợp lệ; lý do khi hủy/giao nhận",
+          "when": "Nhảy bước, lùi trạng thái, khách tự đóng gói",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC14-P",
+          "group": "Quyền",
+          "given": "Trạng thái đầu hợp lệ; lý do khi hủy/giao nhận",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "orders.manage; orders.cancel cho hủy",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC14-I",
+          "group": "Toàn vẹn và hậu điều kiện",
+          "given": "Trạng thái đầu hợp lệ; lý do khi hủy/giao nhận",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "CAS + history + audit; không tự ghi PAID từ status",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC14-U",
+          "group": "UI/API/DB và trạng thái",
+          "given": "Trạng thái đầu hợp lệ; lý do khi hủy/giao nhận",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "Theo order-state-machine.md",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        }
+      ]
+    },
+    {
+      "id": "UC15",
+      "name": "Đóng gói sản phẩm",
+      "mappedBusinessFunctions": [
+        "ORDER-02"
+      ],
+      "applicableScope": "Giữ enum PROCESSING và ghi packedAt/packedBy cùng checklist SKU/màu/size/lượng. Tạo shipment hoặc chuyển SHIPPING phải đã kiểm tra đóng gói; không thêm enum phá lịch sử cũ.",
+      "requiredEvidence": [
+        "business:^BA-PACK-01",
+        "business:^BA-PACK-02",
+        "business:^BA-PACK-03",
+        "browser:^customer login"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "UC15-M",
+          "group": "Luồng chính",
+          "given": "Trạng thái đầu hợp lệ; lý do khi hủy/giao nhận",
+          "when": "PENDING→CONFIRMED→PROCESSING; từ chối dùng CANCELLED",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC15-A",
+          "group": "Luồng phụ áp dụng",
+          "given": "Trạng thái đầu hợp lệ; lý do khi hủy/giao nhận",
+          "when": "Đường giao nhận thủ công trước có shipment",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC15-E",
+          "group": "Ngoại lệ",
+          "given": "Trạng thái đầu hợp lệ; lý do khi hủy/giao nhận",
+          "when": "Nhảy bước, lùi trạng thái, khách tự đóng gói",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC15-P",
+          "group": "Quyền",
+          "given": "Trạng thái đầu hợp lệ; lý do khi hủy/giao nhận",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "orders.manage; orders.cancel cho hủy",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC15-I",
+          "group": "Toàn vẹn và hậu điều kiện",
+          "given": "Trạng thái đầu hợp lệ; lý do khi hủy/giao nhận",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "CAS + history + audit; không tự ghi PAID từ status",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC15-U",
+          "group": "UI/API/DB và trạng thái",
+          "given": "Trạng thái đầu hợp lệ; lý do khi hủy/giao nhận",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "Theo order-state-machine.md",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        }
+      ]
+    },
+    {
+      "id": "UC16",
+      "name": "Cập nhật giao hàng",
+      "mappedBusinessFunctions": [
+        "SHIP-01",
+        "SHIP-02",
+        "SHIP-03"
+      ],
+      "applicableScope": "Mã HN-SHIP-* là hồ sơ giao nhận local, không phải mã hãng. Không gọi logistics bên ngoài.",
+      "requiredEvidence": [
+        "shipping:^01 ",
+        "shipping:^02 ",
+        "shipping:^03 ",
+        "shipping:^04 ",
+        "shipping:^05 ",
+        "shipping:^06 ",
+        "shipping:^07 ",
+        "shipping:^18 ",
+        "browser:^customer login"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "UC16-M",
+          "group": "Luồng chính",
+          "given": "PROCESSING, UNPAID, COD payment khớp; chưa có shipment; Trạng thái shipment đầu hợp lệ; Kiện đang giao; lý do và trạng thái hợp lệ",
+          "when": "Tạo HN-SHIP-* và snapshot nhận hàng; PENDING→READY_FOR_PICKUP→PICKED_UP→IN_TRANSIT→DELIVERED; Failure→retry hoặc returning→returned",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC16-A",
+          "group": "Luồng phụ áp dụng",
+          "given": "PROCESSING, UNPAID, COD payment khớp; chưa có shipment; Trạng thái shipment đầu hợp lệ; Kiện đang giao; lý do và trạng thái hợp lệ",
+          "when": "Thông số kiện hợp lệ; thông tin tùy chọn; Retry trạng thái đã ghi không tạo side effect; Hủy trước pickup; retry event",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC16-E",
+          "group": "Ngoại lệ",
+          "given": "PROCESSING, UNPAID, COD payment khớp; chưa có shipment; Trạng thái shipment đầu hợp lệ; Kiện đang giao; lý do và trạng thái hợp lệ",
+          "when": "Đơn sai trạng thái/đã có kiện; input parcel sai; carrier thật bị chặn; Nhảy bước; thiếu lý do; sửa order trực tiếp khi đã có kiện; Đánh delivered từ returned; hoàn tồn trước hàng về",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC16-P",
+          "group": "Quyền",
+          "given": "PROCESSING, UNPAID, COD payment khớp; chưa có shipment; Trạng thái shipment đầu hợp lệ; Kiện đang giao; lý do và trạng thái hợp lệ",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "shipping.create; shipping.update; shipping.failures.manage + shipping.update",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC16-I",
+          "group": "Toàn vẹn và hậu điều kiện",
+          "given": "PROCESSING, UNPAID, COD payment khớp; chưa có shipment; Trạng thái shipment đầu hợp lệ; Kiện đang giao; lý do và trạng thái hợp lệ",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "Một shipment/order; không trừ tồn lần hai; Order/shipment/event khớp; giao thành công vẫn UNPAID; Không hoàn tồn tại cả RETURNED và CANCELLED; timeline thật",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC16-U",
+          "group": "UI/API/DB và trạng thái",
+          "given": "PROCESSING, UNPAID, COD payment khớp; chưa có shipment; Trạng thái shipment đầu hợp lệ; Kiện đang giao; lý do và trạng thái hợp lệ",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "None→PENDING; Theo shipping-state-machine.md; DELIVERY_FAILED / RETURNING / RETURNED",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        }
+      ]
+    },
+    {
+      "id": "UC17",
+      "name": "Kiểm tra, nhập và xuất kho",
+      "mappedBusinessFunctions": [
+        "INV-01",
+        "INV-02"
+      ],
+      "applicableScope": "Áp dụng các luồng hợp lệ trong module hiện hữu, theo PROJECT_SPEC và RBAC hiện tại.",
+      "requiredEvidence": [
+        "rbac:^03 ",
+        "business:^BA-STOCKTAKE-01",
+        "business:^BA-STOCKTAKE-03",
+        "browser:^Data update: stock forms",
+        "browser:^SELLER:"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "UC17-M",
+          "group": "Luồng chính",
+          "given": "SKU tồn tại; quantity nguyên dương; lý do/ngày/nhà cung cấp hợp lệ; SKU tồn tại; số tồn nguyên không âm",
+          "when": "Form IN/OUT → CAS stock → movement + audit; Điều chỉnh số kiểm đếm có lý do; xem movement theo SKU",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC17-A",
+          "group": "Luồng phụ áp dụng",
+          "given": "SKU tồn tại; quantity nguyên dương; lý do/ngày/nhà cung cấp hợp lệ; SKU tồn tại; số tồn nguyên không âm",
+          "when": "Retry cùng key cùng nội dung trả lại kết quả; Tồn 0; phân trang; không có lịch sử",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC17-E",
+          "group": "Ngoại lệ",
+          "given": "SKU tồn tại; quantity nguyên dương; lý do/ngày/nhà cung cấp hợp lệ; SKU tồn tại; số tồn nguyên không âm",
+          "when": "OUT quá tồn; date tương lai; key khác nội dung; Mất quyền, số âm, tranh chấp ghi, lỗi giữa transaction",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC17-P",
+          "group": "Quyền",
+          "given": "SKU tồn tại; quantity nguyên dương; lý do/ngày/nhà cung cấp hợp lệ; SKU tồn tại; số tồn nguyên không âm",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "inventory.adjust; inventory.adjust / inventory.movements.read",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC17-I",
+          "group": "Toàn vẹn và hậu điều kiện",
+          "given": "SKU tồn tại; quantity nguyên dương; lý do/ngày/nhà cung cấp hợp lệ; SKU tồn tại; số tồn nguyên không âm",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "Không âm tồn; delta đúng; chỉ một movement mỗi eventKey; Movement delta=after-before; ghi actor/time/reason; không sửa ledger cũ",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC17-U",
+          "group": "UI/API/DB và trạng thái",
+          "given": "SKU tồn tại; quantity nguyên dương; lý do/ngày/nhà cung cấp hợp lệ; SKU tồn tại; số tồn nguyên không âm",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "stock N → N ± quantity; Current stock → Counted stock",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        }
+      ]
+    },
+    {
+      "id": "UC18",
+      "name": "Đánh giá và hỗ trợ khách hàng",
+      "mappedBusinessFunctions": [
+        "CUSTOMER-02"
+      ],
+      "applicableScope": "Đánh giá xác minh mua sau giao; SELLER có quyền hỗ trợ phi tài chính, trả lời và ẩn/hiện có lý do. Hỗ trợ dùng inquiry + replies nội bộ, không xây chat thời gian thực ngoài phạm vi.",
+      "requiredEvidence": [
+        "business:^BA-FEEDBACK-01",
+        "business:^BA-FEEDBACK-02",
+        "business:^BA-FEEDBACK-03",
+        "business:^BA-FEEDBACK-04",
+        "browser:^Business acceptance UI: stocktake"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "UC18-M",
+          "group": "Luồng chính",
+          "given": "Thông tin liên hệ/lý do hợp lệ",
+          "when": "Gửi → inquiry NEW; đọc và giải quyết",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC18-A",
+          "group": "Luồng phụ áp dụng",
+          "given": "Thông tin liên hệ/lý do hợp lệ",
+          "when": "Guest không gán userId; email liên hệ khác tài khoản vẫn gán tác giả đăng nhập",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC18-E",
+          "group": "Ngoại lệ",
+          "given": "Thông tin liên hệ/lý do hợp lệ",
+          "when": "Nội dung ngắn, ID/email giả không được ghép vào lịch sử người khác",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC18-P",
+          "group": "Quyền",
+          "given": "Thông tin liên hệ/lý do hợp lệ",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "Guest hoặc user gửi; inquiries.read/manage xử lý",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC18-I",
+          "group": "Toàn vẹn và hậu điều kiện",
+          "given": "Thông tin liên hệ/lý do hợp lệ",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "Không backfill userId bằng email; ghi thay đổi status có audit",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC18-U",
+          "group": "UI/API/DB và trạng thái",
+          "given": "Thông tin liên hệ/lý do hợp lệ",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "NEW→READ→RESOLVED",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        }
+      ]
+    },
+    {
+      "id": "UC19",
+      "name": "Quản lý người dùng",
+      "mappedBusinessFunctions": [
+        "CUSTOMER-01",
+        "CUSTOMER-03",
+        "STAFF-01"
+      ],
+      "applicableScope": "Áp dụng các luồng hợp lệ trong module hiện hữu, theo PROJECT_SPEC và RBAC hiện tại.",
+      "requiredEvidence": [
+        "business:^BA-CUSTOMER-01",
+        "business:^BA-CUSTOMER-02",
+        "rbac:^14 ",
+        "rbac:^15 ",
+        "browser:^ADMIN account management",
+        "browser:^BUYER:"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "UC19-M",
+          "group": "Luồng chính",
+          "given": "Đúng CUSTOMER; phân trang; CUSTOMER; không phải chính tài khoản thao tác; Không tự nâng quyền; actor có grant phù hợp",
+          "when": "Danh sách → hồ sơ → đơn và số đã thu → yêu cầu hỗ trợ; Khóa→thu hồi phiên; mở cho đăng nhập mới; Tạo ADMIN/SELLER/BUYER hoặc role được phép; sửa, khóa/mở",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC19-A",
+          "group": "Luồng phụ áp dụng",
+          "given": "Đúng CUSTOMER; phân trang; CUSTOMER; không phải chính tài khoản thao tác; Không tự nâng quyền; actor có grant phù hợp",
+          "when": "Khách chưa mua/chưa hỗ trợ; quyền chỉ đọc; Retry trạng thái cùng kết quả; lịch sử mua vẫn giữ; Legacy roles giữ tương thích",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC19-E",
+          "group": "Ngoại lệ",
+          "given": "Đúng CUSTOMER; phân trang; CUSTOMER; không phải chính tài khoản thao tác; Không tự nâng quyền; actor có grant phù hợp",
+          "when": "ID nhân viên, ID không tồn tại, Seller không customers.read; Khóa staff qua endpoint khách, không quyền, lỗi audit; Email trùng, role client không cho phép, khóa chính mình, loại SUPER_ADMIN cuối",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC19-P",
+          "group": "Quyền",
+          "given": "Đúng CUSTOMER; phân trang; CUSTOMER; không phải chính tài khoản thao tác; Không tự nâng quyền; actor có grant phù hợp",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "customers.read; quyền riêng để mở đơn/returns/support; customers.manage; staff.* / accounts.manage",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC19-I",
+          "group": "Toàn vẹn và hậu điều kiện",
+          "given": "Đúng CUSTOMER; phân trang; CUSTOMER; không phải chính tài khoản thao tác; Không tự nâng quyền; actor có grant phù hợp",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "Select allowlist, không password/token; support theo userId thật; Status/version/sessions/audit atomic; mở không hồi sinh token cũ; Role/status/version/session/audit atomic; mật khẩu không log",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC19-U",
+          "group": "UI/API/DB và trạng thái",
+          "given": "Đúng CUSTOMER; phân trang; CUSTOMER; không phải chính tài khoản thao tác; Không tự nâng quyền; actor có grant phù hợp",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "Read only; Active↔Disabled; Active↔Disabled; Role assigned",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        }
+      ]
+    },
+    {
+      "id": "UC20",
+      "name": "Quản lý nhân viên và phân quyền",
+      "mappedBusinessFunctions": [
+        "STAFF-01",
+        "STAFF-02",
+        "STAFF-03"
+      ],
+      "applicableScope": "Áp dụng các luồng hợp lệ trong module hiện hữu, theo PROJECT_SPEC và RBAC hiện tại.",
+      "requiredEvidence": [
+        "rbac:^01 ",
+        "rbac:^02 ",
+        "rbac:^06 ",
+        "rbac:^14 ",
+        "rbac:^15 ",
+        "rbac:^16 ",
+        "rbac:^17 ",
+        "rbac:^26 ",
+        "browser:^ADMIN account management",
+        "browser:^staff role"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "UC20-M",
+          "group": "Luồng chính",
+          "given": "Không tự nâng quyền; actor có grant phù hợp; Phiên active/version đúng; quyền tại backend/service; Nhân viên có quyền đọc nhật ký",
+          "when": "Tạo ADMIN/SELLER/BUYER hoặc role được phép; sửa, khóa/mở; Menu/form theo quyền; API/service xác minh riêng; Lọc/xem audit theo actor/resource/result",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC20-A",
+          "group": "Luồng phụ áp dụng",
+          "given": "Không tự nâng quyền; actor có grant phù hợp; Phiên active/version đúng; quyền tại backend/service; Nhân viên có quyền đọc nhật ký",
+          "when": "Legacy roles giữ tương thích; Vai trò chuyên biệt chỉ được nhóm việc tương ứng; Bản ghi cũ thiếu actor được giữ",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC20-E",
+          "group": "Ngoại lệ",
+          "given": "Không tự nâng quyền; actor có grant phù hợp; Phiên active/version đúng; quyền tại backend/service; Nhân viên có quyền đọc nhật ký",
+          "when": "Email trùng, role client không cho phép, khóa chính mình, loại SUPER_ADMIN cuối; Ẩn UI nhưng gọi API trực tiếp; role giả; hết phiên; sửa ID ngoài scope; Không có API sửa/xóa audit; token/password/PII nhạy cảm phải loại",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC20-P",
+          "group": "Quyền",
+          "given": "Không tự nâng quyền; actor có grant phù hợp; Phiên active/version đúng; quyền tại backend/service; Nhân viên có quyền đọc nhật ký",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "staff.* / accounts.manage; Mọi role; default deny; audit.read",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC20-I",
+          "group": "Toàn vẹn và hậu điều kiện",
+          "given": "Không tự nâng quyền; actor có grant phù hợp; Phiên active/version đúng; quyền tại backend/service; Nhân viên có quyền đọc nhật ký",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "Role/status/version/session/audit atomic; mật khẩu không log; Không thay dữ liệu khi denied; denial audit không chứa bí mật; Read only; financial ledger không bị viết lại",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC20-U",
+          "group": "UI/API/DB và trạng thái",
+          "given": "Không tự nâng quyền; actor có grant phù hợp; Phiên active/version đúng; quyền tại backend/service; Nhân viên có quyền đọc nhật ký",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "Active↔Disabled; Role assigned; Authorized / Denied; Append-only",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        }
+      ]
+    },
+    {
+      "id": "UC21",
+      "name": "Quản lý sản phẩm",
+      "mappedBusinessFunctions": [
+        "CAT-02",
+        "CAT-03",
+        "CAT-04",
+        "CAT-05",
+        "CAT-07",
+        "CAT-08"
+      ],
+      "applicableScope": "Ưu tiên lưu nháp/readiness, ẩn sản phẩm/màu và giữ SKU/ảnh đã có ledger; không cung cấp hard delete làm mất snapshot. Không suy ra quyền sử dụng thương mại từ ảnh tham chiếu.",
+      "requiredEvidence": [
+        "business:^BA-PRODUCT-01",
+        "business:^BA-PRODUCT-02",
+        "business:^BA-CATALOG-02",
+        "business:^BA-CATALOG-03",
+        "phase5:^02 ",
+        "phase5:^03 ",
+        "phase5:^06 ",
+        "phase5:^07 ",
+        "phase5:^08 ",
+        "order:^12 ",
+        "browser:^SELLER:"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "UC21-M",
+          "group": "Luồng chính",
+          "given": "Danh mục hợp lệ; SKU/slug duy nhất; ảnh local có thật; Sản phẩm tồn tại; SKU duy nhất; size/màu thuộc sản phẩm; Ảnh local hợp lệ; màu và target cùng catalog hợp lệ; Ma trận đo hợp lệ; READY cần ảnh/hàng/tồn được xác minh; Ảnh raster local an toàn và được phép dùng",
+          "when": "Gửi form → validate → ghi sản phẩm/ảnh → audit → đọc lại; Đặt active=false; ẩn mua mới; Tạo/sửa SKU, override giá, ghi movement khi đổi tồn; Lưu màu/ảnh/position hoặc outfit → invalidate publication; Cấu hình bảng riêng/kế thừa; duyệt readiness và publication; Decode/reencode → lưu file; metadata → liên kết ảnh",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC21-A",
+          "group": "Luồng phụ áp dụng",
+          "given": "Danh mục hợp lệ; SKU/slug duy nhất; ảnh local có thật; Sản phẩm tồn tại; SKU duy nhất; size/màu thuộc sản phẩm; Ảnh local hợp lệ; màu và target cùng catalog hợp lệ; Ma trận đo hợp lệ; READY cần ảnh/hàng/tồn được xác minh; Ảnh raster local an toàn và được phép dùng",
+          "when": "Giá thường/giá sale; gallery nhiều ảnh; Giữ trang quản trị/lịch sử đơn; giỏ cũ có thể xóa; Giá override rỗng dùng sale/base; thêm size; Đổi tên màu cập nhật variant; xóa outfit hợp lệ; Bảng category; bản nháp giữ được thiếu dữ liệu; Ảnh development/reference tách ảnh sản phẩm",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC21-E",
+          "group": "Ngoại lệ",
+          "given": "Danh mục hợp lệ; SKU/slug duy nhất; ảnh local có thật; Sản phẩm tồn tại; SKU duy nhất; size/màu thuộc sản phẩm; Ảnh local hợp lệ; màu và target cùng catalog hợp lệ; Ma trận đo hợp lệ; READY cần ảnh/hàng/tồn được xác minh; Ảnh raster local an toàn và được phép dùng",
+          "when": "Giá không dương, sale ≥ base, SKU trùng, danh mục sai, audit thất bại; Vai trò không có archive; mua sản phẩm đã ẩn; SKU trùng, stock âm/quá giới hạn, chuyển variant sang sản phẩm khác; Màu khác sản phẩm, file sai, outfit tự trỏ hoặc hàng hết; Dữ liệu JSON sai, ảnh tham chiếu/chưa xác minh, tồn chưa rõ nguồn; SVG/file giả, traversal, quá dung lượng; xóa ảnh còn tham chiếu",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC21-P",
+          "group": "Quyền",
+          "given": "Danh mục hợp lệ; SKU/slug duy nhất; ảnh local có thật; Sản phẩm tồn tại; SKU duy nhất; size/màu thuộc sản phẩm; Ảnh local hợp lệ; màu và target cùng catalog hợp lệ; Ma trận đo hợp lệ; READY cần ảnh/hàng/tồn được xác minh; Ảnh raster local an toàn và được phép dùng",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "products.create / products.update; products.archive; products.update; inventory.adjust khi đổi tồn; products.update; products.update / products.publish; media.upload / products.update",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC21-I",
+          "group": "Toàn vẹn và hậu điều kiện",
+          "given": "Danh mục hợp lệ; SKU/slug duy nhất; ảnh local có thật; Sản phẩm tồn tại; SKU duy nhất; size/màu thuộc sản phẩm; Ảnh local hợp lệ; màu và target cùng catalog hợp lệ; Ma trận đo hợp lệ; READY cần ảnh/hàng/tồn được xác minh; Ảnh raster local an toàn và được phép dùng",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "Product + ảnh + audit atomic; đơn cũ không đổi; Không xóa OrderItem/ledger; trả hàng cũ vẫn đối chiếu được; Variant + movement + audit atomic; historical SKU snapshot không đổi; Ghi cấu hình + invalidation + audit atomic; Không tự giả bằng chứng hàng thật; audit trong transaction; Không xóa ảnh snapshot đơn; quyền kiểm tra trước parse; metadata audited",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC21-U",
+          "group": "UI/API/DB và trạng thái",
+          "given": "Danh mục hợp lệ; SKU/slug duy nhất; ảnh local có thật; Sản phẩm tồn tại; SKU duy nhất; size/màu thuộc sản phẩm; Ảnh local hợp lệ; màu và target cùng catalog hợp lệ; Ma trận đo hợp lệ; READY cần ảnh/hàng/tồn được xác minh; Ảnh raster local an toàn và được phép dùng",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "New → Active; Active → Updated; Active → Archived → Active; New → Configured → Updated; PENDING_ASSETS after catalogue change; DRAFT ↔ PENDING_ASSETS → READY; PENDING → APPROVED / REJECTED",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        }
+      ]
+    },
+    {
+      "id": "UC22",
+      "name": "Quản lý danh mục",
+      "mappedBusinessFunctions": [
+        "CAT-06"
+      ],
+      "applicableScope": "Áp dụng các luồng hợp lệ trong module hiện hữu, theo PROJECT_SPEC và RBAC hiện tại.",
+      "requiredEvidence": [
+        "business:^BA-CATALOG-01",
+        "browser:^Admin consistency"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "UC22-M",
+          "group": "Luồng chính",
+          "given": "Slug duy nhất; cấu trúc cha/con hợp lệ",
+          "when": "Thêm/sửa và gán sản phẩm → refresh tìm kiếm",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC22-A",
+          "group": "Luồng phụ áp dụng",
+          "given": "Slug duy nhất; cấu trúc cha/con hợp lệ",
+          "when": "Danh mục con; collection nhiều sản phẩm",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC22-E",
+          "group": "Ngoại lệ",
+          "given": "Slug duy nhất; cấu trúc cha/con hợp lệ",
+          "when": "Vòng/self-parent; chuyển cha sai; FK sản phẩm không tồn tại",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC22-P",
+          "group": "Quyền",
+          "given": "Slug duy nhất; cấu trúc cha/con hợp lệ",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "products.update",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC22-I",
+          "group": "Toàn vẹn và hậu điều kiện",
+          "given": "Slug duy nhất; cấu trúc cha/con hợp lệ",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "Danh mục/collection + liên kết + audit atomic",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC22-U",
+          "group": "UI/API/DB và trạng thái",
+          "given": "Slug duy nhất; cấu trúc cha/con hợp lệ",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "New → Active → Hidden",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        }
+      ]
+    },
+    {
+      "id": "UC23",
+      "name": "Quản lý khuyến mãi",
+      "mappedBusinessFunctions": [
+        "PROMO-01",
+        "PROMO-02"
+      ],
+      "applicableScope": "Hai loại voucher hiện hành FIXED/PERCENT; một mã mỗi đơn. Phí ship chuẩn 30.000đ và miễn ship theo ngưỡng net hiện hành. Không tự sáng tạo chính sách chồng mã, đối tượng riêng hay đổi mức phí ngoài cấu hình đã duyệt.",
+      "requiredEvidence": [
+        "business:^BA-PROMO-01",
+        "business:^BA-PROMO-02",
+        "business:^BA-PROMO-03",
+        "business:^BA-PROMO-04",
+        "order:^06 ",
+        "browser:^Business acceptance UI: scheduled"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "UC23-M",
+          "group": "Luồng chính",
+          "given": "Code chuẩn hóa/duy nhất; số/range hợp lệ; Mã hoạt động trong thời gian, min đạt, used<limit",
+          "when": "Lưu rule, thời điểm bắt đầu/hết, quota, active; Quote kiểm rule; checkout CAS used trong cùng transaction",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC23-A",
+          "group": "Luồng phụ áp dụng",
+          "given": "Code chuẩn hóa/duy nhất; số/range hợp lệ; Mã hoạt động trong thời gian, min đạt, used<limit",
+          "when": "FIXED/PERCENT/cap; ngày đơn chỉ áp dụng đến hết ngày VN; Hủy toàn bộ release đúng một lượt; hủy phần giữ redemption",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC23-E",
+          "group": "Ngoại lệ",
+          "given": "Code chuẩn hóa/duy nhất; số/range hợp lệ; Mã hoạt động trong thời gian, min đạt, used<limit",
+          "when": "PERCENT>100, start>end, ngày không tồn tại, usageLimit<used; Mã sai/hết/chưa mở/cạn; hai khách tranh lượt cuối",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC23-P",
+          "group": "Quyền",
+          "given": "Code chuẩn hóa/duy nhất; số/range hợp lệ; Mã hoạt động trong thời gian, min đạt, used<limit",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "promotions.manage; Khách checkout",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC23-I",
+          "group": "Toàn vẹn và hậu điều kiện",
+          "given": "Code chuẩn hóa/duy nhất; số/range hợp lệ; Mã hoạt động trong thời gian, min đạt, used<limit",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "Audit atomic; không sửa snapshot đơn đã đặt; Không tăng used khi order thất bại; không tăng quá quota",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC23-U",
+          "group": "UI/API/DB và trạng thái",
+          "given": "Code chuẩn hóa/duy nhất; số/range hợp lệ; Mã hoạt động trong thời gian, min đạt, used<limit",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "Active↔Inactive; Scheduled→Effective→Expired; used N→N+1 or rollback",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        }
+      ]
+    },
+    {
+      "id": "UC24",
+      "name": "Quản lý đơn hàng",
+      "mappedBusinessFunctions": [
+        "ORDER-01",
+        "ORDER-02",
+        "ORDER-03"
+      ],
+      "applicableScope": "Áp dụng các luồng hợp lệ trong module hiện hữu, theo PROJECT_SPEC và RBAC hiện tại.",
+      "requiredEvidence": [
+        "order:^07 ",
+        "order:^09 ",
+        "order:^10 ",
+        "order:^13 ",
+        "business:^BA-ASSIGN-01",
+        "browser:^customer login",
+        "browser:^Admin consistency"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "UC24-M",
+          "group": "Luồng chính",
+          "given": "Đơn tồn tại; đúng ownership/quyền; Trạng thái đầu hợp lệ; lý do khi hủy/giao nhận; UNPAID; chưa giao hoặc hàng chuyển hoàn đã về",
+          "when": "Tìm mã → xem snapshot/timeline thực; PENDING→CONFIRMED→PROCESSING; từ chối dùng CANCELLED; Cancel → hoàn lượng còn lại → release voucher một lần",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC24-A",
+          "group": "Luồng phụ áp dụng",
+          "given": "Đơn tồn tại; đúng ownership/quyền; Trạng thái đầu hợp lệ; lý do khi hủy/giao nhận; UNPAID; chưa giao hoặc hàng chuyển hoàn đã về",
+          "when": "Tra cứu mã+phone chỉ dữ liệu tối thiểu; Đường giao nhận thủ công trước có shipment; Retry CANCELLED no-op; trả về rồi hủy",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC24-E",
+          "group": "Ngoại lệ",
+          "given": "Đơn tồn tại; đúng ownership/quyền; Trạng thái đầu hợp lệ; lý do khi hủy/giao nhận; UNPAID; chưa giao hoặc hàng chuyển hoàn đã về",
+          "when": "ID/code khác khách; token sai; không lộ address/email/token; Nhảy bước, lùi trạng thái, khách tự đóng gói; Đã PAID; đang giao/chưa hoàn về; khách hủy muộn",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC24-P",
+          "group": "Quyền",
+          "given": "Đơn tồn tại; đúng ownership/quyền; Trạng thái đầu hợp lệ; lý do khi hủy/giao nhận; UNPAID; chưa giao hoặc hàng chuyển hoàn đã về",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "orders.read; khách sở hữu; guest capability tối thiểu; orders.manage; orders.cancel cho hủy; orders.cancel hoặc owner trước chuẩn bị",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC24-I",
+          "group": "Toàn vẹn và hậu điều kiện",
+          "given": "Đơn tồn tại; đúng ownership/quyền; Trạng thái đầu hợp lệ; lý do khi hủy/giao nhận; UNPAID; chưa giao hoặc hàng chuyển hoàn đã về",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "UI/API/DB khớp tổng tiền/trạng thái; public allowlist; CAS + history + audit; không tự ghi PAID từ status; Hoàn tồn/coupon/history/audit atomic; paid dùng refund flow",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC24-U",
+          "group": "UI/API/DB và trạng thái",
+          "given": "Đơn tồn tại; đúng ownership/quyền; Trạng thái đầu hợp lệ; lý do khi hủy/giao nhận; UNPAID; chưa giao hoặc hàng chuyển hoàn đã về",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "Read only; Theo order-state-machine.md; PENDING/CONFIRMED/PROCESSING/RETURNED→CANCELLED",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        }
+      ]
+    },
+    {
+      "id": "UC25",
+      "name": "Báo cáo thống kê",
+      "mappedBusinessFunctions": [
+        "ANALYTICS-01",
+        "ANALYTICS-02",
+        "ANALYTICS-03",
+        "ANALYTICS-04",
+        "ANALYTICS-05",
+        "ANALYTICS-06"
+      ],
+      "applicableScope": "Áp dụng các luồng hợp lệ trong module hiện hữu, theo PROJECT_SPEC và RBAC hiện tại.",
+      "requiredEvidence": [
+        "analytics:^01 ",
+        "analytics:^02 ",
+        "analytics:^03 ",
+        "analytics:^04 ",
+        "analytics:^05 ",
+        "analytics:^06 ",
+        "analytics:^20 ",
+        "analytics:^21 ",
+        "analytics:^22 ",
+        "analytics:^23 ",
+        "analytics:^27 ",
+        "analytics:^28 ",
+        "analytics:^29 ",
+        "analytics:^31 ",
+        "analytics:^32 ",
+        "business:^BA-REPORT-01",
+        "business:^BA-REPORT-02",
+        "browser:^Admin redesign: compact",
+        "browser:^Business acceptance UI: scheduled"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "UC25-M",
+          "group": "Luồng chính",
+          "given": "Khoảng ngày VN hợp lệ; dữ liệu đơn thật local; Bộ lọc hợp lệ; snapshot dòng; Nguồn tồn/giá vốn xác minh; cost effective date; First-party visitor consent/session; event type hợp lệ; Dữ liệu payment/shipment/refund hiện có; Bộ lọc hợp lệ; giữ scope quyền",
+          "when": "Tổng quan → chart doanh thu và trạng thái theo ngày; Ranking sản phẩm/màu/size và cohort mua lần đầu/quay lại; Xem tồn SKU; nhập giá vốn có audit; tính COGS từ snapshot; Ghi attempt/success theo thực tế → cohort/order attribution; Tách bán hàng/thực thu/chuyển về/refund; phát hiện lệch; Chọn report/time → UI/API cùng tập → stream CSV hoặc .xlsx",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC25-A",
+          "group": "Luồng phụ áp dụng",
+          "given": "Khoảng ngày VN hợp lệ; dữ liệu đơn thật local; Bộ lọc hợp lệ; snapshot dòng; Nguồn tồn/giá vốn xác minh; cost effective date; First-party visitor consent/session; event type hợp lệ; Dữ liệu payment/shipment/refund hiện có; Bộ lọc hợp lệ; giữ scope quyền",
+          "when": "Ngày rỗng=0, daily/monthly; cửa sổ mặc định; mobile; Partial cancellation dùng remaining units, ordered/canceled từ originalQuantity; Thiếu cost để NULL và nêu độ phủ; không hồi gán tùy tiện; Opt-out; phiên mới; không có lịch sử; Chưa đối soát, pending refund, legacy thiếu nguồn; Không dữ liệu; nhiều trang; Unicode/formula-like text",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC25-E",
+          "group": "Ngoại lệ",
+          "given": "Khoảng ngày VN hợp lệ; dữ liệu đơn thật local; Bộ lọc hợp lệ; snapshot dòng; Nguồn tồn/giá vốn xác minh; cost effective date; First-party visitor consent/session; event type hợp lệ; Dữ liệu payment/shipment/refund hiện có; Bộ lọc hợp lệ; giữ scope quyền",
+          "when": "Khoảng đảo/ngày sai/>366; section vượt quyền; Không giả khách hoặc dữ liệu lịch sử; Role thiếu quyền, giá vốn âm, chi phí lịch sử thiếu nguồn; Event key khác nội dung; campaign chứa PII; bộ lọc không hỗ trợ; Không tự sửa ledger để report khớp; Format lạ, ngày sai, role không export hoặc không section",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC25-P",
+          "group": "Quyền",
+          "given": "Khoảng ngày VN hợp lệ; dữ liệu đơn thật local; Bộ lọc hợp lệ; snapshot dòng; Nguồn tồn/giá vốn xác minh; cost effective date; First-party visitor consent/session; event type hợp lệ; Dữ liệu payment/shipment/refund hiện có; Bộ lọc hợp lệ; giữ scope quyền",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "analytics.read và quyền section; analytics.products.read / analytics.customers.read; analytics.inventory.read / analytics.profit.read / analytics.costs.manage; analytics.funnel.read / analytics.marketing.read; analytics.finance.read; Quyền section + analytics.export",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC25-I",
+          "group": "Toàn vẹn và hậu điều kiện",
+          "given": "Khoảng ngày VN hợp lệ; dữ liệu đơn thật local; Bộ lọc hợp lệ; snapshot dòng; Nguồn tồn/giá vốn xác minh; cost effective date; First-party visitor consent/session; event type hợp lệ; Dữ liệu payment/shipment/refund hiện có; Bộ lọc hợp lệ; giữ scope quyền",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "VND chính xác; unpaid COD không coi đã thu; giữ layout Tổng quan đã duyệt; Tổng hàng/giảm/refund nhất quán; tài chính khách theo quyền; Đọc report không thay tồn; không tự tạo lãi khi thiếu cost; Không hồi dựng giả; không lưu raw search/PII; giỏ đã mua loại bỏ; Không đếm COD remittance hai lần; refund pending chưa realized; CSV injection escaped; XLSX string literal, kiểu số/ngày; private no-store; bounded pages",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC25-U",
+          "group": "UI/API/DB và trạng thái",
+          "given": "Khoảng ngày VN hợp lệ; dữ liệu đơn thật local; Bộ lọc hợp lệ; snapshot dòng; Nguồn tồn/giá vốn xác minh; cost effective date; First-party visitor consent/session; event type hợp lệ; Dữ liệu payment/shipment/refund hiện có; Bộ lọc hợp lệ; giữ scope quyền",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "Read only; Known / Unknown costs; Session→Cart→Checkout→Order; Read only / discrepancy flagged; Read only + export audit",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        }
+      ]
+    },
+    {
+      "id": "UC26",
+      "name": "Đổi trả sản phẩm",
+      "mappedBusinessFunctions": [
+        "RETURN-01",
+        "RETURN-02",
+        "RETURN-03",
+        "RETURN-04",
+        "RETURN-06"
+      ],
+      "applicableScope": "Chỉ lỗi được xác minh trong đủ 72 giờ từ mốc nhận; ảnh không bắt buộc theo chính sách hiện hành. Đổi SKU chỉ cùng đơn giá lịch sử; khác giá bị từ chối chờ chính sách.",
+      "requiredEvidence": [
+        "returns:^01 ",
+        "returns:^02 ",
+        "returns:^03 ",
+        "returns:^04 ",
+        "returns:^05 ",
+        "returns:^06 ",
+        "returns:^07 ",
+        "returns:^08 ",
+        "returns:^09 ",
+        "returns:^10 ",
+        "returns:^11 ",
+        "returns:^12 ",
+        "returns:^13 ",
+        "returns:^14 ",
+        "returns:^15 ",
+        "returns:^16 ",
+        "returns:^17 ",
+        "returns:^26 ",
+        "returns:^28 ",
+        "browser:^customer login"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "UC26-M",
+          "group": "Luồng chính",
+          "given": "DELIVERED/COMPLETED; mốc nhận thật; trong đủ 72h; Hồ sơ hiện hữu và cạnh chuyển hợp lệ; Hồ sơ APPROVED→RECEIVED; kết luận từng dòng; Lỗi đã xác minh; hàng thay thế giá lịch sử bằng nhau; tồn đủ; Đúng quyền; ảnh JPEG/PNG/WebP ≤2MB",
+          "when": "Chọn dòng/lượng, lý do lỗi, REFUND/EXCHANGE → REQUESTED; REQUESTED→UNDER_REVIEW→APPROVED/REJECTED; Nhận không cộng tồn; kiểm SELLABLE cộng đúng lượng một lần; Allocate SKU → trừ tồn → giao kiện đổi nội bộ; Xem timeline và ảnh lỗi qua endpoint riêng",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC26-A",
+          "group": "Luồng phụ áp dụng",
+          "given": "DELIVERED/COMPLETED; mốc nhận thật; trong đủ 72h; Hồ sơ hiện hữu và cạnh chuyển hợp lệ; Hồ sơ APPROVED→RECEIVED; kết luận từng dòng; Lỗi đã xác minh; hàng thay thế giá lịch sử bằng nhau; tồn đủ; Đúng quyền; ảnh JPEG/PNG/WebP ≤2MB",
+          "when": "Đúng mốc 72h; nhiều hồ sơ cho lượng còn lại; ảnh không bắt buộc; Từ chối trước nhận giải phóng lượng claim; REVIEW kiểm thêm; DAMAGED cách ly; REJECTED không hoàn; SKU khác size/màu là khắc phục lỗi đã thống nhất; thiếu hàng chuyển refund; Không ảnh vẫn có thể gửi claim",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC26-E",
+          "group": "Ngoại lệ",
+          "given": "DELIVERED/COMPLETED; mốc nhận thật; trong đủ 72h; Hồ sơ hiện hữu và cạnh chuyển hợp lệ; Hồ sơ APPROVED→RECEIVED; kết luận từng dòng; Lỗi đã xác minh; hàng thay thế giá lịch sử bằng nhau; tồn đủ; Đúng quyền; ảnh JPEG/PNG/WebP ≤2MB",
+          "when": "Quá 72h/thiếu mốc, sai chủ, vượt lượng/claim đồng thời, key khác payload; Nhảy bước; tự duyệt bởi khách; thiếu lý do; Ghi đè kết luận cuối, thiếu quyền tồn, hai inspect đồng thời; Hết tồn, SKU sai/giá lệch, hai allocate tranh đơn vị cuối; Chủ khác, ảnh giả/SVG/quá pixel, public access",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC26-P",
+          "group": "Quyền",
+          "given": "DELIVERED/COMPLETED; mốc nhận thật; trong đủ 72h; Hồ sơ hiện hữu và cạnh chuyển hợp lệ; Hồ sơ APPROVED→RECEIVED; kết luận từng dòng; Lỗi đã xác minh; hàng thay thế giá lịch sử bằng nhau; tồn đủ; Đúng quyền; ảnh JPEG/PNG/WebP ≤2MB",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "CUSTOMER sở hữu đơn; returns.review; returns.inspect; inventory.adjust khi SELLABLE; returns.exchange; shipping.update; Chủ hồ sơ; returns.read/inspect",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC26-I",
+          "group": "Toàn vẹn và hậu điều kiện",
+          "given": "DELIVERED/COMPLETED; mốc nhận thật; trong đủ 72h; Hồ sơ hiện hữu và cạnh chuyển hợp lệ; Hồ sơ APPROVED→RECEIVED; kết luận từng dòng; Lỗi đã xác minh; hàng thay thế giá lịch sử bằng nhau; tồn đủ; Đúng quyền; ảnh JPEG/PNG/WebP ≤2MB",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "Claim lượng/amount snapshot; không sửa shipment gốc; History/audit; không tự hoàn tiền khi duyệt; Inspection+movement+audit atomic; không trùng hoàn tồn; Không sửa item/shipment gốc; atomic và audit; Reencode bỏ metadata; không public evidence hoặc ghi chú nội bộ",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC26-U",
+          "group": "UI/API/DB và trạng thái",
+          "given": "DELIVERED/COMPLETED; mốc nhận thật; trong đủ 72h; Hồ sơ hiện hữu và cạnh chuyển hợp lệ; Hồ sơ APPROVED→RECEIVED; kết luận từng dòng; Lỗi đã xác minh; hàng thay thế giá lịch sử bằng nhau; tồn đủ; Đúng quyền; ảnh JPEG/PNG/WebP ≤2MB",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "None→REQUESTED; Theo returns-state-machine.md; RECEIVED→INSPECTED/INSPECTION_FAILED; INSPECTED→EXCHANGE_PENDING→COMPLETED/CLOSED; Read only / private evidence",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        }
+      ]
+    },
+    {
+      "id": "UC27",
+      "name": "Hoàn tiền",
+      "mappedBusinessFunctions": [
+        "RETURN-05"
+      ],
+      "applicableScope": "SIMULATED REFUND, không chuyển tiền thật; duyệt và thực thi theo quyền riêng, giữ trần khoản thực thu và số lượng được phép.",
+      "requiredEvidence": [
+        "returns:^18 ",
+        "returns:^19 ",
+        "returns:^20 ",
+        "returns:^21 ",
+        "returns:^22 ",
+        "returns:^27 ",
+        "analytics:^05 ",
+        "analytics:^06 ",
+        "analytics:^23 ",
+        "browser:^customer login"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "UC27-M",
+          "group": "Luồng chính",
+          "given": "Hàng đã kiểm hợp lệ; payment có tiền đã thu còn có thể hoàn",
+          "when": "Prepare → APPROVED → SIMULATED_COMPLETED",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC27-A",
+          "group": "Luồng phụ áp dụng",
+          "given": "Hàng đã kiểm hợp lệ; payment có tiền đã thu còn có thể hoàn",
+          "when": "Hoàn một số lượng; phí ship theo quyết định hợp lệ; reject/cancel khoản chưa hoàn",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC27-E",
+          "group": "Ngoại lệ",
+          "given": "Hàng đã kiểm hợp lệ; payment có tiền đã thu còn có thể hoàn",
+          "when": "Số client chèn, vượt paid/refund cap, hai xác nhận đồng thời",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC27-P",
+          "group": "Quyền",
+          "given": "Hàng đã kiểm hợp lệ; payment có tiền đã thu còn có thể hoàn",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "refunds.approve / refunds.execute",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC27-I",
+          "group": "Toàn vẹn và hậu điều kiện",
+          "given": "Hàng đã kiểm hợp lệ; payment có tiền đã thu còn có thể hoàn",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "Tổng giữ/hoàn ≤ thực thu; không xóa COD; số hàng net đúng snapshot/rounding",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC27-U",
+          "group": "UI/API/DB và trạng thái",
+          "given": "Hàng đã kiểm hợp lệ; payment có tiền đã thu còn có thể hoàn",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "PENDING→APPROVED→SIMULATED_COMPLETED",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        }
+      ]
+    },
+    {
+      "id": "UC28",
+      "name": "Đối soát COD",
+      "mappedBusinessFunctions": [
+        "COD-01",
+        "COD-02",
+        "COD-03",
+        "COD-04"
+      ],
+      "applicableScope": "Áp dụng các luồng hợp lệ trong module hiện hữu, theo PROJECT_SPEC và RBAC hiện tại.",
+      "requiredEvidence": [
+        "shipping:^08 ",
+        "shipping:^09 ",
+        "shipping:^10 ",
+        "shipping:^11 ",
+        "shipping:^12 ",
+        "shipping:^13 ",
+        "shipping:^15 ",
+        "shipping:^16 ",
+        "analytics:^22 ",
+        "browser:^customer login"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "UC28-M",
+          "group": "Luồng chính",
+          "given": "Đã giao; payment COD đúng tổng; chứng từ và nguồn thu; Có collection; chứng từ hợp lệ; Collected/remitted/expected và fees khớp hoặc có tranh chấp; Chứng từ gốc tồn tại; correction link + evidence",
+          "when": "Thêm collection ledger → tính collected → payment PAID khi đủ; Ghi remittance → outstanding thay đổi; Đối chiếu ledger → reconcile hoặc dispute có ghi chú; Thêm bút toán bù có tham chiếu → tính lại",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC28-A",
+          "group": "Luồng phụ áp dụng",
+          "given": "Đã giao; payment COD đúng tổng; chứng từ và nguồn thu; Có collection; chứng từ hợp lệ; Collected/remitted/expected và fees khớp hoặc có tranh chấp; Chứng từ gốc tồn tại; correction link + evidence",
+          "when": "Thu từng phần; thiếu/thừa tiền hiển thị lệch; Chuyển từng phần, chưa đủ tiền; Thiếu/thừa; tiếp tục bổ sung chứng từ; Chứng từ sai được bù; ledger gốc giữ nguyên",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC28-E",
+          "group": "Ngoại lệ",
+          "given": "Đã giao; payment COD đúng tổng; chứng từ và nguồn thu; Có collection; chứng từ hợp lệ; Collected/remitted/expected và fees khớp hoặc có tranh chấp; Chứng từ gốc tồn tại; correction link + evidence",
+          "when": "Sai provider/amount/date; trùng key khác payload; thu trước giao; Chưa thu, số âm không phải correction, ngày tương lai; Đối soát khi còn lệch, không quyền, thao tác đồng thời; Bù quá giới hạn, key khác nội dung, số thu dưới khoản refund đã giữ",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC28-P",
+          "group": "Quyền",
+          "given": "Đã giao; payment COD đúng tổng; chứng từ và nguồn thu; Có collection; chứng từ hợp lệ; Collected/remitted/expected và fees khớp hoặc có tranh chấp; Chứng từ gốc tồn tại; correction link + evidence",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "cod.collection.confirm; cod.remittance.record; cod.reconcile; Quyền collection/remittance tương ứng",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC28-I",
+          "group": "Toàn vẹn và hậu điều kiện",
+          "given": "Đã giao; payment COD đúng tổng; chứng từ và nguồn thu; Có collection; chứng từ hợp lệ; Collected/remitted/expected và fees khớp hoặc có tranh chấp; Chứng từ gốc tồn tại; correction link + evidence",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "Append-only; không nhân đôi từ retry; không ghi PAID từ delivery; Không cộng lại doanh thu từ tiền chuyển về; Một settlement hợp lệ; audit; outstanding không bị xóa để che lệch; Không sửa/xóa ledger; không hoàn vượt thực thu",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC28-U",
+          "group": "UI/API/DB và trạng thái",
+          "given": "Đã giao; payment COD đúng tổng; chứng từ và nguồn thu; Có collection; chứng từ hợp lệ; Collected/remitted/expected và fees khớp hoặc có tranh chấp; Chứng từ gốc tồn tại; correction link + evidence",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "UNPAID→PAID when actual recorded collected sufficient; OUTSTANDING→PARTIAL→READY; PENDING/PARTIAL/DISPUTED→RECONCILED; Settlement recomputed / disputed",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        }
+      ]
+    },
+    {
+      "id": "UC29",
+      "name": "Kiểm kê và xử lý chênh lệch kho",
+      "mappedBusinessFunctions": [
+        "INV-01",
+        "INV-02"
+      ],
+      "applicableScope": "Phiếu DRAFT→SUBMITTED→APPROVED/CANCELLED; countedStock chỉ hàng bán được, damagedStock cách ly. Tồn sổ thay đổi trong thời gian chờ thì phải kiểm đếm lại, không ghi đè giao dịch.",
+      "requiredEvidence": [
+        "business:^BA-STOCKTAKE-01",
+        "business:^BA-STOCKTAKE-02",
+        "business:^BA-STOCKTAKE-03",
+        "business:^BA-STOCKTAKE-04",
+        "business:^BA-STOCKTAKE-05",
+        "browser:^Business acceptance UI: stocktake"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "UC29-M",
+          "group": "Luồng chính",
+          "given": "SKU tồn tại; quantity nguyên dương; lý do/ngày/nhà cung cấp hợp lệ; SKU tồn tại; số tồn nguyên không âm",
+          "when": "Form IN/OUT → CAS stock → movement + audit; Điều chỉnh số kiểm đếm có lý do; xem movement theo SKU",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC29-A",
+          "group": "Luồng phụ áp dụng",
+          "given": "SKU tồn tại; quantity nguyên dương; lý do/ngày/nhà cung cấp hợp lệ; SKU tồn tại; số tồn nguyên không âm",
+          "when": "Retry cùng key cùng nội dung trả lại kết quả; Tồn 0; phân trang; không có lịch sử",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC29-E",
+          "group": "Ngoại lệ",
+          "given": "SKU tồn tại; quantity nguyên dương; lý do/ngày/nhà cung cấp hợp lệ; SKU tồn tại; số tồn nguyên không âm",
+          "when": "OUT quá tồn; date tương lai; key khác nội dung; Mất quyền, số âm, tranh chấp ghi, lỗi giữa transaction",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC29-P",
+          "group": "Quyền",
+          "given": "SKU tồn tại; quantity nguyên dương; lý do/ngày/nhà cung cấp hợp lệ; SKU tồn tại; số tồn nguyên không âm",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "inventory.adjust; inventory.adjust / inventory.movements.read",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC29-I",
+          "group": "Toàn vẹn và hậu điều kiện",
+          "given": "SKU tồn tại; quantity nguyên dương; lý do/ngày/nhà cung cấp hợp lệ; SKU tồn tại; số tồn nguyên không âm",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "Không âm tồn; delta đúng; chỉ một movement mỗi eventKey; Movement delta=after-before; ghi actor/time/reason; không sửa ledger cũ",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC29-U",
+          "group": "UI/API/DB và trạng thái",
+          "given": "SKU tồn tại; quantity nguyên dương; lý do/ngày/nhà cung cấp hợp lệ; SKU tồn tại; số tồn nguyên không âm",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "stock N → N ± quantity; Current stock → Counted stock",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        }
+      ]
+    },
+    {
+      "id": "UC30",
+      "name": "Ngôn ngữ, khu vực và tiền tệ",
+      "mappedBusinessFunctions": [
+        "SETTINGS-01"
+      ],
+      "applicableScope": "VI/EN, vùng/tiền tệ hiển thị được cấu hình; tỷ giá tham khảo local. Checkout/ledger luôn VND; vùng khác VN không giao hàng.",
+      "requiredEvidence": [
+        "business:^BA-SETTINGS-01",
+        "business:^BA-SETTINGS-02",
+        "browser:^Localization:"
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "UC30-M",
+          "group": "Luồng chính",
+          "given": "Giá trị form/config/rate hợp lệ",
+          "when": "Lưu form atomic; preference SSR/cookie/DB thống nhất",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC30-A",
+          "group": "Luồng phụ áp dụng",
+          "given": "Giá trị form/config/rate hợp lệ",
+          "when": "Guest→login adopt; English/Vietnamese; currency tham khảo",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC30-E",
+          "group": "Ngoại lệ",
+          "given": "Giá trị form/config/rate hợp lệ",
+          "when": "Email/url/phone/sizeGuide sai; role tài chính bị giới hạn",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC30-P",
+          "group": "Quyền",
+          "given": "Giá trị form/config/rate hợp lệ",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "content.manage; user sở hữu preference",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC30-I",
+          "group": "Toàn vẹn và hậu điều kiện",
+          "given": "Giá trị form/config/rate hợp lệ",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "Không đổi tiền VND của checkout/ledger; validate toàn bộ trước ghi",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC30-U",
+          "group": "UI/API/DB và trạng thái",
+          "given": "Giá trị form/config/rate hợp lệ",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "Existing→Updated",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        }
+      ]
+    },
+    {
+      "id": "UC31",
+      "name": "Nhật ký và kiểm soát vận hành",
+      "mappedBusinessFunctions": [
+        "STAFF-03",
+        "SYSTEM-01"
+      ],
+      "applicableScope": "Audit quan trọng atomic với dữ liệu DB; upload file được xác minh trước khi đưa vào catalog. Log từ chối chỉ chứa mã an toàn, không raw token/password/SQL.",
+      "requiredEvidence": [
+        "business:^BA-AUDIT-01",
+        "business:^BA-PRODUCT-01",
+        "business:^BA-PARTIAL-08",
+        "business:^BA-SETTINGS-02",
+        "business:^BA-STOCKTAKE-05",
+        "business:^BA-FEEDBACK-04",
+        "rbac:^20 ",
+        "rbac:^27 ",
+        "phase5:^17-20",
+        "phase5:^27 "
+      ],
+      "acceptanceCriteria": [
+        {
+          "id": "UC31-M",
+          "group": "Luồng chính",
+          "given": "Nhân viên có quyền đọc nhật ký; Database local có bản sao; không ghi vào main khi test",
+          "when": "Lọc/xem audit theo actor/resource/result; Lỗi trước commit rollback; sau commit retry receipt; backup→restore kiểm chứng",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC31-A",
+          "group": "Luồng phụ áp dụng",
+          "given": "Nhân viên có quyền đọc nhật ký; Database local có bản sao; không ghi vào main khi test",
+          "when": "Bản ghi cũ thiếu actor được giữ; SQLite contention retry tối đa 3; thông báo lỗi có requestId",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC31-E",
+          "group": "Ngoại lệ",
+          "given": "Nhân viên có quyền đọc nhật ký; Database local có bản sao; không ghi vào main khi test",
+          "when": "Không có API sửa/xóa audit; token/password/PII nhạy cảm phải loại; Audit fail, duplicate request, timeout, FK/unique violation",
+          "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC31-P",
+          "group": "Quyền",
+          "given": "Nhân viên có quyền đọc nhật ký; Database local có bản sao; không ghi vào main khi test",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "audit.read; Người dùng đúng quyền; vận hành local",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC31-I",
+          "group": "Toàn vẹn và hậu điều kiện",
+          "given": "Nhân viên có quyền đọc nhật ký; Database local có bản sao; không ghi vào main khi test",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "Read only; financial ledger không bị viết lại; Không tồn/tiền/ledger dở dang; main history giữ nguyên",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        },
+        {
+          "id": "UC31-U",
+          "group": "UI/API/DB và trạng thái",
+          "given": "Nhân viên có quyền đọc nhật ký; Database local có bản sao; không ghi vào main khi test",
+          "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
+          "then": "Append-only; Failure→Rollback→Retry→Committed",
+          "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
+        }
+      ]
+    }
+  ],
+  "blockedScenarios": [
+    {
+      "id": "POLICY-PARTIAL-CANCEL",
+      "status": "BLOCKED",
+      "reason": "Chưa có chính sách tài chính hủy một phần được chủ cửa hàng phê duyệt. Database chính không có approval, API từ chối và UI ẩn. Ca positive chỉ dùng policy fixture trong DB thử nghiệm.",
+      "gateTest": "business:^BA-POLICY-01"
+    },
+    {
+      "id": "POLICY-EXCHANGE-PRICE-DIFFERENCE",
+      "status": "BLOCKED",
+      "reason": "Chưa có quy tắc bù chênh lệch giá khi đổi SKU. Engine chỉ chấp nhận cùng đơn giá lịch sử; không tự thu/hoàn phần chênh.",
+      "gateTest": "returns:^16 "
+    },
+    {
+      "id": "LIVE-PAYMENT-CARRIER",
+      "status": "BLOCKED",
+      "reason": "Ngoài phạm vi: PROJECT_SPEC cấm kết nối tiền/hãng vận chuyển thật. Kết quả kiểm thử là local, không chứng nhận giao dịch production.",
+      "gateTest": "shipping:^01 "
+    },
+    {
+      "id": "MERCHANDISE-COMMERCIAL-VERIFICATION",
+      "status": "BLOCKED",
+      "reason": "Ảnh hàng thật, quyền sử dụng, nguồn tồn và giá vốn cần chủ cửa hàng xác minh; không dùng dữ liệu demo để tự xác nhận.",
+      "gateTest": "business:^BA-CATALOG-02"
+    }
+  ]
+}

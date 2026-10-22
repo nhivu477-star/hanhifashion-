@@ -1,0 +1,10 @@
+ALTER TABLE "InventoryMovement" ADD COLUMN "kind" TEXT NOT NULL DEFAULT 'ADJUSTMENT';
+ALTER TABLE "InventoryMovement" ADD COLUMN "occurredAt" DATETIME;
+ALTER TABLE "InventoryMovement" ADD COLUMN "supplier" TEXT;
+ALTER TABLE "InventoryMovement" ADD COLUMN "notes" TEXT;
+ALTER TABLE "InventoryMovement" ADD COLUMN "eventKey" TEXT;
+CREATE UNIQUE INDEX "InventoryMovement_eventKey_key" ON "InventoryMovement"("eventKey");
+CREATE TABLE "SyntheticBatch"("id" TEXT NOT NULL PRIMARY KEY,"createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,"manifest" TEXT NOT NULL);
+CREATE TABLE "SyntheticRecord"("id" TEXT NOT NULL PRIMARY KEY,"batchId" TEXT NOT NULL,"entity" TEXT NOT NULL,"recordId" TEXT NOT NULL);
+CREATE UNIQUE INDEX "SyntheticRecord_entity_recordId_key" ON "SyntheticRecord"("entity","recordId");
+CREATE INDEX "SyntheticRecord_batchId_idx" ON "SyntheticRecord"("batchId");

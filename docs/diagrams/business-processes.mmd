@@ -1,0 +1,57 @@
+flowchart LR
+  n0_0["Đăng nhập & phân quyền"]
+  n0_1["Đăng nhập / quản lý tài khoản"]
+  n0_0 --> n0_1
+  n0_2["auth + RBAC / service guards"]
+  n0_1 --> n0_2
+  n0_3["User · Session · AuditLog"]
+  n0_2 --> n0_3
+  n1_0["Danh mục & lựa chọn hàng"]
+  n1_1["Storefront / sản phẩm / giỏ"]
+  n1_0 --> n1_1
+  n1_2["catalog + pricing + cart"]
+  n1_1 --> n1_2
+  n1_3["Product · ProductVariant · Cart"]
+  n1_2 --> n1_3
+  n2_0["Đặt & xử lý đơn"]
+  n2_1["Checkout / Admin đơn hàng"]
+  n2_0 --> n2_1
+  n2_2["order lifecycle / atomic reserve"]
+  n2_1 --> n2_2
+  n2_3["Order · OrderItem · InventoryMovement"]
+  n2_2 --> n2_3
+  n3_0["Giao nhận & thu COD"]
+  n3_1["Vận chuyển / theo dõi đơn"]
+  n3_0 --> n3_1
+  n3_2["shipping + COD / đối soát"]
+  n3_1 --> n3_2
+  n3_3["Shipment · Payment · CODCollection"]
+  n3_2 --> n3_3
+  n4_0["Đối soát khoản thu"]
+  n4_1["Sổ thu & chuyển về"]
+  n4_0 --> n4_1
+  n4_2["recordCOD / reconcileCOD"]
+  n4_1 --> n4_2
+  n4_3["CODRemittance · CODReconciliation"]
+  n4_2 --> n4_3
+  n5_0["Đổi trả lỗi trong 72 giờ"]
+  n5_1["Yêu cầu / kiểm hàng / hoàn"]
+  n5_0 --> n5_1
+  n5_2["returns / refundLimit / restock"]
+  n5_1 --> n5_2
+  n5_3["ReturnRequest · ReturnItem · MockRefund"]
+  n5_2 --> n5_3
+  n6_0["Nhập & xuất kho"]
+  n6_1["SKU / số lượng / nhà cung cấp"]
+  n6_0 --> n6_1
+  n6_2["moveStock / CAS / idempotency"]
+  n6_1 --> n6_2
+  n6_3["ProductVariant · InventoryMovement"]
+  n6_2 --> n6_3
+  n7_0["Phân tích & dữ liệu tổng hợp"]
+  n7_1["KPI / biểu đồ / bộ lọc"]
+  n7_0 --> n7_1
+  n7_2["analyticsReport / SQL aggregate"]
+  n7_1 --> n7_2
+  n7_3["OrderLineAnalytics · SyntheticBatch"]
+  n7_2 --> n7_3

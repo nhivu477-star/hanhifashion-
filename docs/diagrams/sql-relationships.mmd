@@ -1,0 +1,669 @@
+erDiagram
+  Account {
+    string id PK
+    string userId FK
+    string provider
+    string providerAccountId
+  }
+  User ||--o{ Account : "userId → id"
+  PasswordReset {
+    string id PK
+    string tokenHash
+    string email
+    datetime expiresAt
+    string used
+  }
+  Address {
+    string id PK
+    string userId FK
+    string name
+    string phone
+    string province
+    string ward
+    string street
+    string details
+    datetime createdAt
+    datetime updatedAt
+  }
+  User ||--o{ Address : "userId → id"
+  Collection {
+    string id PK
+    string name
+    string slug
+    string description
+    string image
+    datetime createdAt
+    datetime updatedAt
+  }
+  CollectionProduct {
+    string collectionId PK, FK
+    string productId PK, FK
+  }
+  Product ||--o{ CollectionProduct : "productId → id"
+  Collection ||--o{ CollectionProduct : "collectionId → id"
+  Wishlist {
+    string id PK
+    string userId FK
+  }
+  User ||--o| Wishlist : "userId → id"
+  WishlistItem {
+    string id PK
+    string wishlistId FK
+    string productId FK
+  }
+  Product ||--o{ WishlistItem : "productId → id"
+  Wishlist ||--o{ WishlistItem : "wishlistId → id"
+  Cart {
+    string id PK
+    string userId FK
+    string guestToken
+    datetime createdAt
+    datetime updatedAt
+  }
+  User |o--o| Cart : "userId → id"
+  CartItem {
+    string id PK
+    string cartId FK
+    string variantId FK
+    int quantity
+  }
+  ProductVariant ||--o{ CartItem : "variantId → id"
+  Cart ||--o{ CartItem : "cartId → id"
+  Order {
+    string id PK
+    string code
+    string accessToken
+    string idempotencyKey
+    string userId FK
+    string name
+    string phone
+    string email
+    string province
+    string ward
+    string street
+    string details
+    string notes
+    string status
+    string paymentStatus
+    int subtotal
+    int discount
+    int shipping
+    int total
+    datetime createdAt
+    datetime updatedAt
+    string shippingStatus
+    string shippingReference
+  }
+  User |o--o{ Order : "userId → id"
+  OrderItem {
+    string id PK
+    string orderId FK
+    string productId FK
+    string variantId FK
+    string name
+    string sku
+    string size
+    string color
+    string image
+    int quantity
+    int unitPrice
+  }
+  ProductVariant ||--o{ OrderItem : "variantId → id"
+  Product ||--o{ OrderItem : "productId → id"
+  Order ||--o{ OrderItem : "orderId → id"
+  OrderStatusHistory {
+    string id PK
+    string orderId FK
+    string status
+    string note
+    datetime createdAt
+    string previousStatus
+    string actorId
+    string actorLabel
+    string event
+  }
+  Order ||--o{ OrderStatusHistory : "orderId → id"
+  Payment {
+    string id PK
+    string orderId FK
+    string method
+    int amount
+    string status
+    datetime createdAt
+    datetime collectedAt
+    string collectedBy
+    string collectionReference
+  }
+  Order ||--o{ Payment : "orderId → id"
+  InventoryMovement {
+    string id PK
+    string variantId FK
+    int delta
+    string reason
+    datetime createdAt
+    string orderId
+    string actorId
+    string kind
+    datetime occurredAt
+    string supplier
+    string notes
+    string eventKey
+  }
+  ProductVariant ||--o{ InventoryMovement : "variantId → id"
+  Coupon {
+    string id PK
+    string code
+    string type
+    int value
+    int minimum
+    int maximum
+    datetime expiresAt
+    int usageLimit
+    int used
+    string active
+  }
+  CouponRedemption {
+    string id PK
+    string couponId FK
+    string orderId FK
+  }
+  Order ||--o| CouponRedemption : "orderId → id"
+  Coupon ||--o{ CouponRedemption : "couponId → id"
+  Banner {
+    string id PK
+    string title
+    string subtitle
+    string image
+    string href
+    string active
+    datetime createdAt
+    datetime updatedAt
+  }
+  StoreSetting {
+    string key PK
+    string value
+    datetime updatedAt
+  }
+  Newsletter {
+    string id PK
+    string email
+    datetime createdAt
+  }
+  Inquiry {
+    string id PK
+    string name
+    string email
+    string phone
+    string subject
+    string message
+    string status
+    datetime createdAt
+    datetime updatedAt
+  }
+  Category {
+    string id PK
+    string name
+    string slug
+    string description
+    string image
+    datetime createdAt
+    datetime updatedAt
+    string parentId FK
+    string active
+    int sortOrder
+  }
+  Category |o--o{ Category : "parentId → id"
+  ProductColor {
+    string id PK
+    string productId FK
+    string name
+    string hex
+    int position
+    string active
+  }
+  Product ||--o{ ProductColor : "productId → id"
+  OutfitCombination {
+    string id PK
+    string colorId FK
+    string title
+    int position
+  }
+  ProductColor ||--o{ OutfitCombination : "colorId → id"
+  OutfitItem {
+    string id PK
+    string outfitId FK
+    string productId FK
+    string colorId FK
+  }
+  ProductColor ||--o{ OutfitItem : "colorId → id"
+  Product ||--o{ OutfitItem : "productId → id"
+  OutfitCombination ||--o{ OutfitItem : "outfitId → id"
+  SizeChart {
+    string id PK
+    string categoryId FK
+    string productId FK
+    string kind
+    string notes
+    string rowsJson
+    string matrixJson
+    datetime updatedAt
+  }
+  Product |o--o| SizeChart : "productId → id"
+  Category |o--o| SizeChart : "categoryId → id"
+  MediaAsset {
+    string id PK
+    string localPath
+    string originalSourceUrl
+    string creator
+    string licenseType
+    string licenseReference
+    datetime retrievedAt
+    string authorizedUse
+    string role
+    string reviewStatus
+    string verificationNotes
+    string garmentVerified
+    datetime reviewedAt
+    string productId FK
+    string colorId FK
+    string focalX
+    string focalY
+  }
+  ProductColor |o--o{ MediaAsset : "colorId → id"
+  Product |o--o{ MediaAsset : "productId → id"
+  ColorImage {
+    string id PK
+    string colorId FK
+    string url
+    string alt
+    int position
+    string mediaAssetId FK
+  }
+  MediaAsset |o--o{ ColorImage : "mediaAssetId → id"
+  ProductColor ||--o{ ColorImage : "colorId → id"
+  Product {
+    string id PK
+    string name
+    string slug
+    string sku
+    string description
+    string material
+    string style
+    string fit
+    string occasion
+    int price
+    int salePrice
+    string active
+    string featured
+    string isNew
+    string searchText
+    string categoryId FK
+    string subcategoryId FK
+    string sleeveType
+    string length
+    string styleTags
+    datetime createdAt
+    datetime updatedAt
+    string details
+    string care
+    string styling
+    string fitClass
+    string stretchVerified
+    string stretchAllowance
+    int enrichmentVersion
+    string publicationStatus
+    string merchandiseVerified
+  }
+  Category |o--o{ Product : "subcategoryId → id"
+  Category ||--o{ Product : "categoryId → id"
+  ProductImage {
+    string id PK
+    string productId FK
+    string url
+    string alt
+    int position
+    string mediaAssetId FK
+  }
+  Product ||--o{ ProductImage : "productId → id"
+  MediaAsset |o--o{ ProductImage : "mediaAssetId → id"
+  ProductVariant {
+    string id PK
+    string productId FK
+    string sku
+    string size
+    string color
+    string colorHex
+    string colorId FK
+    int stock
+    string stockOrigin
+    int priceOverride
+    datetime updatedAt
+  }
+  Product ||--o{ ProductVariant : "productId → id"
+  ProductColor |o--o{ ProductVariant : "colorId → id"
+  ShipmentEvent {
+    string id PK
+    string shipmentId FK
+    string previousStatus
+    string status
+    string actorId
+    string source
+    string reason
+    datetime createdAt
+    string disposition
+    string providerEventKey
+    string providerEventType
+    string providerPayload
+    string providerStatus
+    datetime providerTimestamp
+  }
+  Shipment ||--o{ ShipmentEvent : "shipmentId → id"
+  DeliveryAttempt {
+    string id PK
+    string shipmentId FK
+    string reasonCode
+    string note
+    string actorId
+    datetime createdAt
+  }
+  Shipment ||--o{ DeliveryAttempt : "shipmentId → id"
+  CODCollection {
+    string id PK
+    string shipmentId FK
+    string eventKey
+    string provider
+    string reference
+    int amount
+    string evidence
+    datetime occurredAt
+    string actorId
+    string correctsId FK
+    datetime createdAt
+  }
+  CODCollection |o--o{ CODCollection : "correctsId → id"
+  Shipment ||--o{ CODCollection : "shipmentId → id"
+  CODRemittance {
+    string id PK
+    string shipmentId FK
+    string eventKey
+    string provider
+    string reference
+    int amount
+    string evidence
+    datetime occurredAt
+    string actorId
+    string correctsId FK
+    datetime createdAt
+  }
+  CODRemittance |o--o{ CODRemittance : "correctsId → id"
+  Shipment ||--o{ CODRemittance : "shipmentId → id"
+  CODReconciliation {
+    string id PK
+    string shipmentId FK
+    string eventKey
+    string action
+    string previousStatus
+    string status
+    int expected
+    int collected
+    int remitted
+    int outstanding
+    string note
+    string actorId
+    datetime createdAt
+  }
+  Shipment ||--o{ CODReconciliation : "shipmentId → id"
+  Shipment {
+    int lengthCm
+    int widthCm
+    int heightCm
+    int insuredValue
+    string providerClientRef
+    int providerShopId
+    string providerCode
+    string providerSyncStatus
+    string providerVerification
+    datetime providerSubmittedAt
+    datetime providerLastSyncedAt
+    datetime providerLastEventAt
+    string providerCorrelationId
+    string providerRequestDigest
+    string providerErrorCode
+    datetime providerErrorAt
+    string id PK
+    string orderId FK
+    string paymentId FK
+    string reference
+    string provider
+    string carrierReference
+    string status
+    int shippingFee
+    int expectedCOD
+    int collectedCOD
+    int remittedCOD
+    int outstandingCOD
+    string reconciliationStatus
+    datetime reconciledAt
+    string reconciledBy
+    string reconciliationNote
+    string discrepancyNote
+    int version
+    string recipientName
+    string recipientPhone
+    string recipientAddress
+    string parcelDescription
+    int weightGrams
+    int parcelCount
+    string createdBy
+    datetime createdAt
+    datetime updatedAt
+  }
+  Payment ||--o| Shipment : "paymentId → id"
+  Order ||--o| Shipment : "orderId → id"
+  ReturnRequest {
+    string id PK
+    string reference
+    string eventKey
+    string payloadHash
+    string orderId FK
+    string userId FK
+    string status
+    string resolution
+    string reason
+    string policyVersion
+    datetime deliveredAt
+    datetime deadline
+    string released
+    int version
+    datetime createdAt
+    datetime updatedAt
+  }
+  User ||--o{ ReturnRequest : "userId → id"
+  Order ||--o{ ReturnRequest : "orderId → id"
+  ReturnItem {
+    string id PK
+    string requestId FK
+    string orderItemId FK
+    int quantity
+    int amount
+    string disposition
+    string restocked
+  }
+  OrderItem ||--o{ ReturnItem : "orderItemId → id"
+  ReturnRequest ||--o{ ReturnItem : "requestId → id"
+  ReturnEvidence {
+    string id PK
+    string requestId FK
+    string mime
+    string data
+    datetime createdAt
+  }
+  ReturnRequest ||--o{ ReturnEvidence : "requestId → id"
+  ReturnInspection {
+    string id PK
+    string itemId FK
+    string actorId
+    string condition
+    string notes
+    string evidence
+    datetime createdAt
+  }
+  ReturnItem ||--o{ ReturnInspection : "itemId → id"
+  ReturnHistory {
+    string id PK
+    string requestId FK
+    string previousStatus
+    string status
+    string actorId
+    string reason
+    datetime createdAt
+  }
+  ReturnRequest ||--o{ ReturnHistory : "requestId → id"
+  ExchangeItem {
+    string id PK
+    string itemId FK
+    string variantId FK
+    string sku
+    string name
+    string size
+    string color
+    int quantity
+    int unitPrice
+    string reference
+    string status
+    string stockRestored
+    string createdBy
+    datetime createdAt
+  }
+  ProductVariant ||--o{ ExchangeItem : "variantId → id"
+  ReturnItem ||--o| ExchangeItem : "itemId → id"
+  MockRefund {
+    string id PK
+    string reference
+    string requestId FK
+    string orderId FK
+    string paymentId FK
+    int amount
+    int shippingAmount
+    string reason
+    string status
+    string approvalActor
+    string completionActor
+    datetime createdAt
+    datetime completedAt
+  }
+  Payment ||--o{ MockRefund : "paymentId → id"
+  Order ||--o{ MockRefund : "orderId → id"
+  ReturnRequest ||--o| MockRefund : "requestId → id"
+  AuditLog {
+    string resourceType
+    string result
+    string beforeJson
+    string afterJson
+    string reason
+    string id PK
+    string actorId
+    string action
+    string targetId
+    string detail
+    datetime createdAt
+  }
+  Session {
+    string id PK
+    int permissionVersion
+    string tokenHash
+    string userId FK
+    datetime expiresAt
+    datetime createdAt
+  }
+  User ||--o{ Session : "userId → id"
+  User {
+    string id PK
+    string name
+    string email
+    string phone
+    string passwordHash
+    string role
+    int permissionVersion
+    datetime lastLoginAt
+    string active
+    datetime createdAt
+    datetime updatedAt
+  }
+  VisitorSession {
+    string id PK
+    string keyHash
+    datetime startedAt
+    datetime lastSeenAt
+    datetime expiresAt
+    string source
+    string medium
+    string campaign
+    string content
+    string term
+  }
+  AnalyticsEvent {
+    string id PK
+    string eventKey
+    string visitorId FK
+    string type
+    string productId
+    string authenticated
+    datetime createdAt
+    string metadataJson
+  }
+  VisitorSession ||--o{ AnalyticsEvent : "visitorId → id"
+  CartAnalyticsCycle {
+    string id PK
+    string cartId FK
+    datetime firstSeenAt
+    datetime lastActivityAt
+    string orderId FK
+    datetime convertedAt
+    string snapshotJson
+  }
+  Order |o--o| CartAnalyticsCycle : "orderId → id"
+  Cart ||--o| CartAnalyticsCycle : "cartId → id"
+  OrderAttribution {
+    string orderId PK, FK
+    string visitorId FK
+    datetime capturedAt
+    string source
+    string medium
+    string campaign
+    string content
+    string term
+  }
+  VisitorSession |o--o{ OrderAttribution : "visitorId → id"
+  Order ||--o| OrderAttribution : "orderId → id"
+  ProductCostHistory {
+    string id PK
+    string productId FK
+    string variantId FK
+    int unitCost
+    string source
+    datetime effectiveFrom
+    string createdBy
+    datetime createdAt
+  }
+  ProductVariant |o--o{ ProductCostHistory : "variantId → id"
+  Product ||--o{ ProductCostHistory : "productId → id"
+  OrderLineAnalytics {
+    string orderItemId PK, FK
+    int netAmount
+    int unitCost
+    string costSource
+    datetime costCapturedAt
+  }
+  OrderItem ||--o| OrderLineAnalytics : "orderItemId → id"
+  SyntheticBatch {
+    string id PK
+    datetime createdAt
+    string manifest
+  }
+  SyntheticRecord {
+    string id PK
+    string batchId
+    string entity
+    string recordId
+  }

@@ -1,0 +1,1 @@
+ALTER TABLE "ProductColor" ADD COLUMN "active" BOOLEAN NOT NULL DEFAULT true;

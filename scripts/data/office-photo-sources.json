@@ -1,0 +1,686 @@
+[
+  {
+    "id": "saint-argent",
+    "title": "Áo blazer cổ ve dáng suông",
+    "category": "ao-vest-blazer",
+    "sourceUrl": "https://saintandsofia.com/products/argent-blazer-cream",
+    "brand": "SAINT AND SOFIA",
+    "colors": [
+      {
+        "sourceColor": "Kem 01",
+        "sourceUrl": "https://saintandsofia.com/products/argent-blazer-cream",
+        "images": [
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/argent-blazer-cream-women-s-jackets-saint-sofia-usa-1158712062.jpg?v=1745490888",
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/argent-blazer-cream-women-s-jackets-saint-sofia-usa-1158712061.jpg?v=1745490885",
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/argent-blazer-cream-women-s-jackets-saint-sofia-usa-1158712060.jpg?v=1745490883"
+        ],
+        "localImages": [
+          "/images/office-demo/saint-argent-0-0.webp",
+          "/images/office-demo/saint-argent-0-1.webp",
+          "/images/office-demo/saint-argent-0-2.webp"
+        ],
+        "detailImages": [
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/argent-blazer-cream-women-s-jackets-saint-sofia-usa-1194826329.jpg?v=1758888656"
+        ],
+        "localDetailImages": [
+          "/images/office-demo/saint-argent-0-detail-0.webp"
+        ]
+      },
+      {
+        "sourceColor": "Đen",
+        "sourceUrl": "https://saintandsofia.com/products/argent-blazer-black",
+        "images": [
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/argent-blazer-black-women-s-jackets-saint-sofia-usa-1232733218.jpg?v=1776428469",
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/argent-blazer-black-women-s-jackets-saint-sofia-usa-1232733217.jpg?v=1776428495",
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/argent-blazer-black-women-s-jackets-saint-sofia-usa-1232733213.jpg?v=1776428436"
+        ],
+        "localImages": [
+          "/images/office-demo/saint-argent-1-0.webp",
+          "/images/office-demo/saint-argent-1-1.webp",
+          "/images/office-demo/saint-argent-1-2.webp"
+        ],
+        "detailImages": [
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/argent-blazer-black-women-s-jackets-saint-sofia-usa-1232733212.jpg?v=1776428289"
+        ],
+        "localDetailImages": [
+          "/images/office-demo/saint-argent-1-detail-0.webp"
+        ]
+      }
+    ],
+    "slug": "blazer-co-ve-dang-suong",
+    "subcategory": "blazer-dang-suong",
+    "price": 1490000,
+    "material": "Polyester Blend",
+    "fit": "Relaxed Fit",
+    "sleeveType": "Dài tay",
+    "description": "Cổ ve nhỏ, một hàng khuy và hai túi phía trước."
+  },
+  {
+    "id": "saint-cambridge",
+    "title": "Áo blazer hai hàng khuy",
+    "category": "ao-vest-blazer",
+    "sourceUrl": "https://saintandsofia.com/products/cambridge-blazer-khaki-crepe",
+    "brand": "SAINT AND SOFIA",
+    "colors": [
+      {
+        "sourceColor": "Be khaki",
+        "sourceUrl": "https://saintandsofia.com/products/cambridge-blazer-khaki-crepe",
+        "images": [
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/cambridge-blazer-khaki-crepe-1259017176.jpg?v=1789591809",
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/cambridge-blazer-khaki-crepe-1259016983.jpg?v=1789599818",
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/cambridge-blazer-khaki-crepe-1259017183.jpg?v=1789591450"
+        ],
+        "localImages": [
+          "/images/office-demo/saint-cambridge-0-0.webp",
+          "/images/office-demo/saint-cambridge-0-1.webp",
+          "/images/office-demo/saint-cambridge-0-2.webp"
+        ],
+        "detailImages": [
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/cambridge-blazer-khaki-crepe-1259017165.png?v=1789591331"
+        ],
+        "localDetailImages": [
+          "/images/office-demo/saint-cambridge-0-detail-0.webp"
+        ]
+      },
+      {
+        "sourceColor": "Đen",
+        "sourceUrl": "https://saintandsofia.com/products/cambridge-blazer-crepe-black",
+        "images": [
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/cambridge-blazer-black-crepe-women-s-blazers-saint-and-sofia-usa-1245362485.jpg?v=1781972557",
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/cambridge-blazer-black-crepe-women-s-blazers-saint-and-sofia-usa-1245362481.jpg?v=1781972530",
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/cambridge-blazer-black-crepe-women-s-blazers-saint-and-sofia-usa-1245362483.jpg?v=1781972498"
+        ],
+        "localImages": [
+          "/images/office-demo/saint-cambridge-1-0.webp",
+          "/images/office-demo/saint-cambridge-1-1.webp",
+          "/images/office-demo/saint-cambridge-1-2.webp"
+        ],
+        "detailImages": [
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/cambridge-blazer-black-crepe-women-s-blazers-saint-sofia-usa-34028359680177.jpg?v=1693411268"
+        ],
+        "localDetailImages": [
+          "/images/office-demo/saint-cambridge-1-detail-0.webp"
+        ]
+      },
+      {
+        "sourceColor": "Xanh navy",
+        "sourceUrl": "https://saintandsofia.com/products/cambridge-blazer-crepe-navy",
+        "images": [
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/cambridge-blazer-navy-crepe-1255418434.jpg?v=1787322010",
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/cambridge-blazer-navy-crepe-1255418433.jpg?v=1787321978",
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/cambridge-blazer-navy-crepe-1255418429.jpg?v=1787321949"
+        ],
+        "localImages": [
+          "/images/office-demo/saint-cambridge-2-0.webp",
+          "/images/office-demo/saint-cambridge-2-1.webp",
+          "/images/office-demo/saint-cambridge-2-2.webp"
+        ],
+        "detailImages": [
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/cambridge-blazer-navy-crepe-1255418428.jpg?v=1787321831"
+        ],
+        "localDetailImages": [
+          "/images/office-demo/saint-cambridge-2-detail-0.webp"
+        ]
+      }
+    ],
+    "slug": "blazer-hai-hang-khuy",
+    "subcategory": "blazer-hai-hang-khuy",
+    "price": 1690000,
+    "material": "Polyester Blend",
+    "fit": "Regular Fit",
+    "sleeveType": "Dài tay",
+    "description": "Cổ ve, hai hàng khuy và phom blazer dài qua eo."
+  },
+  {
+    "id": "saint-cambridge-pants",
+    "title": "Quần tây ống rộng cạp cao",
+    "category": "quan-tay",
+    "sourceUrl": "https://saintandsofia.com/products/cambridge-tailored-wide-leg-pant-beige-pant",
+    "brand": "SAINT AND SOFIA",
+    "colors": [
+      {
+        "sourceColor": "Da 01",
+        "sourceUrl": "https://saintandsofia.com/products/cambridge-tailored-wide-leg-pant-beige-pant",
+        "images": [
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/cambridge-tailored-wide-leg-pant-beige-women-s-pants-saint-sofia-usa-1149794834.jpg?v=1769461801",
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/cambridge-tailored-wide-leg-pant-beige-women-s-pants-saint-sofia-usa-1149794833.jpg?v=1769461801",
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/cambridge-tailored-wide-leg-pant-beige-women-s-pants-saint-sofia-usa-1149794830.jpg?v=1769461801"
+        ],
+        "localImages": [
+          "/images/office-demo/saint-cambridge-pants-0-0.webp",
+          "/images/office-demo/saint-cambridge-pants-0-1.webp",
+          "/images/office-demo/saint-cambridge-pants-0-2.webp"
+        ],
+        "detailImages": [
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/cambridge-tailored-wide-leg-pant-beige-women-s-trousers-saint-sofia-uk-35692024856753.jpg?v=1742382720"
+        ],
+        "localDetailImages": [
+          "/images/office-demo/saint-cambridge-pants-0-detail-0.webp"
+        ]
+      },
+      {
+        "sourceColor": "Đen",
+        "sourceUrl": "https://saintandsofia.com/products/cambridge-tailored-wide-leg-pant-black-pant",
+        "images": [
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/cambridge-tailored-wide-leg-pant-black-1254076783.jpg?v=1786624177",
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/cambridge-tailored-wide-leg-pant-black-1254076779.jpg?v=1786624150",
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/cambridge-tailored-wide-leg-pant-black-1254076782.jpg?v=1786624118"
+        ],
+        "localImages": [
+          "/images/office-demo/saint-cambridge-pants-1-0.webp",
+          "/images/office-demo/saint-cambridge-pants-1-1.webp",
+          "/images/office-demo/saint-cambridge-pants-1-2.webp"
+        ],
+        "detailImages": [
+          "https://cdn.shopify.com/s/files/1/1756/9129/products/cambridge-tailored-wide-leg-pant-black-women-s-trousers-saint-sofia-uk-32113575198897.jpg?v=1772201498"
+        ],
+        "localDetailImages": [
+          "/images/office-demo/saint-cambridge-pants-1-detail-0.webp"
+        ]
+      },
+      {
+        "sourceColor": "Xanh navy",
+        "sourceUrl": "https://saintandsofia.com/products/cambridge-tailored-wide-leg-pant-navy-pant",
+        "images": [
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/cambridge-tailored-wide-leg-pant-navy-1256693578.jpg?v=1788286811",
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/cambridge-tailored-wide-leg-pant-navy-1256693575.jpg?v=1788286777",
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/cambridge-tailored-wide-leg-pant-navy-1256693576.jpg?v=1788286752"
+        ],
+        "localImages": [
+          "/images/office-demo/saint-cambridge-pants-2-0.webp",
+          "/images/office-demo/saint-cambridge-pants-2-1.webp",
+          "/images/office-demo/saint-cambridge-pants-2-2.webp"
+        ],
+        "detailImages": [
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/cambridge-tailored-wide-leg-pant-navy-1256693577.jpg?v=1788286629"
+        ],
+        "localDetailImages": [
+          "/images/office-demo/saint-cambridge-pants-2-detail-0.webp"
+        ]
+      }
+    ],
+    "slug": "quan-tay-ong-rong-cap-cao",
+    "subcategory": "quan-ong-rong",
+    "price": 890000,
+    "material": "Polyester Blend",
+    "fit": "Wide Leg",
+    "sleeveType": "",
+    "description": "Quần dài cạp cao, ống rộng, ly trước và túi bên."
+  },
+  {
+    "id": "saint-keller",
+    "title": "Quần suông thanh lịch",
+    "category": "quan-tay",
+    "sourceUrl": "https://saintandsofia.com/products/keller-wide-leg-pant-cream",
+    "brand": "SAINT AND SOFIA",
+    "colors": [
+      {
+        "sourceColor": "Kem 01",
+        "sourceUrl": "https://saintandsofia.com/products/keller-wide-leg-pant-cream",
+        "images": [
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/keller-wide-leg-pant-cream-women-s-pants-saint-sofia-usa-1239471309.jpg?v=1779294037",
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/keller-wide-leg-pant-cream-women-s-pants-saint-sofia-usa-1239471308.jpg?v=1779293978",
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/keller-wide-leg-pant-cream-women-s-pants-saint-sofia-usa-1239471304.jpg?v=1779294011"
+        ],
+        "localImages": [
+          "/images/office-demo/saint-keller-0-0.webp",
+          "/images/office-demo/saint-keller-0-1.webp",
+          "/images/office-demo/saint-keller-0-2.webp"
+        ],
+        "detailImages": [
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/keller-wide-leg-pant-cream-women-s-pants-saint-sofia-usa-1240794243.jpg?v=1779992290"
+        ],
+        "localDetailImages": [
+          "/images/office-demo/saint-keller-0-detail-0.webp"
+        ]
+      },
+      {
+        "sourceColor": "Xám 01",
+        "sourceUrl": "https://saintandsofia.com/products/keller-wide-leg-pant-grey-twill-trouser",
+        "images": [
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/keller-wide-leg-pant-grey-twill-women-s-trousers-saint-sofia-us-1224374046.jpg?v=1772210316",
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/keller-wide-leg-pant-grey-twill-women-s-trousers-saint-sofia-us-1224374043.jpg?v=1772210168",
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/keller-wide-leg-pant-grey-twill-women-s-trousers-saint-sofia-us-1224374045.jpg?v=1772210229"
+        ],
+        "localImages": [
+          "/images/office-demo/saint-keller-1-0.webp",
+          "/images/office-demo/saint-keller-1-1.webp",
+          "/images/office-demo/saint-keller-1-2.webp"
+        ],
+        "detailImages": [
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/keller-wide-leg-pant-grey-twill-women-s-trousers-saint-sofia-us-1151639597.jpg?v=1772202280"
+        ],
+        "localDetailImages": [
+          "/images/office-demo/saint-keller-1-detail-0.webp"
+        ]
+      },
+      {
+        "sourceColor": "Đen",
+        "sourceUrl": "https://saintandsofia.com/products/keller-wide-leg-pant-black-pant",
+        "images": [
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/keller-wide-leg-pants-black-pintuck-saint-and-sofia-1262704886.jpg?v=1792073978",
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/keller-wide-leg-pants-black-pintuck-saint-and-sofia-1262704885.jpg?v=1792073951",
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/keller-wide-leg-pants-black-pintuck-saint-and-sofia-1262704883.jpg?v=1792073918"
+        ],
+        "localImages": [
+          "/images/office-demo/saint-keller-2-0.webp",
+          "/images/office-demo/saint-keller-2-1.webp",
+          "/images/office-demo/saint-keller-2-2.webp"
+        ],
+        "detailImages": [
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/keller-wide-leg-pant-black-women-s-pants-saint-sofia-usa-33551285518513.jpg?v=1772201965"
+        ],
+        "localDetailImages": [
+          "/images/office-demo/saint-keller-2-detail-0.webp"
+        ]
+      }
+    ],
+    "slug": "quan-suong-thanh-lich",
+    "subcategory": "quan-tay-ong-suong",
+    "price": 890000,
+    "material": "Polyester Blend",
+    "fit": "Wide Leg",
+    "sleeveType": "",
+    "description": "Quần dài ống suông rộng, cạp gọn và bề mặt vải trơn."
+  },
+  {
+    "id": "saint-sutton",
+    "title": "Chân váy midi dáng suông",
+    "category": "chan-vay",
+    "sourceUrl": "https://saintandsofia.com/products/sutton-skirt-navy",
+    "brand": "SAINT AND SOFIA",
+    "colors": [
+      {
+        "sourceColor": "Xanh navy",
+        "sourceUrl": "https://saintandsofia.com/products/sutton-skirt-navy",
+        "images": [
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/sutton-skirt-navy-1259017054.jpg?v=1789596551",
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/sutton-skirt-navy-1259017045.jpg?v=1789596491",
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/sutton-skirt-navy-1259017034.jpg?v=1789596516"
+        ],
+        "localImages": [
+          "/images/office-demo/saint-sutton-0-0.webp",
+          "/images/office-demo/saint-sutton-0-1.webp",
+          "/images/office-demo/saint-sutton-0-2.webp"
+        ],
+        "detailImages": [
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/sutton-skirt-navy-1259761879.png?v=1790164958"
+        ],
+        "localDetailImages": [
+          "/images/office-demo/saint-sutton-0-detail-0.webp"
+        ]
+      },
+      {
+        "sourceColor": "Đen",
+        "sourceUrl": "https://saintandsofia.com/products/sutton-skirt-black",
+        "images": [
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/sutton-skirt-black-1259017046.jpg?v=1789596731",
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/sutton-skirt-black-1259017040.jpg?v=1789596696",
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/sutton-skirt-black-1259017049.jpg?v=1789596670"
+        ],
+        "localImages": [
+          "/images/office-demo/saint-sutton-1-0.webp",
+          "/images/office-demo/saint-sutton-1-1.webp",
+          "/images/office-demo/saint-sutton-1-2.webp"
+        ],
+        "detailImages": [
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/sutton-skirt-black-1259017043.png?v=1789596578"
+        ],
+        "localDetailImages": [
+          "/images/office-demo/saint-sutton-1-detail-0.webp"
+        ]
+      }
+    ],
+    "slug": "chan-vay-midi-dang-suong",
+    "subcategory": "chan-vay-midi",
+    "price": 790000,
+    "material": "Viscose",
+    "fit": "A-Line",
+    "sleeveType": "",
+    "description": "Chân váy midi cắt xéo, bề mặt trơn và tà rủ nhẹ."
+  },
+  {
+    "id": "saint-bonnie",
+    "title": "Đầm midi cổ V tay ngắn",
+    "category": "dam-cong-so",
+    "sourceUrl": "https://saintandsofia.com/products/bonnie-v-neck-dress-black",
+    "brand": "SAINT AND SOFIA",
+    "colors": [
+      {
+        "sourceColor": "Đen",
+        "sourceUrl": "https://saintandsofia.com/products/bonnie-v-neck-dress-black",
+        "images": [
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/bonnie-v-neck-dress-black-women-s-dresses-saint-sofia-usa-1227041665.jpg?v=1773316389",
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/bonnie-v-neck-dress-black-women-s-dresses-saint-sofia-usa-1227041664.jpg?v=1773316418",
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/bonnie-v-neck-dress-black-women-s-dresses-saint-sofia-usa-1227041663.jpg?v=1773316328"
+        ],
+        "localImages": [
+          "/images/office-demo/saint-bonnie-0-0.webp",
+          "/images/office-demo/saint-bonnie-0-1.webp",
+          "/images/office-demo/saint-bonnie-0-2.webp"
+        ],
+        "detailImages": [
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/bonnie-v-neck-dress-black-women-s-dresses-saint-sofia-usa-1226673750.jpg?v=1773310712"
+        ],
+        "localDetailImages": [
+          "/images/office-demo/saint-bonnie-0-detail-0.webp"
+        ]
+      },
+      {
+        "sourceColor": "Xanh navy",
+        "sourceUrl": "https://saintandsofia.com/products/bonnie-v-neck-dress-navy",
+        "images": [
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/bonnie-v-neck-dress-navy-women-s-dresses-saint-sofia-usa-1226661782.jpg?v=1773073595",
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/bonnie-v-neck-dress-navy-women-s-dresses-saint-sofia-usa-1226661781.jpg?v=1773073567",
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/bonnie-v-neck-dress-navy-women-s-dresses-saint-sofia-usa-1226661777.jpg?v=1773073507"
+        ],
+        "localImages": [
+          "/images/office-demo/saint-bonnie-1-0.webp",
+          "/images/office-demo/saint-bonnie-1-1.webp",
+          "/images/office-demo/saint-bonnie-1-2.webp"
+        ],
+        "detailImages": [
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/bonnie-v-neck-dress-navy-women-s-dresses-saint-sofia-usa-1226661776.jpg?v=1773073416"
+        ],
+        "localDetailImages": [
+          "/images/office-demo/saint-bonnie-1-detail-0.webp"
+        ]
+      }
+    ],
+    "slug": "dam-midi-co-v-tay-ngan",
+    "subcategory": "dam-co-v",
+    "price": 1190000,
+    "material": "Viscose",
+    "fit": "Regular Fit",
+    "sleeveType": "Tay ngắn",
+    "description": "Đầm midi cổ V, tay ngắn, phần eo gọn và chân váy xòe nhẹ."
+  },
+  {
+    "id": "saint-callie",
+    "title": "Đầm midi dệt kim cổ tròn",
+    "category": "dam-cong-so",
+    "sourceUrl": "https://saintandsofia.com/products/callie-fluted-midi-dress-beige-melange",
+    "brand": "SAINT AND SOFIA",
+    "colors": [
+      {
+        "sourceColor": "Be melange",
+        "sourceUrl": "https://saintandsofia.com/products/callie-fluted-midi-dress-beige-melange",
+        "images": [
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/callie-fluted-midi-dress-beige-melange-women-s-dresses-saint-sofia-us-37876200571057.jpg?v=1737669138",
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/callie-fluted-midi-dress-beige-melange-women-s-dresses-saint-sofia-us-37876200407217.jpg?v=1737671289",
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/callie-fluted-midi-dress-beige-melange-women-s-dresses-saint-sofia-us-37876200538289.jpg?v=1737671296"
+        ],
+        "localImages": [
+          "/images/office-demo/saint-callie-0-0.webp",
+          "/images/office-demo/saint-callie-0-1.webp",
+          "/images/office-demo/saint-callie-0-2.webp"
+        ],
+        "detailImages": [
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/callie-fluted-midi-dress-beige-melange-women-s-dresses-saint-sofia-us-37876217348273.jpg?v=1737671471"
+        ],
+        "localDetailImages": [
+          "/images/office-demo/saint-callie-0-detail-0.webp"
+        ]
+      }
+    ],
+    "slug": "dam-midi-det-kim-co-tron",
+    "subcategory": "dam-midi",
+    "price": 1290000,
+    "material": "Vải dệt kim",
+    "fit": "Slim Fit",
+    "sleeveType": "Dài tay",
+    "description": "Đầm midi dệt gân, cổ tròn, tay dài và dáng ôm nhẹ."
+  },
+  {
+    "id": "saint-ariella",
+    "title": "Áo cardigan cổ V cài khuy",
+    "category": "ao-khoac-len",
+    "sourceUrl": "https://saintandsofia.com/products/ariella-cardigan-wool-beige",
+    "brand": "SAINT AND SOFIA",
+    "colors": [
+      {
+        "sourceColor": "Da 01",
+        "sourceUrl": "https://saintandsofia.com/products/ariella-cardigan-wool-beige",
+        "images": [
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/ariella-cardigan-beige-1259163519.jpg?v=1789669208",
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/ariella-cardigan-beige-1259163518.jpg?v=1789669177",
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/ariella-cardigan-beige-1259163517.jpg?v=1789669149"
+        ],
+        "localImages": [
+          "/images/office-demo/saint-ariella-0-0.webp",
+          "/images/office-demo/saint-ariella-0-1.webp",
+          "/images/office-demo/saint-ariella-0-2.webp"
+        ],
+        "detailImages": [
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/ariella-cardigan-beige-1259163522.jpg?v=1789669029"
+        ],
+        "localDetailImages": [
+          "/images/office-demo/saint-ariella-0-detail-0.webp"
+        ]
+      },
+      {
+        "sourceColor": "Kem 01",
+        "sourceUrl": "https://saintandsofia.com/products/ariella-cardigan-cream",
+        "images": [
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/ariella-cardigan-cream-women-s-sweaters-saint-and-sofia-usa-1249344783.jpg?v=1784226009",
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/ariella-cardigan-cream-women-s-sweaters-saint-and-sofia-usa-1249344782.jpg?v=1784225979",
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/ariella-cardigan-cream-women-s-sweaters-saint-and-sofia-usa-1249344779.jpg?v=1784225952"
+        ],
+        "localImages": [
+          "/images/office-demo/saint-ariella-1-0.webp",
+          "/images/office-demo/saint-ariella-1-1.webp",
+          "/images/office-demo/saint-ariella-1-2.webp"
+        ],
+        "detailImages": [
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/ariella-cardigan-cream-women-s-sweaters-saint-and-sofia-usa-1249344777.png?v=1784225832"
+        ],
+        "localDetailImages": [
+          "/images/office-demo/saint-ariella-1-detail-0.webp"
+        ]
+      },
+      {
+        "sourceColor": "Lilac Pink",
+        "sourceUrl": "https://saintandsofia.com/products/ariella-cardigan-lilac-pink",
+        "images": [
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/ariella-cardigan-lilac-pink-women-s-sweaters-saint-and-sofia-usa-1244818499.jpg?v=1781721310",
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/ariella-cardigan-lilac-pink-women-s-sweaters-saint-and-sofia-usa-1244818497.jpg?v=1781721251",
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/ariella-cardigan-lilac-pink-women-s-sweaters-saint-and-sofia-usa-1244818498.jpg?v=1781721277"
+        ],
+        "localImages": [
+          "/images/office-demo/saint-ariella-2-0.webp",
+          "/images/office-demo/saint-ariella-2-1.webp",
+          "/images/office-demo/saint-ariella-2-2.webp"
+        ],
+        "detailImages": [
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/ariella-cardigan-lilac-pink-women-s-sweaters-saint-and-sofia-usa-1248152951.png?v=1783506337"
+        ],
+        "localDetailImages": [
+          "/images/office-demo/saint-ariella-2-detail-0.webp"
+        ]
+      },
+      {
+        "sourceColor": "Xám 01",
+        "sourceUrl": "https://saintandsofia.com/products/ariella-cardigan-wool-grey",
+        "images": [
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/ariella-cardigan-grey-women-s-cardigans-saint-and-sofia-usa-1245344749.jpg?v=1781944896",
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/ariella-cardigan-grey-women-s-cardigans-saint-and-sofia-usa-1245344750.jpg?v=1781944869",
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/ariella-cardigan-grey-women-s-cardigans-saint-and-sofia-usa-1245344748.jpg?v=1781944838"
+        ],
+        "localImages": [
+          "/images/office-demo/saint-ariella-3-0.webp",
+          "/images/office-demo/saint-ariella-3-1.webp",
+          "/images/office-demo/saint-ariella-3-2.webp"
+        ],
+        "detailImages": [
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/ariella-cardigan-grey-women-s-cardigans-saint-sofia-us-1216672439.jpg?v=1768477869"
+        ],
+        "localDetailImages": [
+          "/images/office-demo/saint-ariella-3-detail-0.webp"
+        ]
+      }
+    ],
+    "slug": "cardigan-co-v-cai-khuy",
+    "subcategory": "cardigan-mong",
+    "price": 990000,
+    "material": "Vải dệt kim",
+    "fit": "Regular Fit",
+    "sleeveType": "Dài tay",
+    "description": "Cardigan cổ V, hàng khuy trước và bề mặt dệt mềm."
+  },
+  {
+    "id": "saint-anneliese",
+    "title": "Áo sơ mi cổ Đức dáng suông",
+    "category": "ao-so-mi",
+    "brand": "SAINT AND SOFIA",
+    "sourceUrl": "https://saintandsofia.com/products/anneliese-shirt-white",
+    "colors": [
+      {
+        "sourceColor": "Trắng",
+        "sourceUrl": "https://saintandsofia.com/products/anneliese-shirt-white",
+        "images": [
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/anneliese-shirt-white-women-s-blouses-saint-sofia-usa-1224289104.jpg?v=1772130009",
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/anneliese-shirt-white-women-s-blouses-saint-sofia-usa-1217933662.jpg?v=1772123179"
+        ],
+        "detailImages": [
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/anneliese-shirt-white-women-s-blouses-saint-sofia-usa-1217316865.jpg?v=1772123179"
+        ],
+        "localImages": [
+          "/images/office-demo/saint-anneliese-0-0.webp",
+          "/images/office-demo/saint-anneliese-0-1.webp"
+        ],
+        "localDetailImages": [
+          "/images/office-demo/saint-anneliese-0-detail-0.webp"
+        ]
+      },
+      {
+        "sourceColor": "Xanh dương nhạt",
+        "sourceUrl": "https://saintandsofia.com/products/anneliese-shirt-ice-blue-cotton",
+        "images": [
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/anneliese-shirt-ice-blue-1254460548.jpg?v=1786976772",
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/anneliese-shirt-ice-blue-1254460557.jpg?v=1786976737"
+        ],
+        "detailImages": [
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/anneliese-shirt-ice-blue-1254460551.jpg?v=1786976592"
+        ],
+        "localImages": [
+          "/images/office-demo/saint-anneliese-1-0.webp",
+          "/images/office-demo/saint-anneliese-1-1.webp"
+        ],
+        "localDetailImages": [
+          "/images/office-demo/saint-anneliese-1-detail-0.webp"
+        ]
+      }
+    ],
+    "slug": "ao-so-mi-co-duc-dang-suong",
+    "subcategory": "so-mi-co-duc",
+    "price": 690000,
+    "material": "Cotton",
+    "fit": "Relaxed Fit",
+    "sleeveType": "Dài tay",
+    "description": "Sơ mi cổ Đức, tay dài, khuy trước và phom suông rộng."
+  },
+  {
+    "id": "saint-quentin",
+    "title": "Áo sơ mi cổ tàu dài tay",
+    "category": "ao-so-mi",
+    "brand": "SAINT AND SOFIA",
+    "sourceUrl": "https://saintandsofia.com/products/quentin-shirt-white",
+    "colors": [
+      {
+        "sourceColor": "Trắng",
+        "sourceUrl": "https://saintandsofia.com/products/quentin-shirt-white",
+        "images": [
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/quentin-shirt-white-1260665739.jpg?v=1790878990",
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/quentin-shirt-white-women-s-blouses-saint-and-sofia-usa-1254460607.jpg?v=1786965518"
+        ],
+        "detailImages": [
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/quentin-shirt-white-women-s-blouses-saint-and-sofia-usa-1255879837.jpg?v=1787761029"
+        ],
+        "localImages": [
+          "/images/office-demo/saint-quentin-0-0.webp",
+          "/images/office-demo/saint-quentin-0-1.webp"
+        ],
+        "localDetailImages": [
+          "/images/office-demo/saint-quentin-0-detail-0.webp"
+        ]
+      },
+      {
+        "sourceColor": "Xanh dương nhạt",
+        "sourceUrl": "https://saintandsofia.com/products/quentin-shirt-ice-blue",
+        "images": [
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/quentin-shirt-ice-blue-1259016666.jpg?v=1789586439",
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/quentin-shirt-ice-blue-1259016649.jpg?v=1789586234"
+        ],
+        "detailImages": [
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/quentin-shirt-ice-blue-1259016654.png?v=1789585536"
+        ],
+        "localImages": [
+          "/images/office-demo/saint-quentin-1-0.webp",
+          "/images/office-demo/saint-quentin-1-1.webp"
+        ],
+        "localDetailImages": [
+          "/images/office-demo/saint-quentin-1-detail-0.webp"
+        ]
+      }
+    ],
+    "slug": "ao-so-mi-co-tau-dai-tay",
+    "subcategory": "so-mi-tay-dai",
+    "price": 690000,
+    "material": "Cotton",
+    "fit": "Regular Fit",
+    "sleeveType": "Dài tay",
+    "description": "Sơ mi cổ tàu, tay dài và khuy cài phía trước."
+  },
+  {
+    "id": "saint-tabitha",
+    "title": "Áo blouse tay bồng thêu nổi",
+    "category": "ao-kieu",
+    "brand": "SAINT AND SOFIA",
+    "sourceUrl": "https://saintandsofia.com/products/tabitha-cotton-blouse-cream-broderie",
+    "colors": [
+      {
+        "sourceColor": "Kem 01",
+        "sourceUrl": "https://saintandsofia.com/products/tabitha-cotton-blouse-cream-broderie",
+        "images": [
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/tabitha-blouse-cream-broderie-women-s-blouses-saint-and-sofia-usa-1243360767.jpg?v=1781022516",
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/tabitha-blouse-cream-broderie-women-s-blouses-saint-and-sofia-usa-1243360764.jpg?v=1781022428"
+        ],
+        "detailImages": [
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/tabitha-blouse-cream-broderie-women-s-blouses-saint-and-sofia-usa-1243360761.jpg?v=1781022337"
+        ],
+        "localImages": [
+          "/images/office-demo/saint-tabitha-0-0.webp",
+          "/images/office-demo/saint-tabitha-0-1.webp"
+        ],
+        "localDetailImages": [
+          "/images/office-demo/saint-tabitha-0-detail-0.webp"
+        ]
+      },
+      {
+        "sourceColor": "Xanh navy",
+        "sourceUrl": "https://saintandsofia.com/products/tabitha-blouse-navy",
+        "images": [
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/tabitha-blouse-navy-1254205198.jpg?v=1786725279",
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/tabitha-blouse-navy-1254205197.jpg?v=1786725252"
+        ],
+        "detailImages": [
+          "https://cdn.shopify.com/s/files/1/1756/9129/files/tabitha-blouse-navy-women-s-blouses-saint-sofia-usa-1187310962.jpg?v=1766075814"
+        ],
+        "localImages": [
+          "/images/office-demo/saint-tabitha-1-0.webp",
+          "/images/office-demo/saint-tabitha-1-1.webp"
+        ],
+        "localDetailImages": [
+          "/images/office-demo/saint-tabitha-1-detail-0.webp"
+        ]
+      }
+    ],
+    "slug": "ao-blouse-tay-bong-theu-noi",
+    "subcategory": "ao-tay-bong",
+    "price": 790000,
+    "material": "Cotton",
+    "fit": "Regular Fit",
+    "sleeveType": "Tay bồng",
+    "description": "Áo blouse tay bồng, thêu nổi và cổ đứng nhẹ."
+  }
+]

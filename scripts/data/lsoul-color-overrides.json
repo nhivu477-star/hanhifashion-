@@ -1,0 +1,626 @@
+{
+  "ls-marni-jacket": {
+    "hex": "#be9c61",
+    "reviewedProduct": "Áo khoác Marni"
+  },
+  "ls-kalla-jacket": {
+    "hex": "#f4f1eb",
+    "reviewedProduct": "Áo khoác Kalla"
+  },
+  "ls-charon-jacket": {
+    "hex": "#c5b298",
+    "reviewedProduct": "Áo khoác Charon"
+  },
+  "ls-dimen-jacket": {
+    "hex": "#a49583",
+    "reviewedProduct": "Áo khoác Dimen"
+  },
+  "ls-rella-dress": {
+    "hex": "#49372d",
+    "reviewedProduct": "Đầm Rella"
+  },
+  "ls-neece-dress": {
+    "hex": "#4c4d49",
+    "reviewedProduct": "Đầm Neece"
+  },
+  "ls-awak-jacket": {
+    "hex": "#e5ddc9",
+    "reviewedProduct": "Áo khoác Awak"
+  },
+  "ls-tiffin-top": {
+    "hex": "#c7e2de",
+    "reviewedProduct": "Áo Tiffin"
+  },
+  "ls-aya-top": {
+    "hex": "#f4f1eb",
+    "reviewedProduct": "Áo Aya"
+  },
+  "ls-loren-top": {
+    "hex": "#4c4d49",
+    "reviewedProduct": "Áo Loren"
+  },
+  "ls-loudly-top": {
+    "hex": "#f4f1eb",
+    "reviewedProduct": "Áo Loudly"
+  },
+  "ls-firri-top": {
+    "hex": "#19191b",
+    "reviewedProduct": "Áo Firri"
+  },
+  "ls-chie-top": {
+    "hex": "#f4f1eb",
+    "reviewedProduct": "Áo Chie"
+  },
+  "ls-unn-top": {
+    "hex": "#19191b",
+    "reviewedProduct": "Áo Unn"
+  },
+  "ls-mostii-jeans": {
+    "hex": "#a7bec5",
+    "reviewedProduct": "Quần jeans Mostii"
+  },
+  "ls-koupe-skirt": {
+    "hex": "#19191b",
+    "reviewedProduct": "Chân váy Koupe"
+  },
+  "ls-pavin-top": {
+    "hex": "#682f3d",
+    "reviewedProduct": "Áo Pavin"
+  },
+  "ls-lincoln-skirt": {
+    "hex": "#e5ddc9",
+    "reviewedProduct": "Chân váy Lincoln"
+  },
+  "ls-wippi-skirt": {
+    "hex": "#a7bec5",
+    "reviewedProduct": "Chân váy Wippi"
+  },
+  "ls-kilii-skirt": {
+    "hex": "#19191b",
+    "reviewedProduct": "Chân váy Kilii"
+  },
+  "ls-sumie-top": {
+    "hex": "#f4f1eb",
+    "reviewedProduct": "Áo Sumie"
+  },
+  "ls-joye-bodysuit": {
+    "hex": "#f4f1eb",
+    "reviewedProduct": "Bodysuit Joye"
+  },
+  "ls-erros-top": {
+    "hex": "#19191b",
+    "reviewedProduct": "Áo Erros"
+  },
+  "ls-velle-top": {
+    "hex": "#e5ddc9",
+    "reviewedProduct": "Áo Velle"
+  },
+  "ls-ers-jeans": {
+    "hex": "#527a91",
+    "reviewedProduct": "Quần jeans Ers"
+  },
+  "ls-zee-top": {
+    "hex": "#f4f1eb",
+    "reviewedProduct": "Áo Zee"
+  },
+  "ls-yorki-jeans": {
+    "hex": "#a7bec5",
+    "reviewedProduct": "Quần jeans Yorki"
+  },
+  "ls-nata-jeans": {
+    "hex": "#19191b",
+    "reviewedProduct": "Quần jeans Nata"
+  },
+  "ls-liu-top": {
+    "hex": "#e5ddc9",
+    "reviewedProduct": "Áo Liu"
+  },
+  "ls-vanis-top": {
+    "hex": "#ecd5d6",
+    "reviewedProduct": "Áo Vanis"
+  },
+  "ls-therric-top": {
+    "hex": "#aa7335",
+    "reviewedProduct": "Áo Therric"
+  },
+  "ls-risse-top": {
+    "hex": "#c5bbdc",
+    "reviewedProduct": "Áo Risse"
+  },
+  "ls-kat-top": {
+    "hex": "#ecd5d6",
+    "reviewedProduct": "Áo Kat"
+  },
+  "ls-almes-dress": {
+    "hex": "#f4f1eb",
+    "reviewedProduct": "Đầm Almes"
+  },
+  "ls-aslur-dress": {
+    "hex": "#49372d",
+    "reviewedProduct": "Đầm Aslur"
+  },
+  "ls-jone-dress": {
+    "hex": "#d8ddd8",
+    "reviewedProduct": "Đầm Jone"
+  },
+  "ls-ricci-dress": {
+    "hex": "#19191b",
+    "reviewedProduct": "Đầm Ricci"
+  },
+  "ls-aimer-dress": {
+    "hex": "#ecd5d6",
+    "reviewedProduct": "Đầm Aimer"
+  },
+  "ls-vie-dress": {
+    "hex": "#ddb5c2",
+    "reviewedProduct": "Đầm Vie"
+  },
+  "ls-liery-dress": {
+    "hex": "#bfd9e9",
+    "reviewedProduct": "Đầm Liery"
+  },
+  "ls-rico-bikini": {
+    "hex": "#bc293c",
+    "reviewedProduct": "Rico Bikini"
+  },
+  "ls-myme-bodysuit": {
+    "hex": "#d8ddd8",
+    "reviewedProduct": "Bodysuit Myme"
+  },
+  "ls-fredie-skirt": {
+    "hex": "#49372d",
+    "reviewedProduct": "Chân váy Fredie"
+  },
+  "ls-choo-skirt": {
+    "hex": "#19191b",
+    "reviewedProduct": "Chân váy Choo"
+  },
+  "ls-kylie-set": {
+    "hex": "#e5ddc9",
+    "reviewedProduct": "Bộ Kylie"
+  },
+  "ls-suzan-top": {
+    "hex": "#c5bbdc",
+    "reviewedProduct": "Áo Suzan"
+  },
+  "ls-soulie-top": {
+    "hex": "#a49583",
+    "reviewedProduct": "Áo Soulie"
+  },
+  "ls-suzan-skirt": {
+    "hex": "#ddb5c2",
+    "reviewedProduct": "Chân váy Suzan"
+  },
+  "ls-rossi-set": {
+    "hex": "#19191b",
+    "reviewedProduct": "Bộ Rossi"
+  },
+  "ls-lio-top": {
+    "hex": "#f4f1eb",
+    "reviewedProduct": "Áo Lio"
+  },
+  "ls-via-top": {
+    "hex": "#f4f1eb",
+    "reviewedProduct": "Áo Via"
+  },
+  "ls-tico-top": {
+    "hex": "#19191b",
+    "reviewedProduct": "Áo Tico"
+  },
+  "ls-simi-top": {
+    "hex": "#bfd9e9",
+    "reviewedProduct": "Áo Simi"
+  },
+  "ls-somna-top": {
+    "hex": "#f4f1eb",
+    "reviewedProduct": "Áo Somna"
+  },
+  "ls-noon-skirt": {
+    "hex": "#e5ddc9",
+    "reviewedProduct": "Chân váy Noon"
+  },
+  "ls-doon-short": {
+    "hex": "#a6aa96",
+    "reviewedProduct": "Doon Short"
+  },
+  "ls-ezzo-pants": {
+    "hex": "#19191b",
+    "reviewedProduct": "Quần Ezzo"
+  },
+  "ls-nie-jeans": {
+    "hex": "#19191b",
+    "reviewedProduct": "Quần jeans Nie"
+  },
+  "ls-perpi-skirt": {
+    "hex": "#527a91",
+    "reviewedProduct": "Chân váy Perpi"
+  },
+  "ls-emme-dress": {
+    "hex": "#19191b",
+    "reviewedProduct": "Đầm Emme"
+  },
+  "ls-jewell-top": {
+    "hex": "#c5bbdc",
+    "reviewedProduct": "Áo Jewell"
+  },
+  "ls-sian-top": {
+    "hex": "#f4f1eb",
+    "reviewedProduct": "Áo Sian"
+  },
+  "ls-lincoln-top": {
+    "hex": "#e5ddc9",
+    "reviewedProduct": "Áo Lincoln"
+  },
+  "ls-rene-skirt": {
+    "hex": "#e5ddc9",
+    "reviewedProduct": "Chân váy Rene"
+  },
+  "ls-yaan-pants": {
+    "hex": "#527a91",
+    "reviewedProduct": "Quần Yaan"
+  },
+  "ls-anna-skirt": {
+    "hex": "#e5ddc9",
+    "reviewedProduct": "Chân váy Anna"
+  },
+  "ls-oli-top": {
+    "hex": "#4c4d49",
+    "reviewedProduct": "Áo Oli"
+  },
+  "ls-osric-jacket": {
+    "hex": "#c5b298",
+    "reviewedProduct": "Áo khoác Osric"
+  },
+  "ls-mysie-jacket": {
+    "hex": "#e5ddc9",
+    "reviewedProduct": "Áo khoác Mysie"
+  },
+  "ls-muel-jacket": {
+    "hex": "#c5b298",
+    "reviewedProduct": "Áo khoác Muel"
+  },
+  "ls-winly-dress": {
+    "hex": "#a6aa96",
+    "reviewedProduct": "Đầm Winly"
+  },
+  "ls-echo-shorts": {
+    "hex": "#e5ddc9",
+    "reviewedProduct": "Quần shorts Echo"
+  },
+  "ls-ani-jacket": {
+    "hex": "#c5b298",
+    "reviewedProduct": "Áo khoác Ani"
+  },
+  "ls-hannie-top": {
+    "hex": "#49372d",
+    "reviewedProduct": "Áo Hannie"
+  },
+  "ls-gunbou-dress": {
+    "hex": "#bc293c",
+    "reviewedProduct": "Đầm Gunbou"
+  },
+  "ls-kirsi-dress": {
+    "hex": "#19191b",
+    "reviewedProduct": "Đầm Kirsi"
+  },
+  "ls-uzi-top": {
+    "hex": "#bc293c",
+    "reviewedProduct": "Áo Uzi"
+  },
+  "ls-yeom-jeans": {
+    "hex": "#527a91",
+    "reviewedProduct": "Quần jeans Yeom"
+  },
+  "ls-bloom-set": {
+    "hex": "#e5ddc9",
+    "reviewedProduct": "Bộ Bloom"
+  },
+  "ls-jaby-pants": {
+    "hex": "#bfd9e9",
+    "reviewedProduct": "Quần Jaby"
+  },
+  "ls-jaby-top": {
+    "hex": "#bfd9e9",
+    "reviewedProduct": "Áo Jaby"
+  },
+  "ls-morri-set": {
+    "hex": "#f4f1eb",
+    "reviewedProduct": "Bộ Morri"
+  },
+  "ls-rossen-set": {
+    "hex": "#f4f1eb",
+    "reviewedProduct": "Bộ Rossen"
+  },
+  "ls-ouni-dress": {
+    "hex": "#19191b",
+    "reviewedProduct": "Đầm Ouni"
+  },
+  "ls-dydy-dress": {
+    "hex": "#682f3d",
+    "reviewedProduct": "Đầm Dydy"
+  },
+  "ls-luvvi-set": {
+    "hex": "#682f3d",
+    "reviewedProduct": "Bộ Luvvi"
+  },
+  "ls-niya-dress": {
+    "hex": "#a49583",
+    "reviewedProduct": "Đầm Niya"
+  },
+  "ls-ishii-dress": {
+    "hex": "#19191b",
+    "reviewedProduct": "Đầm Ishii"
+  },
+  "ls-ace-set": {
+    "hex": "#19191b",
+    "reviewedProduct": "Bộ Ace"
+  },
+  "ls-ciber-set": {
+    "hex": "#19191b",
+    "reviewedProduct": "Bộ Ciber"
+  },
+  "ls-sass-set": {
+    "hex": "#4c4d49",
+    "reviewedProduct": "Bộ Sass"
+  },
+  "ls-petal-dress": {
+    "hex": "#f4f1eb",
+    "reviewedProduct": "Đầm Petal"
+  },
+  "ls-sadou-set": {
+    "hex": "#4c4d49",
+    "reviewedProduct": "Bộ Sadou"
+  },
+  "ls-ming-top": {
+    "hex": "#19191b",
+    "reviewedProduct": "Áo Ming"
+  },
+  "ls-lory-dress": {
+    "hex": "#be9c61",
+    "reviewedProduct": "Đầm Lory"
+  },
+  "ls-zizi-jacket": {
+    "hex": "#682f3d",
+    "reviewedProduct": "Áo khoác Zizi"
+  },
+  "ls-trap-top": {
+    "hex": "#be9c61",
+    "reviewedProduct": "Áo Trap"
+  },
+  "ls-dusk-dress": {
+    "hex": "#f4f1eb",
+    "reviewedProduct": "Đầm Dusk"
+  },
+  "ls-judit-dress": {
+    "hex": "#49372d",
+    "reviewedProduct": "Đầm Judit"
+  },
+  "ls-rue-dress": {
+    "hex": "#f4f1eb",
+    "reviewedProduct": "Đầm Rue"
+  },
+  "ls-enus-jacket": {
+    "hex": "#c5b298",
+    "reviewedProduct": "Áo khoác Enus"
+  },
+  "ls-aura-dress": {
+    "hex": "#d8ddd8",
+    "reviewedProduct": "Đầm Aura"
+  },
+  "ls-fang-set": {
+    "hex": "#19191b",
+    "reviewedProduct": "Bộ Fang"
+  },
+  "ls-lessa-dress": {
+    "hex": "#19191b",
+    "reviewedProduct": "Đầm Lessa"
+  },
+  "ls-vamp-dress": {
+    "hex": "#682f3d",
+    "reviewedProduct": "Đầm Vamp"
+  },
+  "ls-meli-skirt": {
+    "hex": "#e5ddc9",
+    "reviewedProduct": "Chân váy Meli"
+  },
+  "ls-jinx-top": {
+    "hex": "#19191b",
+    "reviewedProduct": "Áo Jinx"
+  },
+  "ls-sweeney-skirt": {
+    "hex": "#be9c61",
+    "reviewedProduct": "Chân váy Sweeney"
+  },
+  "ls-iris-top": {
+    "hex": "#19191b",
+    "reviewedProduct": "Áo Iris"
+  },
+  "ls-josie-top": {
+    "hex": "#929096",
+    "reviewedProduct": "Áo Josie"
+  },
+  "ls-expo-skirt": {
+    "hex": "#afb0b0",
+    "reviewedProduct": "Chân váy Expo"
+  },
+  "ls-polina-skirt": {
+    "hex": "#929096",
+    "reviewedProduct": "Chân váy Polina"
+  },
+  "ls-dox-top": {
+    "hex": "#afb0b0",
+    "reviewedProduct": "Áo Dox"
+  },
+  "ls-polina-top": {
+    "hex": "#929096",
+    "reviewedProduct": "Áo Polina"
+  },
+  "ls-wink-dress": {
+    "hex": "#afb0b0",
+    "reviewedProduct": "Đầm Wink"
+  },
+  "ls-dox-shorts": {
+    "hex": "#afb0b0",
+    "reviewedProduct": "Quần shorts Dox"
+  },
+  "ls-level-dress": {
+    "hex": "#252b4b",
+    "reviewedProduct": "Đầm Level"
+  },
+  "ls-buzz-set": {
+    "hex": "#929096",
+    "reviewedProduct": "Bộ Buzz"
+  },
+  "ls-fanne-top": {
+    "hex": "#19191b",
+    "reviewedProduct": "Áo Fanne"
+  },
+  "ls-lind-dress": {
+    "hex": "#f4f1eb",
+    "reviewedProduct": "Đầm Lind"
+  },
+  "ls-gracin-top": {
+    "hex": "#a49583",
+    "reviewedProduct": "Áo Gracin"
+  },
+  "ls-jeana-top": {
+    "hex": "#e5ddc9",
+    "reviewedProduct": "Áo Jeana"
+  },
+  "ls-kelly-skirt": {
+    "hex": "#19191b",
+    "reviewedProduct": "Chân váy Kelly"
+  },
+  "ls-birdy-skirt": {
+    "hex": "#19191b",
+    "reviewedProduct": "Chân váy Birdy"
+  },
+  "ls-zoey-dress": {
+    "hex": "#e5ddc9",
+    "reviewedProduct": "Đầm Zoey"
+  },
+  "ls-rutal-dress": {
+    "hex": "#dfd3a0",
+    "reviewedProduct": "Đầm Rutal"
+  },
+  "ls-fearlo-skirt": {
+    "hex": "#ddb5c2",
+    "reviewedProduct": "Chân váy Fearlo"
+  },
+  "ls-fearlo-top": {
+    "hex": "#ddb5c2",
+    "reviewedProduct": "Áo Fearlo"
+  },
+  "ls-rebone-skirt": {
+    "hex": "#82a8c4",
+    "reviewedProduct": "Chân váy Rebone"
+  },
+  "ls-rebone-top": {
+    "hex": "#82a8c4",
+    "reviewedProduct": "Áo Rebone"
+  },
+  "ls-colin-skirt": {
+    "hex": "#19191b",
+    "reviewedProduct": "Chân váy Colin"
+  },
+  "ls-heera-skirt": {
+    "hex": "#d8ddd8",
+    "reviewedProduct": "Chân váy Heera"
+  },
+  "ls-lavest-set": {
+    "hex": "#a49583",
+    "reviewedProduct": "Bộ Lavest"
+  },
+  "ls-drusa-top": {
+    "hex": "#be9c61",
+    "reviewedProduct": "Áo Drusa"
+  },
+  "ls-faris-set": {
+    "hex": "#f4f1eb",
+    "reviewedProduct": "Bộ Faris"
+  },
+  "ls-lindvall-dress": {
+    "hex": "#c5b298",
+    "reviewedProduct": "Đầm Lindvall"
+  },
+  "ls-beau-set": {
+    "hex": "#f4f1eb",
+    "reviewedProduct": "Bộ Beau"
+  },
+  "ls-aube-dress": {
+    "hex": "#bc293c",
+    "reviewedProduct": "Đầm Aubé"
+  },
+  "ls-darcy-dress": {
+    "hex": "#19191b",
+    "reviewedProduct": "Đầm Darcy"
+  },
+  "ls-ecce-set": {
+    "hex": "#f4f1eb",
+    "reviewedProduct": "Bộ Ecce"
+  },
+  "ls-poison-set": {
+    "hex": "#19191b",
+    "reviewedProduct": "Bộ Poison"
+  },
+  "ls-etheree-dress": {
+    "hex": "#f4f1eb",
+    "reviewedProduct": "Đầm Éthérée"
+  },
+  "ls-folie-top": {
+    "hex": "#ecd5d6",
+    "reviewedProduct": "Áo Folie"
+  },
+  "ls-sixieme-sens-dress": {
+    "hex": "#19191b",
+    "reviewedProduct": "Đầm Sixième Sens"
+  },
+  "ls-doux-fou-set": {
+    "hex": "#f4f1eb",
+    "reviewedProduct": "Bộ Doux Fou"
+  },
+  "ls-boum-boum-dress": {
+    "hex": "#c5bbdc",
+    "reviewedProduct": "Đầm Boum Boum"
+  },
+  "ls-calos-set": {
+    "hex": "#929096",
+    "reviewedProduct": "Bộ Calos"
+  },
+  "ls-folie-skirt": {
+    "hex": "#f4f1eb",
+    "reviewedProduct": "Chân váy Folie"
+  },
+  "ls-moore-dress": {
+    "hex": "#929096",
+    "reviewedProduct": "Đầm Moore"
+  },
+  "ls-magna-dress": {
+    "hex": "#bc293c",
+    "reviewedProduct": "Đầm Magna"
+  },
+  "ls-enal-set": {
+    "hex": "#527a91",
+    "reviewedProduct": "Bộ Enal"
+  },
+  "ls-charli-set": {
+    "hex": "#929096",
+    "reviewedProduct": "Bộ Charli"
+  },
+  "ls-lucy-bag": {
+    "hex": "#19191b",
+    "reviewedProduct": "Túi Lucy"
+  },
+  "ls-oza-bag": {
+    "hex": "#f4f1eb",
+    "reviewedProduct": "Túi Oza"
+  },
+  "ls-ioa-bag": {
+    "hex": "#49372d",
+    "reviewedProduct": "Túi Ioa"
+  },
+  "ls-e-bag": {
+    "hex": "#19191b",
+    "reviewedProduct": "Túi E"
+  }
+}
