@@ -1,17 +1,13 @@
-# Phase 3 — quy tắc đổi trả local
+# quy tắc đổi trả local
 
-Ngày yêu cầu: 18/10/2026. Chỉ LOCAL E-COMMERCE DEMO. Tham chiếu chính: PROJECT_SPEC.md và phase-5-qa-report.md. Không tích hợp carrier, thanh toán, ngân hàng hoặc dịch vụ production; không deploy/push.
-
-## Audit trước thay đổi
-
-Đã đối chiếu schema và order-lifecycle/shipping/auth/API/admin/customer với các tài liệu Phase 1/2A. Chưa có hồ sơ đổi trả, kiểm hàng, hàng thay thế hoặc sổ hoàn tiền. Đơn/kiện DELIVERED kết thúc nghiệp vụ giao ban đầu; hủy PAID bị chặn đúng chủ đích. Tái sử dụng orderTransaction (rollback + retry SQLite), validator kiện, InventoryMovement, requireUser/currentUser, origin check, AuditLog, form/order UI và revalidation. Không thay máy trạng thái đơn gốc, không ghi PAID từ delivery, không xóa COD.
+Ngày yêu cầu: 18/10/2026. Chỉ LOCAL E-COMMERCE DEMO. Tham chiếu chính: PROJECT_SPEC.md và business-acceptance-report.md. Không tích hợp carrier, thanh toán, ngân hàng hoặc dịch vụ production; không deploy/push.
 
 ## Chính sách và điều kiện
 
 - Chủ dự án đã xác nhận **đủ 72 giờ từ thời điểm nhận hàng**, bao gồm đúng mốc cuối. Chính sách trước đó chỉ nói “03 ngày”, chưa có hàm tính ngày. Không áp dụng hết ngày lịch. `src/lib/content.ts` được làm rõ đúng câu này; các điều kiện khác giữ nguyên.
 - Mốc nhận: ShipmentEvent DELIVERED đầu tiên của kiện gốc; đơn cũ chưa có kiện dùng OrderStatusHistory DELIVERED đầu tiên. Đơn phải DELIVERED/COMPLETED và kiện nếu có phải DELIVERED. Không dùng ngày đặt/cập nhật đơn.
 - Mốc nhận và deadline được snapshot vào ReturnRequest với `DEFECT_72H_V1_2026-10-18`. Đơn thiếu mốc/quá hạn bị chặn ở API tự phục vụ, hướng dẫn liên hệ để xét riêng; không giả mốc và chưa mở API ngoại lệ tự gia hạn.
-- RET-001: chỉ tài khoản CUSTOMER đăng nhập, đúng userId đơn. Guest capability hoặc code+phone không đủ để gửi/xem hồ sơ đổi trả. ADMIN xử lý qua admin module; STAFF không được duyệt, kiểm hàng, phân bổ tồn hoặc hoàn tiền.
+- RET-001: chỉ tài khoản CUSTOMER đăng nhập, đúng userId đơn. Guest capability hoặc code+phone không đủ để gửi/xem hồ sơ đổi trả. ADMIN xử lý qua admin module; SELLER không được duyệt, kiểm hàng, phân bổ tồn hoặc hoàn tiền.
 - Yêu cầu phải có dòng OrderItem thuộc đơn, số nguyên dương, không lặp dòng, lý do lỗi tối thiểu 10 ký tự, phương án REFUND hoặc EXCHANGE và loại DEFECT. Phương án mong muốn không tự chứng minh lỗi: ADMIN phải xác minh và thống nhất với khách trước duyệt.
 - Giữ chính sách không đổi size/màu/mẫu vì sở thích. Size khác chỉ được hỗ trợ là phương án khắc phục lỗi đã xác minh và thống nhất.
 - Tổng số lượng hồ sơ chưa giải phóng không vượt số mua. Từ chối trước nhận hàng giải phóng lượng đã giữ; hồ sơ đã nhận/đã xử lý không giải phóng để gửi lại cùng hàng. Event key unique + hash payload bảo đảm retry cùng nội dung trả lại cùng ID, khác nội dung bị chặn. Transaction SQLite và retry ngăn hai hồ sơ đồng thời chiếm quá số mua.
@@ -34,4 +30,4 @@ Kết luận cuối không được ghi đè. Retry chính xác là no-op; nội
 
 Migration `20261018235000_returns_mock_refunds`: chỉ CREATE TABLE/INDEX và FK Restrict, thêm 7 bảng ReturnRequest, ReturnItem, ReturnEvidence, ReturnInspection, ReturnHistory, ExchangeItem, MockRefund. Các field relation ngược thêm ở Prisma không sửa cột DB cũ. Unique eventKey/reference, request-item, exchange-item và refund-request. Index status/time, user/time và order/status.
 
-Backup `verification/backups/before-phase3.db`. Đối chiếu toàn bộ cột/bản ghi 39 bảng cũ với dev.db sau migration; không reset/seed/backfill hàng hoặc tiền giả. QA chạy database timestamp riêng.
+Backup `verification/backups/before-nghiệp vụ.db`. Đối chiếu toàn bộ cột/bản ghi 39 bảng cũ với dev.db sau migration; không reset/seed/backfill hàng hoặc tiền giả. QA chạy database timestamp riêng.

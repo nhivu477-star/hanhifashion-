@@ -2,7 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import { hash } from "bcryptjs";
 import { randomUUID } from "node:crypto";
 import { mkdir, writeFile } from "node:fs/promises";
-import { rolePermissions } from "../src/lib/rbac";
+import { rolePermissions } from "../../src/lib/rbac";
 
 const database = process.env.DATABASE_URL;
 if (!/^file:\.\/final-uat-browser-[\w-]+\.db$/.test(database ?? ""))

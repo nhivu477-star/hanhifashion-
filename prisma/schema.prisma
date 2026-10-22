@@ -19,6 +19,7 @@ model User {
   email             String          @unique
   phone             String
   passwordHash      String
+  /// Canonical CUSTOMER, SELLER, ADMIN; enforced by role migration triggers in SQLite.
   role              String          @default("CUSTOMER")
   permissionVersion Int             @default(0)
   lastLoginAt       DateTime?

@@ -6,7 +6,7 @@
       "id": "AUTH-01",
       "name": "Đăng ký",
       "actors": "Guest → CUSTOMER",
-      "preconditions": "Không có tài khoản cùng email",
+      "preconditions": "Không có tài khoản trùng định danh email/số điện thoại",
       "mainFlow": "Nhập hồ sơ và mật khẩu hợp lệ → tạo tài khoản → đăng nhập",
       "alternativeFlows": "Email khác chữ hoa/thường được chuẩn hóa; wishlist được hợp nhất",
       "exceptionFlows": "Email trùng, điện thoại sai, mật khẩu ngắn/không khớp; chèn role không được nâng quyền",
@@ -21,9 +21,9 @@
       "id": "AUTH-02",
       "name": "Đăng nhập / đăng xuất",
       "actors": "Mọi tài khoản hoạt động",
-      "preconditions": "Thông tin đăng nhập hợp lệ; tài khoản chưa bị khóa",
+      "preconditions": "Email hoặc số điện thoại và mật khẩu hợp lệ; tài khoản chưa bị khóa",
       "mainFlow": "Đăng nhập → cookie → đúng trang theo quyền; đăng xuất → xóa phiên",
-      "alternativeFlows": "returnTo nội bộ hợp lệ; ADMIN/SELLER/BUYER có điểm đến riêng",
+      "alternativeFlows": "returnTo nội bộ hợp lệ; ADMIN/SELLER/CUSTOMER có điểm đến riêng",
       "exceptionFlows": "Sai mật khẩu, khóa, returnTo bên ngoài, phiên cũ/hết hạn",
       "postconditions": "Không tái sử dụng phiên bị thu hồi; không nâng quyền từ client",
       "stateTransitions": "Anonymous ↔ Authenticated",
@@ -90,7 +90,7 @@
       "postconditions": "Không lộ sản phẩm ẩn; giá hiển thị theo variant/sale/base",
       "stateTransitions": "Active visible / Archived hidden",
       "evidence": [
-        "phase5:26 ",
+        "quality:26 ",
         "browser:responsive"
       ]
     },
@@ -105,7 +105,7 @@
       "postconditions": "Product + ảnh + audit atomic; đơn cũ không đổi",
       "stateTransitions": "New → Active; Active → Updated",
       "evidence": [
-        "phase5:03 ",
+        "quality:03 ",
         "business:BA-PRODUCT-01",
         "order:12 ",
         "browser:SELLER:"
@@ -137,7 +137,7 @@
       "postconditions": "Variant + movement + audit atomic; historical SKU snapshot không đổi",
       "stateTransitions": "New → Configured → Updated",
       "evidence": [
-        "phase5:02 ",
+        "quality:02 ",
         "rbac:02 ",
         "browser:SELLER:"
       ]
@@ -155,7 +155,7 @@
       "evidence": [
         "business:BA-CATALOG-02",
         "business:BA-CATALOG-03",
-        "phase5:04 "
+        "quality:04 "
       ]
     },
     {
@@ -185,7 +185,7 @@
       "stateTransitions": "DRAFT ↔ PENDING_ASSETS → READY",
       "evidence": [
         "business:BA-CATALOG-02",
-        "phase5:01 "
+        "quality:01 "
       ]
     },
     {
@@ -199,10 +199,10 @@
       "postconditions": "Không xóa ảnh snapshot đơn; quyền kiểm tra trước parse; metadata audited",
       "stateTransitions": "PENDING → APPROVED / REJECTED",
       "evidence": [
-        "phase5:06 ",
-        "phase5:07 ",
-        "phase5:08 ",
-        "phase5:valid raster"
+        "quality:06 ",
+        "quality:07 ",
+        "quality:08 ",
+        "quality:valid raster"
       ]
     },
     {
@@ -655,7 +655,7 @@
       "stateTransitions": "Active↔Disabled",
       "evidence": [
         "business:BA-CUSTOMER-02",
-        "browser:BUYER:"
+        "browser:CUSTOMER:"
       ]
     },
     {
@@ -696,9 +696,9 @@
       "name": "Tạo / sửa / khóa tài khoản",
       "actors": "staff.* / accounts.manage",
       "preconditions": "Không tự nâng quyền; actor có grant phù hợp",
-      "mainFlow": "Tạo ADMIN/SELLER/BUYER hoặc role được phép; sửa, khóa/mở",
-      "alternativeFlows": "Legacy roles giữ tương thích",
-      "exceptionFlows": "Email trùng, role client không cho phép, khóa chính mình, loại SUPER_ADMIN cuối",
+      "mainFlow": "Tạo ADMIN/SELLER/CUSTOMER (chỉ ba vai trò chuẩn); sửa, khóa/mở",
+      "alternativeFlows": "Chỉ chấp nhận CUSTOMER, SELLER, ADMIN; vai trò khác bị từ chối",
+      "exceptionFlows": "Email trùng, role client không cho phép, khóa chính mình, loại ADMIN cuối",
       "postconditions": "Role/status/version/session/audit atomic; mật khẩu không log",
       "stateTransitions": "Active↔Disabled; Role assigned",
       "evidence": [
@@ -743,7 +743,7 @@
       "evidence": [
         "rbac:20 ",
         "rbac:27 ",
-        "phase5:25 "
+        "quality:25 "
       ]
     },
     {
@@ -904,7 +904,7 @@
         "business:BA-CART-06",
         "business:BA-PARTIAL-08",
         "business:BA-SETTINGS-02",
-        "phase5:29 ",
+        "quality:29 ",
         "browser:customer login"
       ]
     }

@@ -1,14 +1,14 @@
-import { packPreparedFixture } from "./test-support/packing-test-fixture";
-import { authenticateCartFixture } from "./test-support/analytics-test-client";
+import { packPreparedFixture } from "../test-support/packing-test-fixture";
+import { authenticateCartFixture } from "../test-support/analytics-test-client";
 import assert from "node:assert/strict";
 import { readFile, writeFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { PrismaClient } from "@prisma/client";
-if (!process.env.DATABASE_URL?.includes("phase1-orders"))
+if (!/^file:\.\/business-tests-[\w-]+\.db$/.test(process.env.DATABASE_URL ?? ""))
   throw Error("Isolated database required");
 const db = new PrismaClient();
 const fixture = JSON.parse(
-  await readFile("verification/phase1-fixtures.json", "utf8"),
+  await readFile("verification/business-fixtures.json", "utf8"),
 );
 const base = "http://127.0.0.1:3101";
 class Client {
@@ -61,12 +61,12 @@ class Client {
 const customer = {
   name: "Khách QA",
   phone: "0912345678",
-  email: "qa@phase1.test",
+  email: "qa@orders.test",
   province: "Hưng Yên",
   ward: "Phường thử nghiệm",
   street: "123 Đường kiểm thử",
   details: "",
-  notes: "Phase 1 isolated",
+  notes: "Isolated order test",
 };
 const results: { test: string; status: string; error?: string }[] = [];
 async function run(name: string, fn: () => Promise<void>) {
@@ -121,7 +121,7 @@ await run(
       total: 1,
       subtotal: 1,
       shipping: 0,
-      coupon: "PHASE1",
+      coupon: "ORDERTEST",
     });
     assert.equal(first.order.subtotal, 1080000);
     assert.equal(first.order.discount, 100000);
@@ -225,7 +225,7 @@ await run(
       10,
     );
     assert.equal(
-      (await db.coupon.findUniqueOrThrow({ where: { code: "PHASE1" } })).used,
+      (await db.coupon.findUniqueOrThrow({ where: { code: "ORDERTEST" } })).used,
       0,
     );
   },
@@ -445,20 +445,16 @@ await run(
     });
     assert.equal(track.body.status, "CONFIRMED");
     assert.equal(track.body.total, 570000);
-    const dash = await admin.req("/admin/bao-cao");
-    assert.equal(dash.status, 200);
-    const collected = await db.order.aggregate({
-      where: { paymentStatus: "PAID" },
-      _sum: { total: true },
-    });
-    const metric = dash.body.match(
-      /<span>Doanh thu đã thu<\/span><strong>([^<]+)<\/strong>/,
+    const reports = await admin.req("/admin/phan-tich/reports");
+    assert.equal(reports.status, 200);
+    assert(reports.body.includes("Doanh số hàng đã thanh toán"));
+    const report = await admin.req("/api/analytics/report?section=reports&period=30");
+    assert.equal(report.status, 200);
+    const orderCount = report.body.metrics.find(
+      (metric: { label: string; value: number | null }) => metric.label === "Số đơn trong nhóm",
     );
-    assert(metric, "Collected revenue metric is present");
-    assert.equal(
-      metric[1],
-      new Intl.NumberFormat("vi-VN").format(collected._sum.total ?? 0) + "đ",
-    );
+    assert(orderCount, "Canonical report includes order count");
+    assert.equal(orderCount.value, await db.order.count());
   },
 );
 await run(
@@ -539,7 +535,7 @@ await run("17 csrf and foreign checkout idempotency key rejected", async () => {
   );
 });
 await writeFile(
-  "verification/order-phase1-results.json",
+  "verification/order-results.json",
   JSON.stringify(
     {
       date: new Date().toISOString(),

@@ -4,8 +4,8 @@ const config: NextConfig = {
   poweredByHeader: false,
   typescript: {
     tsconfigPath:
-      process.env.NEXT_DIST_DIR === ".next-phase1"
-        ? "tsconfig.phase1.json"
+      process.env.NEXT_DIST_DIR === ".next-business"
+        ? "tsconfig.business.json"
         : process.env.NEXT_DIST_DIR === ".next-test"
           ? "tsconfig.test-server.json"
           : process.env.NEXT_DIST_DIR === ".next-production"

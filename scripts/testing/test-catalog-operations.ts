@@ -3,15 +3,15 @@ import assert from "node:assert/strict";
 import { readFile, writeFile } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import { PrismaClient } from "@prisma/client";
-import { qualityInclude, productQuality } from "../src/lib/product-quality";
-import { inspectLocalImage } from "../src/lib/local-images";
-import { safeLogRecord } from "../src/lib/observability";
+import { qualityInclude, productQuality } from "../../src/lib/product-quality";
+import { inspectLocalImage } from "../../src/lib/local-images";
+import { safeLogRecord } from "../../src/lib/observability";
 import { randomUUID } from "node:crypto";
-if (!/^file:\.\/phase1-orders-[\w-]+\.db$/.test(process.env.DATABASE_URL ?? ""))
-  throw Error("Phase5 isolated database only");
+if (!/^file:\.\/business-tests-[\w-]+\.db$/.test(process.env.DATABASE_URL ?? ""))
+  throw Error("Catalog operations isolated database only");
 const db = new PrismaClient();
 const fixtures = JSON.parse(
-  await readFile("verification/phase1-fixtures.json", "utf8"),
+  await readFile("verification/business-fixtures.json", "utf8"),
 );
 const base = "http://127.0.0.1:3101";
 let cookie = "";
@@ -154,7 +154,7 @@ await run("valid raster upload is decoded and stored locally", async () => {
   f.set(
     "file",
     new Blob([new Uint8Array(bytes)], { type: "image/png" }),
-    "phase5-fixture.png",
+    "catalog-fixture.png",
   );
   const r = await fetch(base + "/api/admin/upload", {
     method: "POST",
@@ -169,7 +169,7 @@ await run("valid raster upload is decoded and stored locally", async () => {
 await run("08 referenced image cannot be removed", async () => {
   const a = await db.mediaAsset.create({
     data: {
-      localPath: "/uploads/phase5-" + randomUUID() + ".webp",
+      localPath: "/uploads/catalog-fixture-" + randomUUID() + ".webp",
       originalSourceUrl: "https://local.invalid/fixture",
       licenseType: "UNKNOWN",
       licenseReference: "test only",
@@ -180,7 +180,7 @@ await run("08 referenced image cannot be removed", async () => {
     data: {
       productId: p.id,
       url: a.localPath,
-      alt: "QA Phase5",
+      alt: "QA catalog",
       position: 99,
       mediaAssetId: a.id,
     },
@@ -235,7 +235,7 @@ await run(
     assert.equal(r.foreignKeys.length, 0);
     assert.notEqual(r.backup, r.isolatedRestore);
     await writeFile(
-      "verification/phase5-test-backup.json",
+      "verification/catalog-backup.json",
       JSON.stringify(r, null, 2),
     );
   },
@@ -246,7 +246,7 @@ await run("26 catalog query bounded and timed", async () => {
   assert.equal(r.r.status, 200);
   assert((r.text.match(/class="product-card"/g) ?? []).length <= 24);
   await writeFile(
-    "verification/phase5-test-performance.json",
+    "verification/catalog-performance.json",
     JSON.stringify(
       { durationMs: performance.now() - t, bytes: Buffer.byteLength(r.text) },
       null,
@@ -261,9 +261,9 @@ await run(
       safeLogRecord("secret", "password", "phone", "token"),
     );
     assert(!/secret|password|phone|token/.test(s));
-    const r = await req("/api/admin/variant", { secret: "NEVER_LOG_PHASE5" });
+    const r = await req("/api/admin/variant", { secret: "NEVER_LOG_SENSITIVE" });
     assert(r.body.requestId);
-    assert(!JSON.stringify(r.body).includes("NEVER_LOG_PHASE5"));
+    assert(!JSON.stringify(r.body).includes("NEVER_LOG_SENSITIVE"));
     assert.equal(r.r.headers.get("x-request-id"), r.body.requestId);
   },
 );
@@ -316,7 +316,7 @@ await run(
   },
 );
 await writeFile(
-  "verification/phase5-results.json",
+  "verification/catalog-operations-results.json",
   JSON.stringify(
     {
       date: new Date().toISOString(),

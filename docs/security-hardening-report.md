@@ -1,13 +1,19 @@
-# Bảo mật Phase5
+# An toàn ứng dụng local
 
-Giữ Phase4 default deny/ownership/version/session expiration và guard service. Không đổi role/password tài khoản chính. Các API tài chính tiếp tục kiểm quyền granular, trạng thái và dữ liệu DB; không nhận actor role tin từ client. Return evidence vẫn private/no-store.
+## Kiểm soát bắt buộc
 
-Thay đổi: returnTo kiểm server chỉ local path, chặn protocol-relative, backslash/control và vòng lặp auth/API; kiểm file thực/realpath/nested path; upload có pixel limit và exclusive write; không ghi tên file do khách nhập vào audit. Chuẩn hóa SyntaxError để không lộ đoạn JSON lỗi, giữ thông báo validation, che Prisma lỗi. API responses no-store, lỗi POST có correlation ID, log mới chỉ event/requestId/method/area/code allowlist. Không log request body/error message/stack chứa dữ liệu người dùng. Audit DB nghiệp vụ có thể chứa actor/lý do/chứng từ cần thiết, chỉ người có quyền xem; không coi audit nghiệp vụ là telemetry công khai.
+Default deny, ownership và kiểm user/session/permissionVersion từ DB áp dụng ở API/service, không chỉ menu. ADMIN toàn quyền; SELLER không tài khoản/nhân viên/tài chính/giá vốn/lợi nhuận; CUSTOMER chỉ dữ liệu mình. Đổi role chỉ theo hợp đồng ba vai trò được phê duyệt, không đổi ngầm mật khẩu.
 
-CSP/nosniff/frame deny đã có. CSP dev cho unsafe-eval/inline vì Next dev; không tuyên bố chuẩn production. Không external auth/cloud monitoring, không bảo đảm multi-instance hoặc chống brute-force phân tán. Rate-limit memory local giữ nguyên.
+`returnTo` chỉ nhận local path, chặn protocol-relative, backslash/control và vòng lặp auth/API. Upload kiểm bytes/format/pixel/size/realpath, chặn traversal/symlink thoát public, ghi file exclusive và không tin tên/MIME client. Ảnh lỗi đổi trả phải riêng tư, no-store và chỉ ADMIN hoặc chủ hồ sơ được đọc.
 
-## Credential hiện tại
+Chuẩn hóa lỗi parser/Prisma, không trả raw JSON/SQL. API cá nhân/tài chính private/no-store. Log kỹ thuật chỉ allowlist event/requestId/method/area/code, không body/error message/stack có PII/password/token. Audit nghiệp vụ có actor/lý do/chứng từ cần thiết nhưng chỉ quyền tương ứng được xem, không phải telemetry công khai.
 
-Mật khẩu local cũ do chủ dự án yêu cầu yếu; hash bcrypt không làm mật khẩu dễ đoán trở nên an toàn. Không in lại credential và không đổi ngầm. Chỉ chủ tài khoản đăng nhập /tai-khoan/thong-tin → Đổi mật khẩu, dùng mật khẩu riêng >=12 ký tự ngẫu nhiên, nhập mật khẩu cũ/mới, rồi đăng nhập lại. Kiểm thu hồi phiên sau đổi theo cơ chế hiện có. Không đặt credential trong URL, source hoặc screenshots. Backup chứa dữ liệu/hash: để local mode0600, không chia sẻ.
+## Giới hạn
 
-Kết quả RBAC/ownership/disabled-session regression và upload negative tests xem phase-5-qa-report.md. Không nhận chứng nhận vận hành thương mại từ demo local.
+CSP/nosniff/frame deny không thay kiểm quyền. CSP dev có unsafe-eval/inline phục vụ Next dev; rate-limit bộ nhớ không bảo đảm nhiều instance hoặc brute-force phân tán. Không có chứng nhận production security, external auth/cloud monitoring hay kiểm toán chuyên sâu. Quyền sửa SQLite trực tiếp của chủ máy nằm ngoài RBAC web.
+
+## Credential và backup
+
+Mật khẩu dễ đoán vẫn rủi ro dù hash bcrypt. Không in credential hoặc tự đổi mật khẩu người dùng. Chủ tài khoản đổi tại `/tai-khoan/thong-tin`, dùng mật khẩu riêng tối thiểu 12 ký tự ngẫu nhiên và đăng nhập lại; thay mật khẩu phải thu hồi phiên cũ. Không để credential trong URL/source/screenshot. Tệp credential và backup chứa dữ liệu/hash phải giữ local/mode0600 và git-ignored.
+
+Đây là yêu cầu và giới hạn vận hành, không phải khẳng định thay đổi hiện tại đã được kiểm. Kết quả lịch sử và trạng thái mới tại [báo cáo nghiệm thu](business-acceptance-report.md).

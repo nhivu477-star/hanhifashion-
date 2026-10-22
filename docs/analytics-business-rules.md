@@ -1,4 +1,4 @@
-# Quy tắc nghiệp vụ phân tích — Phase 6
+# Quy tắc nghiệp vụ phân tích
 
 Phạm vi chỉ là cửa hàng demo local, tiền COD và hoàn tiền là mô phỏng. Nguồn sự thật là SQLite hiện tại. Số đơn theo cohort ngày tạo đơn, lọc bằng trạng thái và hoàn tiền hiện tại; đây không phải biểu đồ dòng tiền theo ngày nhận tiền. Mọi báo cáo gắn chú thích này.
 

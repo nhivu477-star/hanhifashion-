@@ -28,7 +28,7 @@ if (existing) {
   );
 } else {
   const owner = await db.user.findFirstOrThrow({
-    where: { role: "SUPER_ADMIN", active: true },
+    where: { role: "ADMIN", active: true },
     orderBy: { createdAt: "asc" },
   });
   const accounts = accountTypes.map((accountType) => ({
@@ -59,7 +59,7 @@ if (existing) {
           name: `HÀ NHI Demo ${a.accountType}`,
           ...a,
           reason:
-            "Chủ dự án yêu cầu ba tài khoản demo ADMIN / SELLER / BUYER; local only.",
+            "Chủ dự án yêu cầu ba tài khoản demo ADMIN / SELLER / CUSTOMER; local only.",
         },
         "create",
         { id: owner.id, role: owner.role, label: owner.email },

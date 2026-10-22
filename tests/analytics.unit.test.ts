@@ -8,7 +8,7 @@ import {
 } from "../src/lib/analytics-rules";
 import { analyticsPermission } from "../src/lib/analytics-access";
 import { can } from "../src/lib/rbac";
-describe("Phase6 pure rules", () => {
+describe("Analytics rules and tier permissions", () => {
   const now = new Date("2026-10-19T18:00:00Z");
   it("today uses Vietnam midnight", () =>
     expect(reportFilter({ period: "today" }, now).from.toISOString()).toBe(
@@ -48,10 +48,11 @@ describe("Phase6 pure rules", () => {
   it("CSV escapes quotes", () => expect(csvCell('a"b')).toBe('"a""b"'));
   it("CSV includes BOM", () =>
     expect(csvRows([{ x: 1 }]).startsWith("\uFEFF")).toBe(true));
-  it("marketing cannot access finance", () =>
-    expect(can("MARKETING_STAFF", analyticsPermission.finance)).toBe(false));
-  it("inventory only relevant reports", () => {
-    expect(can("INVENTORY_STAFF", analyticsPermission.inventory)).toBe(true);
-    expect(can("INVENTORY_STAFF", analyticsPermission.profit)).toBe(false);
+  it("customer cannot access financial reports", () =>
+    expect(can("CUSTOMER", analyticsPermission.finance)).toBe(false));
+  it("seller can inspect inventory but not profit or finance", () => {
+    expect(can("SELLER", analyticsPermission.inventory)).toBe(true);
+    expect(can("SELLER", analyticsPermission.profit)).toBe(false);
+    expect(can("SELLER", analyticsPermission.finance)).toBe(false);
   });
 });

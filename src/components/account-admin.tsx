@@ -56,9 +56,8 @@ export async function AccountAdmin({
         <>
           <h2>Quản lý tài khoản</h2>
           <p>
-            ADMIN dùng quyền SUPER_ADMIN; SELLER vận hành bán hàng; BUYER dùng
-            quyền CUSTOMER. Các vai trò nhân viên chuyên biệt hiện hữu giữ
-            nguyên quyền cho đến khi quản trị viên chủ động đổi loại.
+            CUSTOMER mua sắm và quản lý tài khoản cá nhân; SELLER vận hành bán
+            hàng; ADMIN quản trị toàn bộ hệ thống và quản lý tài khoản.
           </p>
           <form className="filter-row">
             <label>
@@ -193,7 +192,7 @@ export async function AccountAdmin({
             />
             <label>
               Loại tài khoản được cấp
-              <select name="accountType" defaultValue="BUYER">
+              <select name="accountType" defaultValue="CUSTOMER">
                 {accountTypes.map((t) => (
                   <option key={t} value={t}>
                     {t} · {accountTypeLabels[t]}
@@ -203,8 +202,7 @@ export async function AccountAdmin({
             </label>
             <p>
               Đổi loại hoặc khóa tài khoản sẽ thu hồi phiên đăng nhập. Không thể
-              tự khóa hay tự đổi quyền; SUPER_ADMIN hoạt động cuối cùng được bảo
-              vệ.
+              tự khóa hay tự đổi quyền; ADMIN hoạt động cuối cùng được bảo vệ.
             </p>
           </StaffForm>
         </>

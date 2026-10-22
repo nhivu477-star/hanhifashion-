@@ -2,6 +2,7 @@ import { LocalizedContent } from "@/components/localization";
 import { PasswordField } from "./password-field";
 import { db } from "@/lib/db";
 import { can, assignableRoles, isStaff, rolePermissions } from "@/lib/rbac";
+import { accountTypes, accountTypeLabels, accountTypeForRole } from "@/lib/account-types";
 import { scalar, Params } from "@/lib/queries";
 import { StaffForm } from "./staff-forms";
 const date = (d: Date | null) =>
@@ -64,7 +65,7 @@ export async function StaffAdmin({
         <>
           <h2>Nhân viên & quyền truy cập</h2>
           <p>
-            Chỉ SUPER_ADMIN được tạo, đổi vai trò hoặc khóa nhân viên. Thay đổi
+            Chỉ ADMIN được tạo, đổi vai trò hoặc khóa nhân viên. Thay đổi
             quyền/trạng thái thu hồi toàn bộ phiên của tài khoản; không đổi mật
             khẩu hiện hữu.
           </p>
@@ -80,7 +81,7 @@ export async function StaffAdmin({
                 {Object.keys(rolePermissions)
                   .filter(isStaff)
                   .map((r) => (
-                    <option key={r}>{r}</option>
+                    <option key={r} value={r}>{r} · {accountTypeLabels[accountTypeForRole(r)]}</option>
                   ))}
               </select>
             </label>
@@ -102,7 +103,7 @@ export async function StaffAdmin({
                 <span data-localize="off">
                   {u.name} · {u.email}
                 </span>{" "}
-                · {u.role} · {u.active ? "Hoạt động" : "Đã khóa"}
+                · {u.role} · {accountTypeLabels[accountTypeForRole(u.role)]} · {u.active ? "Hoạt động" : "Đã khóa"}
               </summary>
               <p>
                 Tạo: {date(u.createdAt)} · Đăng nhập gần nhất:{" "}
@@ -143,16 +144,10 @@ export async function StaffAdmin({
                     Vai trò mới
                     <select
                       name="role"
-                      defaultValue={
-                        assignableRoles.includes(
-                          u.role as (typeof assignableRoles)[number],
-                        )
-                          ? u.role
-                          : "STORE_MANAGER"
-                      }
+                      defaultValue={u.role}
                     >
                       {assignableRoles.map((r) => (
-                        <option key={r}>{r}</option>
+                        <option key={r} value={r}>{r} · {accountTypeLabels[accountTypeForRole(r)]}</option>
                       ))}
                     </select>
                   </label>
@@ -195,9 +190,9 @@ export async function StaffAdmin({
               />
               <label>
                 Vai trò được cấp
-                <select name="role" defaultValue="CUSTOMER_SUPPORT">
+                <select name="role" defaultValue="SELLER">
                   {assignableRoles.map((r) => (
-                    <option key={r}>{r}</option>
+                    <option key={r} value={r}>{r} · {accountTypeLabels[accountTypeForRole(r)]}</option>
                   ))}
                 </select>
               </label>
@@ -236,10 +231,10 @@ export function PermissionOverview({ role }: { role: string }) {
           </ul>
           <details>
             <summary>Ma trận vai trò chuẩn</summary>
-            {assignableRoles.map((r) => (
+            {accountTypes.map((r) => (
               <section key={r}>
-                <h3>{r}</h3>
-                <p>{rolePermissions[r].join(", ")}</p>
+                <h3>{r} · {accountTypeLabels[r]}</h3>
+                <p>{rolePermissions[r].join(", ") || "Mua sắm, theo dõi đơn hàng và quản lý tài khoản cá nhân."}</p>
               </section>
             ))}
           </details>

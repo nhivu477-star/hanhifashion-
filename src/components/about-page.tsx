@@ -39,7 +39,7 @@ export function AboutPage() {
             <span>Về HÀ NHI</span>
           </nav>
           <header className="about-intro">
-            <h1>Phong cách bắt đầu từ nàng.</h1>
+            <h1>Thời trang nữ, giày, túi xách &amp; phụ kiện</h1>
             <p>
               Trang phục thể hiện cá tính. Một đôi giày, chiếc túi hay món phụ
               kiện hoàn thiện dấu ấn riêng. HÀ NHI FASHION gợi mở những lựa chọn
@@ -61,23 +61,23 @@ export function AboutPage() {
           </section>
           <div className="about-story">
             <section>
-              <h2>Một tủ đồ có tiếng nói riêng</h2>
+              <h2>Trang phục nữ cho nhiều phong cách</h2>
               <p>
-                Có ngày nàng chọn sự giản dị. Có dịp nàng muốn nổi bật hơn. Từ
-                trang phục đến giày, túi xách và phụ kiện, mỗi lựa chọn đều có
-                thể trở thành một phần trong câu chuyện của nàng.
+                Từ áo, đầm đến quần, chân váy và bộ trang phục, HÀ NHI gợi mở
+                những lựa chọn để nàng thể hiện cá tính trong từng khoảnh khắc.
+                Khám phá thiết kế, màu sắc và kích cỡ phù hợp với mình.
               </p>
             </section>
             <section>
-              <h2>Tinh tế trong cách kết hợp</h2>
+              <h2>Giày, túi xách và phụ kiện phối cùng</h2>
               <p>
-                Một phom dáng vừa ý, một sắc màu yêu thích, một chi tiết làm
-                điểm nhấn. HÀ NHI trân trọng những kết hợp có chủ đích, để tổng
-                thể hài hòa mà vẫn giữ được cá tính.
+                Kết hợp trang phục với giày, túi xách và phụ kiện để tạo điểm
+                nhấn cho tổng thể. Nàng có thể khám phá riêng từng nhóm sản phẩm
+                và chọn cách phối phù hợp với phong cách của mình.
               </p>
             </section>
             <section>
-              <h2>Chọn điều phù hợp với mình</h2>
+              <h2>Tìm sản phẩm phù hợp với nàng</h2>
               <p>
                 Khám phá từng thiết kế, xem kỹ hình ảnh, màu sắc và kích cỡ. Khi
                 cần thêm một góc nhìn, nàng có thể trao đổi cùng HÀ NHI trước

@@ -1,6 +1,6 @@
 import { createServer } from "node:net";
 import { spawn, execFileSync } from "node:child_process";
-import { open, readFile, writeFile } from "node:fs/promises";
+import { mkdir, open, readFile, writeFile } from "node:fs/promises";
 await new Promise<void>((resolve, reject) => {
   const probe = createServer();
   probe.once("error", () =>
@@ -8,20 +8,19 @@ await new Promise<void>((resolve, reject) => {
   );
   probe.listen(3101, "127.0.0.1", () => probe.close(() => resolve()));
 });
-const database = `file:./phase1-orders-${Date.now()}.db`;
+const database = `file:./business-tests-${Date.now()}.db`;
 const env = {
   ...process.env,
   DATABASE_URL: database,
   STORE_MODE: "preview",
-  NEXT_DIST_DIR: ".next-phase1",
+  NEXT_DIST_DIR: ".next-business",
   NEXT_TELEMETRY_DISABLED: "1",
 };
-if (process.argv.includes("--ghn"))
-  throw new Error("Phase 2B discontinued: local manual demo only");
 const stable = process.argv.includes("--stable");
 if (stable) env.NEXT_DIST_DIR = ".next-production";
 const original = await readFile("next-env.d.ts", "utf8");
-const file = await open("prisma/" + database.replace("file:./", ""), "wx");
+await mkdir("verification", { recursive: true });
+const file = await open("prisma/" + database.replace("file:./", ""), "wx", 0o600);
 await file.close();
 function cmd(args: string[]) {
   execFileSync("npx", args, { env, stdio: "inherit" });
@@ -29,7 +28,7 @@ function cmd(args: string[]) {
 let server: ReturnType<typeof spawn> | undefined;
 try {
   cmd(["prisma", "migrate", "deploy"]);
-  cmd(["tsx", "scripts/prepare-order-phase1.ts"]);
+  cmd(["tsx", "scripts/testing/prepare-business-fixtures.ts"]);
   if (stable && !process.argv.includes("--reuse-build")) cmd(["next", "build"]);
   if (stable && process.argv.includes("--reuse-build"))
     await readFile(".next-production/BUILD_ID", "utf8");
@@ -62,22 +61,22 @@ try {
     });
   }
   if (!ready) throw Error("Test server did not start");
-  cmd(["tsx", "scripts/test-order-phase1.ts"]);
-  const phases = [
-    ["--shipping", "scripts/test-shipping-phase2a.ts"],
-    ["--returns", "scripts/test-returns-phase3.ts"],
-    ["--rbac", "scripts/test-rbac-phase4.ts"],
-    ["--phase5", "scripts/test-phase5.ts"],
-    ["--phase6", "scripts/test-analytics-phase6.ts"],
+  cmd(["tsx", "scripts/testing/test-orders.ts"]);
+  const suites = [
+    ["--shipping", "scripts/testing/test-shipping.ts"],
+    ["--returns", "scripts/testing/test-returns.ts"],
+    ["--rbac", "scripts/testing/test-authorization.ts"],
+    ["--catalog", "scripts/testing/test-catalog-operations.ts"],
+    ["--analytics", "scripts/testing/test-analytics.ts"],
   ] as const;
-  const lastPhase = phases.reduce(
+  const lastSuite = suites.reduce(
     (last, [flag], index) => (process.argv.includes(flag) ? index : last),
     -1,
   );
-  for (let index = 0; index <= lastPhase; index++)
-    cmd(["tsx", phases[index][1]]);
+  for (let index = 0; index <= lastSuite; index++)
+    cmd(["tsx", suites[index][1]]);
   if (process.argv.includes("--acceptance"))
-    cmd(["tsx", "scripts/test-business-acceptance.ts"]);
+    cmd(["tsx", "scripts/testing/test-business-acceptance.ts"]);
 } finally {
   if (server) {
     server.kill("SIGTERM");

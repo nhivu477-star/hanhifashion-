@@ -5,7 +5,7 @@ await db.$transaction(async (tx) => {
   const key = "localization.currencies";
   if (await tx.storeSetting.findUnique({ where: { key } })) return;
   const actor = await tx.user.findFirstOrThrow({
-    where: { role: "SUPER_ADMIN", active: true },
+    where: { role: "ADMIN", active: true },
   });
   await tx.storeSetting.create({
     data: { key, value: JSON.stringify(defaultCurrencyConfig) },

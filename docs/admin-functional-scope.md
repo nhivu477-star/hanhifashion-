@@ -1,6 +1,6 @@
 # Phạm vi chức năng quản trị cửa hàng
 
-Đối chiếu ban đầu ngày 19/10/2026, cập nhật triển khai ngày 20/10/2026. Kết quả kiểm thử hiện hành tại [business-acceptance-report.md](business-acceptance-report.md); tiêu chuẩn theo cửa hàng tại [business-acceptance-31.md](business-acceptance-31.md).
+Đối chiếu ban đầu ngày 19/10/2026, cập nhật triển khai ngày 20/10/2026. Trạng thái kiểm chứng tại [business-acceptance-report.md](business-acceptance-report.md); tiêu chuẩn theo cửa hàng tại [business-acceptance-31.md](business-acceptance-31.md).
 
 | Phân hệ | Yêu cầu | Hiện trạng |
 | --- | --- | --- |
@@ -13,7 +13,7 @@
 | Khách hàng | Hồ sơ, lịch sử mua, đơn hàng, hỗ trợ, khóa/mở | Có danh sách, tổng số đơn, tổng đã trả, khóa/mở. Đã có hồ sơ riêng, lịch sử mua, đổi trả và hỗ trợ liên kết theo userId. |
 | Khuyến mãi | Thêm/sửa/vô hiệu voucher, mức giảm, thời gian, lượt dùng | Có mức giảm, hạn hết hiệu lực, giới hạn lượt; đã có start/end hiệu lực giờ Việt Nam, giới hạn không thấp hơn lượt đã dùng. |
 | Báo cáo | Doanh thu, lợi nhuận, đơn, tồn, khách; lọc thời gian, Excel/CSV | Có báo cáo, phân quyền, bộ lọc và CSV. Đã có Excel .xlsx dạng stream, kiểm quyền cùng scope với CSV. |
-| Nhân viên | Tạo tài khoản, ADMIN/SELLER/BUYER, khóa, nhật ký | Có quản lý tài khoản, hệ thống quyền và nhật ký; cần giữ tương thích các vai trò đang tồn tại. |
+| Nhân viên | Tạo tài khoản, ADMIN/SELLER/CUSTOMER, khóa, nhật ký | Có quản lý tài khoản, hệ thống quyền và nhật ký; chỉ dùng đúng ba vai trò CUSTOMER, SELLER, ADMIN. |
 | Cài đặt | Thông tin cửa hàng, ngôn ngữ, tiền tệ, chính sách bán/đổi trả | Có thông tin cửa hàng, tùy chọn ngôn ngữ/tiền tệ. Đã có hướng dẫn chính sách bổ sung trong quản trị và trang công khai; không thay rule lỗi 72 giờ. |
 
 ## Tiêu chí hoàn thiện

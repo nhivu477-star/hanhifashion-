@@ -1,16 +1,16 @@
-import { packPreparedFixture } from "./test-support/packing-test-fixture";
-import { authenticateCartFixture } from "./test-support/analytics-test-client";
+import { packPreparedFixture } from "../test-support/packing-test-fixture";
+import { authenticateCartFixture } from "../test-support/analytics-test-client";
 import assert from "node:assert/strict";
 import { readFile, writeFile } from "node:fs/promises";
 import { randomUUID, createHash } from "node:crypto";
 import { PrismaClient } from "@prisma/client";
 import sharp from "sharp";
 import { hash } from "bcryptjs";
-if (!/^file:\.\/phase1-orders-[\w-]+\.db$/.test(process.env.DATABASE_URL ?? ""))
+if (!/^file:\.\/business-tests-[\w-]+\.db$/.test(process.env.DATABASE_URL ?? ""))
   throw Error("Isolated database only");
 const db = new PrismaClient(),
   fixture = JSON.parse(
-    await readFile("verification/phase1-fixtures.json", "utf8"),
+    await readFile("verification/business-fixtures.json", "utf8"),
   ),
   base = "http://127.0.0.1:3101";
 class Client {
@@ -63,13 +63,13 @@ const alice = new Client("alice"),
   bob = new Client("bob"),
   admin = new Client("admin"),
   guest = new Client();
-// Dedicated Phase 3 customer keeps checkout rate limits independent of regression traffic.
+// Dedicated returns customer keeps checkout rate limits independent of regression traffic.
 const qaPassword = randomUUID(),
   qaToken = randomUUID();
 const qaUser = await db.user.create({
   data: {
-    name: "alice Phase 3",
-    email: `alice-p3-${randomUUID()}@qa.test`,
+    name: "alice returns",
+    email: `alice-returns-${randomUUID()}@qa.test`,
     phone: "0912345678",
     passwordHash: await hash(qaPassword, 10),
     role: "CUSTOMER",
@@ -133,16 +133,16 @@ async function makeOrder(quantity = 2, paid = true, coupon = false) {
   const key = randomUUID();
   await ok(
     alice.post("checkout", {
-      name: "Khách Phase 3",
+      name: "Khách đổi trả",
       phone: "0912345678",
-      email: "phase3@qa.test",
+      email: "returns@qa.test",
       province: "Hà Nội",
       ward: "Phường Hoàn Kiếm",
       street: "123 Đường kiểm thử",
       details: "",
       notes: "",
       idempotencyKey: key,
-      ...(coupon ? { coupon: "PHASE1" } : {}),
+      ...(coupon ? { coupon: "ORDERTEST" } : {}),
     }),
   );
   const o = await db.order.findUniqueOrThrow({
@@ -156,7 +156,7 @@ async function makeOrder(quantity = 2, paid = true, coupon = false) {
       orderId: o.id,
       provider: "LOCAL_MANUAL",
       shippingFee: 30000,
-      parcelDescription: "Kiện Phase 3",
+      parcelDescription: "Kiện đổi trả",
       weightGrams: 500,
       parcelCount: 1,
     }),
@@ -677,16 +677,16 @@ await run(
   },
 );
 await run(
-  "21 non-admin cannot approve inspect exchange or refund",
+  "21 CUSTOMER and guest cannot approve inspect exchange or refund",
   async () => {
     const raw = randomUUID(),
       u = await db.user.create({
         data: {
-          name: "Staff QA",
-          email: `p3-${raw}@qa.test`,
+          name: "Customer authorization QA",
+          email: `returns-${raw}@qa.test`,
           phone: "",
           passwordHash: "unusable",
-          role: "STAFF",
+          role: "CUSTOMER",
         },
       });
     await db.session.create({
@@ -764,8 +764,8 @@ await run("24 admin filters audit and stock movements visible", async () => {
   assert(r.every((h) => h.actorId && h.reason));
   assert((await db.auditLog.count({ where: { targetId: r1.id } })) > 5);
 });
-await run("25 Phase 1/2A regression in same isolated database", async () => {
-  for (const name of ["order-phase1-results", "shipping-phase2a-results"]) {
+await run("25 order/shipping regression in same isolated database", async () => {
+  for (const name of ["order-results", "shipping-results"]) {
     const r = JSON.parse(await readFile(`verification/${name}.json`, "utf8"));
     assert.equal(r.database, process.env.DATABASE_URL);
     assert(r.results.every((t: any) => t.status === "PASS"));
@@ -850,7 +850,7 @@ await run("28 invalid image never creates request or public file", async () => {
 });
 const browserOrder = await makeOrder(1);
 await writeFile(
-  "verification/returns-phase3-results.json",
+  "verification/returns-results.json",
   JSON.stringify(
     {
       date: new Date().toISOString(),

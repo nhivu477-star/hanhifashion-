@@ -1,13 +1,14 @@
-import { sampleChart } from "../src/lib/sizing";
+import { sampleChart } from "../../src/lib/sizing";
 import assert from "node:assert/strict";
 import { randomUUID, randomBytes, createHash } from "node:crypto";
 import { writeFile, readdir, readFile, unlink, stat } from "node:fs/promises";
 import { hash, compare } from "bcryptjs";
 import { PrismaClient } from "@prisma/client";
 import ExcelJS from "exceljs";
-import { cancelOrderItems } from "../src/lib/partial-cancellation";
+import { cancelOrderItems } from "../../src/lib/partial-cancellation";
+import { nextProductSku, productSkuPrefix } from "../../src/lib/product-sku";
 const database = process.env.DATABASE_URL ?? "";
-if (!/^file:\.\/phase1-orders-[\w-]+\.db$/.test(database))
+if (!/^file:\.\/business-tests-[\w-]+\.db$/.test(database))
   throw Error("Isolated business acceptance DB required");
 const db = new PrismaClient(),
   base = "http://127.0.0.1:3101";
@@ -73,23 +74,26 @@ async function actor(role = "CUSTOMER") {
   });
   return new Client(id, token);
 }
-const admin = await actor("SUPER_ADMIN"),
+const admin = await actor("ADMIN"),
   seller = await actor("SELLER"),
   buyer = await actor(),
   other = await actor();
-const category = await db.category.create({
-  data: {
-    name: "Acceptance",
-    slug: "acceptance-" + randomUUID(),
-    description: "Isolated acceptance",
-    image: "/images/lsoul/products/dam-ricci-dress-nguyen-ban-1.webp",
-  },
+const category = await db.category.findUniqueOrThrow({
+  where: { slug: "trang-phuc" },
 });
+const skuPrefix = productSkuPrefix(category.slug);
+const productSku = nextProductSku(
+  skuPrefix,
+  await db.product.findMany({
+    where: { sku: { startsWith: skuPrefix } },
+    select: { sku: true },
+  }),
+);
 const product = await db.product.create({
   data: {
     name: "Acceptance product",
     slug: "acceptance-" + randomUUID(),
-    sku: "ACC-" + randomUUID(),
+    sku: productSku,
     description: "Business acceptance fixture only",
     categoryId: category.id,
     material: "Cotton",
@@ -101,7 +105,7 @@ const product = await db.product.create({
     images: { create: { url: category.image, alt: "Test" } },
     variants: {
       create: {
-        sku: "ACC-V-" + randomUUID(),
+        sku: `${productSku}-M-WHITE`,
         size: "M",
         color: "Trắng",
         colorHex: "#ffffff",
@@ -854,7 +858,7 @@ await run(
         email,
         password,
         confirmPassword: password,
-        role: "SUPER_ADMIN",
+        role: "ADMIN",
       }),
     );
     assert.equal(
@@ -1734,11 +1738,18 @@ await run(
     const source = await db.productColor.findFirstOrThrow({
       where: { productId: product.id },
     });
+    const targetSku = nextProductSku(
+      skuPrefix,
+      await db.product.findMany({
+        where: { sku: { startsWith: skuPrefix } },
+        select: { sku: true },
+      }),
+    );
     const target = await db.product.create({
       data: {
         name: "Outfit target",
         slug: "outfit-" + randomUUID(),
-        sku: "OUT-" + randomUUID(),
+        sku: targetSku,
         description: "Fixture outfit hợp lệ",
         categoryId: category.id,
         material: "Cotton",
@@ -1764,7 +1775,7 @@ await run(
         color: "Đen",
         colorHex: "#000000",
         size: "M",
-        sku: "OUT-V-" + randomUUID(),
+        sku: `${target.sku}-M-BLACK`,
         stock: 1,
       },
     });

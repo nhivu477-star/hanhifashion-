@@ -23,7 +23,7 @@ async function setPreference(
 async function login(page: Page, role: string) {
   await page.goto("/dang-nhap");
   await page
-    .getByLabel("Email", { exact: true })
+    .locator('input[name="email"]')
     .fill(fixture.accounts[role].email);
   await page
     .getByLabel(/^(Mật khẩu|Password)$/)
@@ -31,7 +31,7 @@ async function login(page: Page, role: string) {
   await page.getByRole("button", { name: /^(ĐĂNG NHẬP|SIGN IN)$/ }).click();
   await expect(page).toHaveURL(
     role === "SELLER"
-      ? origin + "/seller"
+      ? origin + "/admin/don-hang"
       : role === "CUSTOMER"
         ? origin + "/"
         : origin + "/admin",
@@ -227,7 +227,7 @@ test("Localization: unsupported shipping blocked in UI/API and postal validation
           language: "en",
           region: "VN",
           currency: "USD",
-          userId: fixture.accounts.SUPER_ADMIN.id,
+          userId: fixture.accounts.ADMIN.id,
         },
       })
     ).status(),
@@ -251,7 +251,7 @@ test("Localization: Admin/Seller English, configurable rates and financial RBAC"
   page,
 }) => {
   await setPreference(page);
-  await login(page, "SUPER_ADMIN");
+  await login(page, "ADMIN");
   await expect(
     page.getByRole("heading", { name: "Overview", exact: true }),
   ).toBeVisible();

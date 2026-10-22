@@ -13,7 +13,7 @@ const origin = "http://127.0.0.1:3102";
 async function login(page: Page, role: string) {
   await page.goto("/dang-nhap");
   await page
-    .getByLabel("Email", { exact: true })
+    .locator('input[name="email"]')
     .fill(fixture.accounts[role].email);
   await page
     .getByLabel("Mật khẩu", { exact: true })
@@ -21,7 +21,7 @@ async function login(page: Page, role: string) {
   await page.getByRole("button", { name: "ĐĂNG NHẬP", exact: true }).click();
   await expect(page).toHaveURL(
     role === "SELLER"
-      ? origin + "/seller"
+      ? origin + "/admin/don-hang"
       : role === "CUSTOMER"
         ? origin + "/"
         : origin + "/admin",
@@ -37,13 +37,13 @@ test("Admin redesign: compact overview, daily statuses, relocated KPIs and repor
   mkdirSync("verification/admin-redesign", { recursive: true });
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  await login(page, "SUPER_ADMIN");
+  await login(page, "ADMIN");
   await expect(page.locator(".kpi-card")).toHaveCount(2);
   await expect(page.locator(".analytics-filters")).toHaveCount(0);
   await expect(page.locator(".analytics-nav")).toHaveCount(0);
   await expect(page.locator(".dashboard-title .report-link")).toHaveCount(0);
   const f = reportFilter({}),
-    expected = await dashboardSummary(f, "SUPER_ADMIN");
+    expected = await dashboardSummary(f, "ADMIN");
   for (let i = 0; i < 2; i++)
     await expect(page.locator(".kpi-card strong").nth(i)).toHaveText(
       expected.metrics[i].value!.toLocaleString("vi-VN") + (i === 0 ? "đ" : ""),

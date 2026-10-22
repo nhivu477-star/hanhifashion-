@@ -1,12 +1,12 @@
 # Nghiệm thu 31 nghiệp vụ phù hợp cửa hàng HÀ NHI
 
-Tài liệu Word được dùng làm mẫu luồng. Tiêu chuẩn thực thi dựa trên PROJECT_SPEC, chính sách cửa hàng hiện có và yêu cầu mới; không sao chép các tích hợp hay thiết kế CSDL trong Word.
+Tiêu chuẩn thực thi dựa trên PROJECT_SPEC và chính sách cửa hàng hiện hành. Đây là yêu cầu nghiệm thu, không phải kết quả kiểm thử phiên bản mới.
 
-Đọc kết quả thực thi tại `business-acceptance-report.md`. Danh mục có 31 Use Case, mỗi mục có 6 nhóm tiêu chí Given–When–Then (186 nhóm). PASS là các luồng áp dụng trong phạm vi local có bằng chứng thực thi, không phải cam kết đã kiểm mọi tổ hợp vô hạn hay sẵn sàng bán thật.
+Đọc kết quả thực thi tại `business-acceptance-report.md`. Danh mục có 31 Use Case, mỗi mục có 6 nhóm tiêu chí Given–When–Then (186 nhóm). PASS chỉ được ghi khi phiên bản đang nghiệm thu có bằng chứng thực thi, không phải cam kết mọi tổ hợp hay sẵn sàng bán thật.
 
-## Điều chỉnh so với mẫu
+## Phạm vi áp dụng
 
-- **UC01:** Tài khoản mua hàng dùng role CUSTOMER tương ứng BUYER; email là định danh đăng nhập duy nhất. SĐT là thông tin liên hệ, không ép unique vì dữ liệu cửa hàng hiện có và không dùng đăng nhập bằng SĐT. Đăng ký hiện tự đăng nhập; không tự cấp quyền từ payload.
+- **UC01:** Tài khoản mua hàng dùng role CUSTOMER ; đăng nhập bằng email hoặc số điện thoại. Đăng ký yêu cầu ít nhất một trong hai; giữ validation và quy tắc duy nhất của định danh hiện hành. Đăng ký hiện tự đăng nhập; không tự cấp quyền từ payload.
 - **UC03:** Email đăng nhập không đổi qua form hồ sơ; sửa tên/SĐT và địa chỉ riêng, địa chỉ mặc định, mật khẩu, ngôn ngữ/tiền tệ. Không sửa snapshot địa chỉ đơn cũ.
 - **UC04:** Preview local có ảnh tham chiếu, không coi là hàng/ảnh đã xác minh thương mại. Chế độ commercial vẫn kiểm publication/readiness.
 - **UC09:** Chỉ COD nội bộ theo PROJECT_SPEC; phương thức khác không được trình bày như thanh toán thật. Địa chỉ VN, tiền giao dịch VND.
@@ -29,11 +29,11 @@ Tài liệu Word được dùng làm mẫu luồng. Tiêu chuẩn thực thi d�
 
 ### UC01 — Đăng ký tài khoản
 
-Tài khoản mua hàng dùng role CUSTOMER tương ứng BUYER; email là định danh đăng nhập duy nhất. SĐT là thông tin liên hệ, không ép unique vì dữ liệu cửa hàng hiện có và không dùng đăng nhập bằng SĐT. Đăng ký hiện tự đăng nhập; không tự cấp quyền từ payload.
+Tài khoản mua hàng dùng role CUSTOMER ; đăng nhập bằng email hoặc số điện thoại. Đăng ký yêu cầu ít nhất một trong hai; giữ validation và quy tắc duy nhất của định danh hiện hành. Đăng ký hiện tự đăng nhập; không tự cấp quyền từ payload.
 
 **UC01-M — Luồng chính**
 
-Given: Không có tài khoản cùng email
+Given: Không có tài khoản trùng định danh email/số điện thoại
 
 When: Nhập hồ sơ và mật khẩu hợp lệ → tạo tài khoản → đăng nhập
 
@@ -43,7 +43,7 @@ PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thi�
 
 **UC01-A — Luồng phụ áp dụng**
 
-Given: Không có tài khoản cùng email
+Given: Không có tài khoản trùng định danh email/số điện thoại
 
 When: Email khác chữ hoa/thường được chuẩn hóa; wishlist được hợp nhất
 
@@ -53,7 +53,7 @@ PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thi�
 
 **UC01-E — Ngoại lệ**
 
-Given: Không có tài khoản cùng email
+Given: Không có tài khoản trùng định danh email/số điện thoại
 
 When: Email trùng, điện thoại sai, mật khẩu ngắn/không khớp; chèn role không được nâng quyền
 
@@ -63,7 +63,7 @@ PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thi�
 
 **UC01-P — Quyền**
 
-Given: Không có tài khoản cùng email
+Given: Không có tài khoản trùng định danh email/số điện thoại
 
 When: Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.
 
@@ -73,7 +73,7 @@ PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thi�
 
 **UC01-I — Toàn vẹn và hậu điều kiện**
 
-Given: Không có tài khoản cùng email
+Given: Không có tài khoản trùng định danh email/số điện thoại
 
 When: Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.
 
@@ -83,7 +83,7 @@ PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thi�
 
 **UC01-U — UI/API/DB và trạng thái**
 
-Given: Không có tài khoản cùng email
+Given: Không có tài khoản trùng định danh email/số điện thoại
 
 When: Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.
 
@@ -91,7 +91,7 @@ Then: Guest → CUSTOMER
 
 PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thiếu bằng chứng.
 
-Bằng chứng cần có: `business:^BA-AUTH-02`, `business:^BA-AUDIT-01`, `browser:^Business acceptance UI: registration`.
+Bằng chứng cần có: kết quả thực thi mới theo các tiêu chí trên; xem báo cáo nghiệm thu hợp nhất.
 
 ### UC02 — Đăng nhập và xác thực
 
@@ -99,7 +99,7 @@ Bằng chứng cần có: `business:^BA-AUTH-02`, `business:^BA-AUDIT-01`, `brow
 
 **UC02-M — Luồng chính**
 
-Given: Thông tin đăng nhập hợp lệ; tài khoản chưa bị khóa; Token còn hạn 30 phút, chưa dùng; Mật khẩu hiện tại đúng; tài khoản hoạt động
+Given: Email hoặc số điện thoại và mật khẩu hợp lệ; tài khoản chưa bị khóa; Token còn hạn 30 phút, chưa dùng; Mật khẩu hiện tại đúng; tài khoản hoạt động
 
 When: Đăng nhập → cookie → đúng trang theo quyền; đăng xuất → xóa phiên; Tạo mail local → dùng token → đổi hash → thu hồi phiên; Kiểm tra mật khẩu → đổi → thu hồi tất cả phiên
 
@@ -109,9 +109,9 @@ PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thi�
 
 **UC02-A — Luồng phụ áp dụng**
 
-Given: Thông tin đăng nhập hợp lệ; tài khoản chưa bị khóa; Token còn hạn 30 phút, chưa dùng; Mật khẩu hiện tại đúng; tài khoản hoạt động
+Given: Email hoặc số điện thoại và mật khẩu hợp lệ; tài khoản chưa bị khóa; Token còn hạn 30 phút, chưa dùng; Mật khẩu hiện tại đúng; tài khoản hoạt động
 
-When: returnTo nội bộ hợp lệ; ADMIN/SELLER/BUYER có điểm đến riêng; Email không tồn tại nhận cùng thông báo; retry sau rollback; Đăng nhập lại bằng mật khẩu mới
+When: returnTo nội bộ hợp lệ; ADMIN/SELLER/CUSTOMER có điểm đến riêng; Email không tồn tại nhận cùng thông báo; retry sau rollback; Đăng nhập lại bằng mật khẩu mới
 
 Then: Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.
 
@@ -119,7 +119,7 @@ PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thi�
 
 **UC02-E — Ngoại lệ**
 
-Given: Thông tin đăng nhập hợp lệ; tài khoản chưa bị khóa; Token còn hạn 30 phút, chưa dùng; Mật khẩu hiện tại đúng; tài khoản hoạt động
+Given: Email hoặc số điện thoại và mật khẩu hợp lệ; tài khoản chưa bị khóa; Token còn hạn 30 phút, chưa dùng; Mật khẩu hiện tại đúng; tài khoản hoạt động
 
 When: Sai mật khẩu, khóa, returnTo bên ngoài, phiên cũ/hết hạn; Token hết hạn, đã dùng; hai yêu cầu đồng thời chỉ một thành công; Sai mật khẩu cũ, phiên hết hạn, lỗi audit, hai lần đổi tranh chấp
 
@@ -129,7 +129,7 @@ PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thi�
 
 **UC02-P — Quyền**
 
-Given: Thông tin đăng nhập hợp lệ; tài khoản chưa bị khóa; Token còn hạn 30 phút, chưa dùng; Mật khẩu hiện tại đúng; tài khoản hoạt động
+Given: Email hoặc số điện thoại và mật khẩu hợp lệ; tài khoản chưa bị khóa; Token còn hạn 30 phút, chưa dùng; Mật khẩu hiện tại đúng; tài khoản hoạt động
 
 When: Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.
 
@@ -139,7 +139,7 @@ PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thi�
 
 **UC02-I — Toàn vẹn và hậu điều kiện**
 
-Given: Thông tin đăng nhập hợp lệ; tài khoản chưa bị khóa; Token còn hạn 30 phút, chưa dùng; Mật khẩu hiện tại đúng; tài khoản hoạt động
+Given: Email hoặc số điện thoại và mật khẩu hợp lệ; tài khoản chưa bị khóa; Token còn hạn 30 phút, chưa dùng; Mật khẩu hiện tại đúng; tài khoản hoạt động
 
 When: Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.
 
@@ -149,7 +149,7 @@ PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thi�
 
 **UC02-U — UI/API/DB và trạng thái**
 
-Given: Thông tin đăng nhập hợp lệ; tài khoản chưa bị khóa; Token còn hạn 30 phút, chưa dùng; Mật khẩu hiện tại đúng; tài khoản hoạt động
+Given: Email hoặc số điện thoại và mật khẩu hợp lệ; tài khoản chưa bị khóa; Token còn hạn 30 phút, chưa dùng; Mật khẩu hiện tại đúng; tài khoản hoạt động
 
 When: Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.
 
@@ -157,7 +157,7 @@ Then: Anonymous ↔ Authenticated; UNUSED → USED; Authenticated → Reauthenti
 
 PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thiếu bằng chứng.
 
-Bằng chứng cần có: `business:^BA-AUTH-01`, `business:^BA-AUTH-02`, `business:^BA-AUTH-03`, `business:^BA-AUTH-04`, `business:^BA-AUTH-05`, `business:^BA-AUTH-06`, `rbac:^24 `, `browser:^SELLER:`, `browser:^BUYER:`.
+Bằng chứng cần có: kết quả thực thi mới theo các tiêu chí trên; xem báo cáo nghiệm thu hợp nhất.
 
 ### UC03 — Quản lý thông tin cá nhân
 
@@ -223,7 +223,7 @@ Then: Existing → Updated / Deleted; Existing→Updated
 
 PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thiếu bằng chứng.
 
-Bằng chứng cần có: `business:^BA-CUSTOMER-03`, `business:^BA-ADDRESS-01`, `business:^BA-AUDIT-01`, `browser:^Business acceptance UI: registration`, `browser:^Localization:`.
+Bằng chứng cần có: kết quả thực thi mới theo các tiêu chí trên; xem báo cáo nghiệm thu hợp nhất.
 
 ### UC04 — Xem danh sách sản phẩm
 
@@ -289,7 +289,7 @@ Then: Active visible / Archived hidden; PENDING → APPROVED / REJECTED
 
 PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thiếu bằng chứng.
 
-Bằng chứng cần có: `phase5:^01 `, `phase5:^05 `, `phase5:^26 `, `browser:^responsive`.
+Bằng chứng cần có: kết quả thực thi mới theo các tiêu chí trên; xem báo cáo nghiệm thu hợp nhất.
 
 ### UC05 — Tìm kiếm và lọc sản phẩm
 
@@ -355,7 +355,7 @@ Then: Active visible / Archived hidden
 
 PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thiếu bằng chứng.
 
-Bằng chứng cần có: `business:^BA-SEARCH-01`, `phase5:^26 `, `browser:^responsive`.
+Bằng chứng cần có: kết quả thực thi mới theo các tiêu chí trên; xem báo cáo nghiệm thu hợp nhất.
 
 ### UC06 — Xem chi tiết sản phẩm
 
@@ -421,7 +421,7 @@ Then: New → Configured → Updated; PENDING_ASSETS after catalogue change; DRA
 
 PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thiếu bằng chứng.
 
-Bằng chứng cần có: `business:^BA-CATALOG-02`, `business:^BA-CATALOG-03`, `phase5:^04 `, `browser:^customer login`.
+Bằng chứng cần có: kết quả thực thi mới theo các tiêu chí trên; xem báo cáo nghiệm thu hợp nhất.
 
 ### UC07 — Thêm sản phẩm vào giỏ hàng
 
@@ -487,7 +487,7 @@ Then: Empty ↔ Populated
 
 PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thiếu bằng chứng.
 
-Bằng chứng cần có: `business:^BA-CART-01`, `business:^BA-CART-02`, `business:^BA-CART-03`, `business:^BA-CART-04`, `business:^BA-CART-05`, `business:^BA-CART-06`, `browser:^customer login`.
+Bằng chứng cần có: kết quả thực thi mới theo các tiêu chí trên; xem báo cáo nghiệm thu hợp nhất.
 
 ### UC08 — Quản lý giỏ hàng
 
@@ -553,7 +553,7 @@ Then: Empty ↔ Populated; Local → Account wishlist
 
 PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thiếu bằng chứng.
 
-Bằng chứng cần có: `business:^BA-CART-07`, `business:^BA-CART-04`, `order:^11 `, `browser:^Retired products`.
+Bằng chứng cần có: kết quả thực thi mới theo các tiêu chí trên; xem báo cáo nghiệm thu hợp nhất.
 
 ### UC09 — Đặt hàng
 
@@ -619,7 +619,7 @@ Then: Cart → Quote; Cart → PENDING / UNPAID; Committed → Same result
 
 PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thiếu bằng chứng.
 
-Bằng chứng cần có: `order:^01 `, `order:^03 `, `order:^04 `, `order:^05 `, `order:^17 `, `business:^BA-CHECKOUT-01`, `business:^BA-PROMO-03`, `browser:^customer login`.
+Bằng chứng cần có: kết quả thực thi mới theo các tiêu chí trên; xem báo cáo nghiệm thu hợp nhất.
 
 ### UC10 — Thanh toán và COD
 
@@ -685,7 +685,7 @@ Then: UNPAID→PAID when actual recorded collected sufficient; OUTSTANDING→PAR
 
 PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thiếu bằng chứng.
 
-Bằng chứng cần có: `shipping:^08 `, `shipping:^09 `, `shipping:^10 `, `shipping:^11 `, `shipping:^12 `, `shipping:^13 `, `shipping:^15 `, `shipping:^16 `, `browser:^customer login`.
+Bằng chứng cần có: kết quả thực thi mới theo các tiêu chí trên; xem báo cáo nghiệm thu hợp nhất.
 
 ### UC11 — Theo dõi đơn hàng
 
@@ -751,7 +751,7 @@ Then: Read only
 
 PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thiếu bằng chứng.
 
-Bằng chứng cần có: `order:^11 `, `order:^14 `, `shipping:^14 `, `returns:^23 `, `browser:^BUYER:`.
+Bằng chứng cần có: kết quả thực thi mới theo các tiêu chí trên; xem báo cáo nghiệm thu hợp nhất.
 
 ### UC12 — Hủy đơn hàng
 
@@ -817,7 +817,7 @@ Then: PENDING/CONFIRMED/PROCESSING/RETURNED→CANCELLED
 
 PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thiếu bằng chứng.
 
-Bằng chứng cần có: `order:^06 `, `order:^07 `, `order:^16 `, `business:^BA-POLICY-01`, `browser:^customer login`.
+Bằng chứng cần có: kết quả thực thi mới theo các tiêu chí trên; xem báo cáo nghiệm thu hợp nhất.
 
 ### UC13 — Xem và tiếp nhận đơn mới
 
@@ -883,7 +883,7 @@ Then: Read only; Theo order-state-machine.md
 
 PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thiếu bằng chứng.
 
-Bằng chứng cần có: `order:^14 `, `rbac:^05 `, `business:^BA-ASSIGN-01`, `browser:^SELLER:`.
+Bằng chứng cần có: kết quả thực thi mới theo các tiêu chí trên; xem báo cáo nghiệm thu hợp nhất.
 
 ### UC14 — Xác nhận đơn hàng
 
@@ -949,7 +949,7 @@ Then: Theo order-state-machine.md
 
 PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thiếu bằng chứng.
 
-Bằng chứng cần có: `order:^09 `, `order:^13 `, `rbac:^05 `, `browser:^customer login`.
+Bằng chứng cần có: kết quả thực thi mới theo các tiêu chí trên; xem báo cáo nghiệm thu hợp nhất.
 
 ### UC15 — Đóng gói sản phẩm
 
@@ -1015,7 +1015,7 @@ Then: Theo order-state-machine.md
 
 PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thiếu bằng chứng.
 
-Bằng chứng cần có: `business:^BA-PACK-01`, `business:^BA-PACK-02`, `business:^BA-PACK-03`, `browser:^customer login`.
+Bằng chứng cần có: kết quả thực thi mới theo các tiêu chí trên; xem báo cáo nghiệm thu hợp nhất.
 
 ### UC16 — Cập nhật giao hàng
 
@@ -1081,7 +1081,7 @@ Then: None→PENDING; Theo shipping-state-machine.md; DELIVERY_FAILED / RETURNIN
 
 PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thiếu bằng chứng.
 
-Bằng chứng cần có: `shipping:^01 `, `shipping:^02 `, `shipping:^03 `, `shipping:^04 `, `shipping:^05 `, `shipping:^06 `, `shipping:^07 `, `shipping:^18 `, `browser:^customer login`.
+Bằng chứng cần có: kết quả thực thi mới theo các tiêu chí trên; xem báo cáo nghiệm thu hợp nhất.
 
 ### UC17 — Kiểm tra, nhập và xuất kho
 
@@ -1147,7 +1147,7 @@ Then: stock N → N ± quantity; Current stock → Counted stock
 
 PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thiếu bằng chứng.
 
-Bằng chứng cần có: `rbac:^03 `, `business:^BA-STOCKTAKE-01`, `business:^BA-STOCKTAKE-03`, `browser:^Data update: stock forms`, `browser:^SELLER:`.
+Bằng chứng cần có: kết quả thực thi mới theo các tiêu chí trên; xem báo cáo nghiệm thu hợp nhất.
 
 ### UC18 — Đánh giá và hỗ trợ khách hàng
 
@@ -1213,7 +1213,7 @@ Then: NEW→READ→RESOLVED
 
 PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thiếu bằng chứng.
 
-Bằng chứng cần có: `business:^BA-FEEDBACK-01`, `business:^BA-FEEDBACK-02`, `business:^BA-FEEDBACK-03`, `business:^BA-FEEDBACK-04`, `browser:^Business acceptance UI: stocktake`.
+Bằng chứng cần có: kết quả thực thi mới theo các tiêu chí trên; xem báo cáo nghiệm thu hợp nhất.
 
 ### UC19 — Quản lý người dùng
 
@@ -1223,7 +1223,7 @@ Bằng chứng cần có: `business:^BA-FEEDBACK-01`, `business:^BA-FEEDBACK-02`
 
 Given: Đúng CUSTOMER; phân trang; CUSTOMER; không phải chính tài khoản thao tác; Không tự nâng quyền; actor có grant phù hợp
 
-When: Danh sách → hồ sơ → đơn và số đã thu → yêu cầu hỗ trợ; Khóa→thu hồi phiên; mở cho đăng nhập mới; Tạo ADMIN/SELLER/BUYER hoặc role được phép; sửa, khóa/mở
+When: Danh sách → hồ sơ → đơn và số đã thu → yêu cầu hỗ trợ; Khóa→thu hồi phiên; mở cho đăng nhập mới; Tạo ADMIN/SELLER/CUSTOMER (chỉ ba vai trò chuẩn); sửa, khóa/mở
 
 Then: Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.
 
@@ -1233,7 +1233,7 @@ PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thi�
 
 Given: Đúng CUSTOMER; phân trang; CUSTOMER; không phải chính tài khoản thao tác; Không tự nâng quyền; actor có grant phù hợp
 
-When: Khách chưa mua/chưa hỗ trợ; quyền chỉ đọc; Retry trạng thái cùng kết quả; lịch sử mua vẫn giữ; Legacy roles giữ tương thích
+When: Khách chưa mua/chưa hỗ trợ; quyền chỉ đọc; Retry trạng thái cùng kết quả; lịch sử mua vẫn giữ; Chỉ chấp nhận CUSTOMER, SELLER, ADMIN; vai trò khác bị từ chối
 
 Then: Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.
 
@@ -1243,7 +1243,7 @@ PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thi�
 
 Given: Đúng CUSTOMER; phân trang; CUSTOMER; không phải chính tài khoản thao tác; Không tự nâng quyền; actor có grant phù hợp
 
-When: ID nhân viên, ID không tồn tại, Seller không customers.read; Khóa staff qua endpoint khách, không quyền, lỗi audit; Email trùng, role client không cho phép, khóa chính mình, loại SUPER_ADMIN cuối
+When: ID nhân viên, ID không tồn tại, Seller không customers.read; Khóa staff qua endpoint khách, không quyền, lỗi audit; Email trùng, role client không cho phép, khóa chính mình, loại ADMIN cuối
 
 Then: Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.
 
@@ -1279,7 +1279,7 @@ Then: Read only; Active↔Disabled; Active↔Disabled; Role assigned
 
 PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thiếu bằng chứng.
 
-Bằng chứng cần có: `business:^BA-CUSTOMER-01`, `business:^BA-CUSTOMER-02`, `rbac:^14 `, `rbac:^15 `, `browser:^ADMIN account management`, `browser:^BUYER:`.
+Bằng chứng cần có: kết quả thực thi mới theo các tiêu chí trên; xem báo cáo nghiệm thu hợp nhất.
 
 ### UC20 — Quản lý nhân viên và phân quyền
 
@@ -1289,7 +1289,7 @@ Bằng chứng cần có: `business:^BA-CUSTOMER-01`, `business:^BA-CUSTOMER-02`
 
 Given: Không tự nâng quyền; actor có grant phù hợp; Phiên active/version đúng; quyền tại backend/service; Nhân viên có quyền đọc nhật ký
 
-When: Tạo ADMIN/SELLER/BUYER hoặc role được phép; sửa, khóa/mở; Menu/form theo quyền; API/service xác minh riêng; Lọc/xem audit theo actor/resource/result
+When: Tạo ADMIN/SELLER/CUSTOMER (chỉ ba vai trò chuẩn); sửa, khóa/mở; Menu/form theo quyền; API/service xác minh riêng; Lọc/xem audit theo actor/resource/result
 
 Then: Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.
 
@@ -1299,7 +1299,7 @@ PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thi�
 
 Given: Không tự nâng quyền; actor có grant phù hợp; Phiên active/version đúng; quyền tại backend/service; Nhân viên có quyền đọc nhật ký
 
-When: Legacy roles giữ tương thích; Vai trò chuyên biệt chỉ được nhóm việc tương ứng; Bản ghi cũ thiếu actor được giữ
+When: Chỉ chấp nhận CUSTOMER, SELLER, ADMIN; vai trò khác bị từ chối; Vai trò chuyên biệt chỉ được nhóm việc tương ứng; Bản ghi cũ thiếu actor được giữ
 
 Then: Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.
 
@@ -1309,7 +1309,7 @@ PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thi�
 
 Given: Không tự nâng quyền; actor có grant phù hợp; Phiên active/version đúng; quyền tại backend/service; Nhân viên có quyền đọc nhật ký
 
-When: Email trùng, role client không cho phép, khóa chính mình, loại SUPER_ADMIN cuối; Ẩn UI nhưng gọi API trực tiếp; role giả; hết phiên; sửa ID ngoài scope; Không có API sửa/xóa audit; token/password/PII nhạy cảm phải loại
+When: Email trùng, role client không cho phép, khóa chính mình, loại ADMIN cuối; Ẩn UI nhưng gọi API trực tiếp; role giả; hết phiên; sửa ID ngoài scope; Không có API sửa/xóa audit; token/password/PII nhạy cảm phải loại
 
 Then: Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.
 
@@ -1345,7 +1345,7 @@ Then: Active↔Disabled; Role assigned; Authorized / Denied; Append-only
 
 PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thiếu bằng chứng.
 
-Bằng chứng cần có: `rbac:^01 `, `rbac:^02 `, `rbac:^06 `, `rbac:^14 `, `rbac:^15 `, `rbac:^16 `, `rbac:^17 `, `rbac:^26 `, `browser:^ADMIN account management`, `browser:^staff role`.
+Bằng chứng cần có: kết quả thực thi mới theo các tiêu chí trên; xem báo cáo nghiệm thu hợp nhất.
 
 ### UC21 — Quản lý sản phẩm
 
@@ -1411,7 +1411,7 @@ Then: New → Active; Active → Updated; Active → Archived → Active; New �
 
 PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thiếu bằng chứng.
 
-Bằng chứng cần có: `business:^BA-PRODUCT-01`, `business:^BA-PRODUCT-02`, `business:^BA-CATALOG-02`, `business:^BA-CATALOG-03`, `phase5:^02 `, `phase5:^03 `, `phase5:^06 `, `phase5:^07 `, `phase5:^08 `, `order:^12 `, `browser:^SELLER:`.
+Bằng chứng cần có: kết quả thực thi mới theo các tiêu chí trên; xem báo cáo nghiệm thu hợp nhất.
 
 ### UC22 — Quản lý danh mục
 
@@ -1477,7 +1477,7 @@ Then: New → Active → Hidden
 
 PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thiếu bằng chứng.
 
-Bằng chứng cần có: `business:^BA-CATALOG-01`, `browser:^Admin consistency`.
+Bằng chứng cần có: kết quả thực thi mới theo các tiêu chí trên; xem báo cáo nghiệm thu hợp nhất.
 
 ### UC23 — Quản lý khuyến mãi
 
@@ -1543,7 +1543,7 @@ Then: Active↔Inactive; Scheduled→Effective→Expired; used N→N+1 or rollba
 
 PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thiếu bằng chứng.
 
-Bằng chứng cần có: `business:^BA-PROMO-01`, `business:^BA-PROMO-02`, `business:^BA-PROMO-03`, `business:^BA-PROMO-04`, `order:^06 `, `browser:^Business acceptance UI: scheduled`.
+Bằng chứng cần có: kết quả thực thi mới theo các tiêu chí trên; xem báo cáo nghiệm thu hợp nhất.
 
 ### UC24 — Quản lý đơn hàng
 
@@ -1609,7 +1609,7 @@ Then: Read only; Theo order-state-machine.md; PENDING/CONFIRMED/PROCESSING/RETUR
 
 PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thiếu bằng chứng.
 
-Bằng chứng cần có: `order:^07 `, `order:^09 `, `order:^10 `, `order:^13 `, `business:^BA-ASSIGN-01`, `browser:^customer login`, `browser:^Admin consistency`.
+Bằng chứng cần có: kết quả thực thi mới theo các tiêu chí trên; xem báo cáo nghiệm thu hợp nhất.
 
 ### UC25 — Báo cáo thống kê
 
@@ -1675,7 +1675,7 @@ Then: Read only; Known / Unknown costs; Session→Cart→Checkout→Order; Read 
 
 PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thiếu bằng chứng.
 
-Bằng chứng cần có: `analytics:^01 `, `analytics:^02 `, `analytics:^03 `, `analytics:^04 `, `analytics:^05 `, `analytics:^06 `, `analytics:^20 `, `analytics:^21 `, `analytics:^22 `, `analytics:^23 `, `analytics:^27 `, `analytics:^28 `, `analytics:^29 `, `analytics:^31 `, `analytics:^32 `, `business:^BA-REPORT-01`, `business:^BA-REPORT-02`, `browser:^Admin redesign: compact`, `browser:^Business acceptance UI: scheduled`.
+Bằng chứng cần có: kết quả thực thi mới theo các tiêu chí trên; xem báo cáo nghiệm thu hợp nhất.
 
 ### UC26 — Đổi trả sản phẩm
 
@@ -1741,7 +1741,7 @@ Then: None→REQUESTED; Theo returns-state-machine.md; RECEIVED→INSPECTED/INSP
 
 PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thiếu bằng chứng.
 
-Bằng chứng cần có: `returns:^01 `, `returns:^02 `, `returns:^03 `, `returns:^04 `, `returns:^05 `, `returns:^06 `, `returns:^07 `, `returns:^08 `, `returns:^09 `, `returns:^10 `, `returns:^11 `, `returns:^12 `, `returns:^13 `, `returns:^14 `, `returns:^15 `, `returns:^16 `, `returns:^17 `, `returns:^26 `, `returns:^28 `, `browser:^customer login`.
+Bằng chứng cần có: kết quả thực thi mới theo các tiêu chí trên; xem báo cáo nghiệm thu hợp nhất.
 
 ### UC27 — Hoàn tiền
 
@@ -1807,7 +1807,7 @@ Then: PENDING→APPROVED→SIMULATED_COMPLETED
 
 PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thiếu bằng chứng.
 
-Bằng chứng cần có: `returns:^18 `, `returns:^19 `, `returns:^20 `, `returns:^21 `, `returns:^22 `, `returns:^27 `, `analytics:^05 `, `analytics:^06 `, `analytics:^23 `, `browser:^customer login`.
+Bằng chứng cần có: kết quả thực thi mới theo các tiêu chí trên; xem báo cáo nghiệm thu hợp nhất.
 
 ### UC28 — Đối soát COD
 
@@ -1873,7 +1873,7 @@ Then: UNPAID→PAID when actual recorded collected sufficient; OUTSTANDING→PAR
 
 PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thiếu bằng chứng.
 
-Bằng chứng cần có: `shipping:^08 `, `shipping:^09 `, `shipping:^10 `, `shipping:^11 `, `shipping:^12 `, `shipping:^13 `, `shipping:^15 `, `shipping:^16 `, `analytics:^22 `, `browser:^customer login`.
+Bằng chứng cần có: kết quả thực thi mới theo các tiêu chí trên; xem báo cáo nghiệm thu hợp nhất.
 
 ### UC29 — Kiểm kê và xử lý chênh lệch kho
 
@@ -1939,7 +1939,7 @@ Then: stock N → N ± quantity; Current stock → Counted stock
 
 PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thiếu bằng chứng.
 
-Bằng chứng cần có: `business:^BA-STOCKTAKE-01`, `business:^BA-STOCKTAKE-02`, `business:^BA-STOCKTAKE-03`, `business:^BA-STOCKTAKE-04`, `business:^BA-STOCKTAKE-05`, `browser:^Business acceptance UI: stocktake`.
+Bằng chứng cần có: kết quả thực thi mới theo các tiêu chí trên; xem báo cáo nghiệm thu hợp nhất.
 
 ### UC30 — Ngôn ngữ, khu vực và tiền tệ
 
@@ -2005,7 +2005,7 @@ Then: Existing→Updated
 
 PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thiếu bằng chứng.
 
-Bằng chứng cần có: `business:^BA-SETTINGS-01`, `business:^BA-SETTINGS-02`, `browser:^Localization:`.
+Bằng chứng cần có: kết quả thực thi mới theo các tiêu chí trên; xem báo cáo nghiệm thu hợp nhất.
 
 ### UC31 — Nhật ký và kiểm soát vận hành
 
@@ -2071,7 +2071,7 @@ Then: Append-only; Failure→Rollback→Retry→Committed
 
 PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thiếu bằng chứng.
 
-Bằng chứng cần có: `business:^BA-AUDIT-01`, `business:^BA-PRODUCT-01`, `business:^BA-PARTIAL-08`, `business:^BA-SETTINGS-02`, `business:^BA-STOCKTAKE-05`, `business:^BA-FEEDBACK-04`, `rbac:^20 `, `rbac:^27 `, `phase5:^17-20`, `phase5:^27 `.
+Bằng chứng cần có: kết quả thực thi mới theo các tiêu chí trên; xem báo cáo nghiệm thu hợp nhất.
 
 ## Nhánh còn BLOCKED
 

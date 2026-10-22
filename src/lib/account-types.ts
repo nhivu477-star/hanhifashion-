@@ -1,28 +1,40 @@
-import { can, isStaff } from "./rbac";
-export const accountTypes = ["ADMIN", "SELLER", "BUYER"] as const;
+import { accountRoles, adminPagePermission, can, isAccountRole, isStaff } from "./rbac";
+import { safeReturnTo } from "./safe-redirect";
+import { analyticsPermission } from "./analytics-access";
+export const accountTypes = accountRoles;
 export type AccountType = (typeof accountTypes)[number];
 export const accountTypeLabels: Record<AccountType, string> = {
   ADMIN: "Quản trị viên",
   SELLER: "Nhân viên bán hàng",
-  BUYER: "Khách hàng",
+  CUSTOMER: "Khách hàng",
 };
-/** Account labels map to grants; existing role records are never rewritten. */
-export const accountRole: Record<AccountType, string> = {
-  ADMIN: "SUPER_ADMIN",
+export const accountRole: Record<AccountType, AccountType> = {
+  ADMIN: "ADMIN",
   SELLER: "SELLER",
-  BUYER: "CUSTOMER",
+  CUSTOMER: "CUSTOMER",
 };
 export function accountTypeForRole(role: string): AccountType {
-  return ["SUPER_ADMIN", "ADMIN"].includes(role)
-    ? "ADMIN"
-    : isStaff(role)
-      ? "SELLER"
-      : "BUYER";
+  if (!isAccountRole(role)) throw new Error("Vai trò tài khoản không hợp lệ.");
+  return role;
 }
 export function accountLoginDestination(
   role: string,
-  _requested?: unknown,
+  requested?: unknown,
 ): string {
-  if (role === "SELLER") return can(role, "orders.read") ? "/admin/don-hang" : "/";
+  const destination = safeReturnTo(requested);
+  if (destination) {
+    const pathname = new URL(destination, "http://local.invalid").pathname;
+    if (pathname !== "/admin" && !pathname.startsWith("/admin/"))
+      return destination;
+    const permission = adminPagePermission[pathname.split("/")[2] ?? ""];
+    if (permission && isStaff(role) && can(role, permission)) {
+      if (pathname.startsWith("/admin/phan-tich/")) {
+        const section = pathname.split("/")[3] as keyof typeof analyticsPermission;
+        if (Object.hasOwn(analyticsPermission, section) && can(role, analyticsPermission[section]))
+          return destination;
+      } else return destination;
+    }
+  }
+  if (role === "SELLER") return "/admin/don-hang";
   return isStaff(role) ? "/admin" : "/";
 }

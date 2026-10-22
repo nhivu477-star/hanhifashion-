@@ -1,53 +1,42 @@
-# HÀ NHI FASHION — website bán hàng local
+# HÀ NHI FASHION
 
-Ứng dụng Next.js, React, TypeScript, Prisma và SQLite. Chế độ **LOCAL E-COMMERCE DEMO**: vận chuyển thủ công, COD/thanh toán/hoàn tiền mô phỏng. Không kết nối hãng vận chuyển hoặc chuyển tiền thật. Giữ chính sách lỗi đủ 72 giờ từ lúc nhận hàng.
+Website thời trang Next.js, React, TypeScript, Prisma và SQLite chạy tại `http://localhost:3000`. Chế độ **LOCAL E-COMMERCE DEMO**: giao nhận thủ công, COD/thanh toán/hoàn tiền mô phỏng, không kết nối hãng vận chuyển hoặc chuyển tiền thật.
 
-## Nguồn ảnh và bản quyền
+## Khởi động
 
-Dự án phục vụ việc học tập và thực hành xây dựng website, không sử dụng cho mục đích thương mại. Xin chân thành cảm ơn các tác giả, chủ sở hữu hình ảnh và các nguồn ảnh được ghi nhận trong dự án. Ảnh tham khảo bên thứ ba thuộc chủ sở hữu tương ứng. Ghi nguồn và mục đích demo không thay thế giấy phép sử dụng. Chưa xác minh quyền tái sử dụng ảnh thương hiệu; cần xin phép hoặc thay ảnh trước khi công khai/kinh doanh. Xem [hồ sơ nguồn ảnh và trạng thái quyền](THIRD_PARTY_IMAGES.md) và trang `/nguon-anh` trên website. Giấy phép mã nguồn không cấp quyền với ảnh bên thứ ba.
+Cài dependencies theo lockfile, cấu hình môi trường local theo `.env.example`, chạy `npx prisma migrate deploy`, sau đó `npm run dev`. Không reset/seed database chính hiện hữu. Mật khẩu tài khoản hiện có được giữ nguyên; thông tin credential local cũ cần đối chiếu đúng database, không đưa vào source/log/báo cáo.
 
-## Mở ứng dụng
+Chỉ có ba vai trò: **CUSTOMER** mua hàng và quản lý dữ liệu của mình; **SELLER** vận hành sản phẩm, kho, đơn, giao nhận và hỗ trợ; **ADMIN** toàn quyền, gồm tài khoản/nhân viên, tài chính và lợi nhuận. Menu không thay thế kiểm quyền API/service. Xem [ma trận quyền](docs/rbac-role-permission-matrix.md).
 
-- Website: http://localhost:3000
-- Quản trị: http://localhost:3000/admin
-- Khởi động: `npm run dev`
-- Tài khoản local: `.local-accounts.md` (tệp riêng tư đã ignore; mật khẩu được đối chiếu với database).
+Bản production local chạy bằng `npm run build && npm start`. Cookie phiên luôn `HttpOnly`, `SameSite=Lax`; chỉ bỏ `Secure` khi host chính xác là `localhost`, `127.0.0.1` hoặc `[::1]` để đăng nhập qua HTTP loopback. Host production khác vẫn yêu cầu cookie `Secure`.
 
-Database chính: `prisma/dev.db`. Không chạy reset hoặc seed để tránh ghi đè dữ liệu hiện có.
+## Cấu trúc
 
-## Tài liệu đang dùng
+- `src/app`: route, API và trang; `src/components`: giao diện; `src/lib`: nghiệp vụ dùng chung.
+- `prisma`: schema, migrations và SQLite local; `public`: tài nguyên và ảnh đang dùng.
+- `scripts/testing`: runner và kịch bản kiểm thử nghiệp vụ; `scripts/test-support`: fixture/helper dùng chung; `tests`: unit và browser tests.
+- `docs`: tài liệu nghiệp vụ/vận hành; `verification`: đầu ra kiểm chứng local và backup, không phải yêu cầu sản phẩm.
 
-- [Yêu cầu dự án](PROJECT_SPEC.md)
-- [Báo cáo QA Phase 6 mới nhất](docs/phase-6-qa-report.md)
-- [Chất lượng dữ liệu sản phẩm](docs/product-data-quality.md)
-- [Quản lý ảnh](docs/product-image-management.md)
-- [Quyền nhân viên](docs/rbac-role-permission-matrix.md)
-- [Quy tắc đơn hàng](docs/order-business-rules.md)
-- [Vận chuyển và COD](docs/shipping-business-rules.md)
-- [Đổi trả](docs/returns-business-rules.md)
-- [Backup và phục hồi](docs/local-backup-restore.md)
-- [Hướng dẫn demo và xử lý lỗi](docs/local-demo-readiness.md)
+## Tài liệu
 
-## Kiểm tra và backup
+- [Đặc tả hiện hành](PROJECT_SPEC.md)
+- [Báo cáo nghiệm thu và giới hạn](docs/business-acceptance-report.md)
+- [31 nghiệp vụ](docs/business-acceptance-31.md) và [chuẩn nghiệm thu](docs/business-acceptance-standards.md)
+- [Tài khoản](docs/account-management.md), [phạm vi quản trị](docs/admin-functional-scope.md)
+- [Danh mục và size](CATALOG_AND_SIZING.md), [chất lượng sản phẩm](docs/product-data-quality.md), [quản lý ảnh](docs/product-image-management.md)
+- [Đơn](docs/order-business-rules.md), [giao nhận](docs/shipping-business-rules.md), [COD](docs/cod-reconciliation.md), [đổi trả](docs/returns-business-rules.md)
+- [Analytics](docs/analytics-business-rules.md), [ngôn ngữ/tiền tệ](docs/localization-and-currency.md), [backup/restore](docs/local-backup-restore.md)
+
+## Kiểm tra và vận hành
 
 `npm test`, `npm run lint`, `npx tsc --noEmit`, `npm run build`.
 
-`npm run test:phase6` tạo database kiểm thử riêng và chạy hồi quy nghiệp vụ Phase 1–6. `npm run test:e2e` tạo database test tên ngẫu nhiên, ghi đường dẫn trong `.test-credentials.json` để Playwright dùng cùng một database; không xóa `prisma/test.db` cũ hoặc dùng tài khoản QA trên database chính.
+Các bộ nghiệp vụ: `npm run test:orders`, `npm run test:shipping`, `npm run test:returns`, `npm run test:rbac`, `npm run test:catalog`, `npm run test:analytics`, `npm run test:business`. Browser: `npm run test:e2e`. Các runner dùng DB thử riêng; không chạy thao tác reset/seed lên `prisma/dev.db`.
 
-`npm run data:quality` kiểm tra dữ liệu/ảnh mà không sửa sản phẩm. `npm run db:backup` tạo bản sao SQLite nhất quán, kiểm tra toàn vẹn và phục hồi vào file riêng để đối chiếu; không đè database đang chạy.
+`npm run data:quality` audit read-only dữ liệu/ảnh. `npm run db:backup` tạo bản sao SQLite nhất quán và phục hồi kiểm tra vào file riêng, không đè DB đang chạy. Backup và credential chứa dữ liệu riêng tư, chỉ giữ local.
 
-### Cấu trúc và bảo trì
+Kết quả và phạm vi kiểm chứng được ghi tại [báo cáo hợp nhất](docs/business-acceptance-report.md). Giữ chính sách hàng lỗi đủ **72 giờ** từ khi nhận; hủy một phần và đổi SKU khác đơn giá chưa có chính sách nên bị chặn. Không coi hàng/ảnh/tồn demo là đã xác minh để mở bán thật.
 
-- `src/app`: route, API và giao diện trang; `src/components`: thành phần giao diện đang dùng; `src/lib`: nghiệp vụ và tiện ích dùng chung.
-- `scripts/test-support`: fixture dùng chung cho các bài kiểm thử nghiệp vụ; các script chạy kiểm thử vẫn ở `scripts` để giữ nguyên lệnh hiện có.
-- Đợt refactor bảo toàn hành vi: bỏ hai component không có nơi sử dụng (`campaign-artwork`, `lookbook-strip`) và dependency kiểm thử không dùng (`@testing-library/react`); gom tính toán dashboard lặp và khai báo thứ tự phase kiểm thử tại một nơi.
-- Bỏ hai module provider không được tham chiếu (`shipping-providers/manual`, `shipping-providers/test-fixtures`); giữ nguyên vận chuyển thủ công đang dùng. Truy vấn catalog chỉ phân tích số trang một lần và bỏ nhánh sắp xếp không thể chạy.
-- Không xóa hoặc di chuyển database, backup, upload, thông tin đăng nhập local và bằng chứng QA cũ. Không chạy reset/seed trên database chính.
+## Nguồn ảnh và bản quyền
 
-## Trạng thái
-
-Phase 6 analytics local đã triển khai; số lượng/sẵn sàng bán xem kiểm tra hiện tại qua `npm run data:quality`. Không coi dữ liệu tham khảo là hàng đã được xác minh để mở bán thật.
-
-## Dọn tệp theo yêu cầu
-
-Ảnh không được tham chiếu, ảnh chụp QA cũ và báo cáo phase lỗi thời đã chuyển khỏi dự án vào Thùng rác, có manifest khôi phục. Giữ nguyên database, backup, ảnh đang dùng và quy tắc nghiệp vụ. Xem `verification/cleanup-result.json` để biết vị trí, số lượng và danh sách tệp. Các báo cáo phase cũ trong master specification nay dẫn đến báo cáo tổng hợp hiện tại.
+Dự án phục vụ học tập/thực hành, không sử dụng thương mại. Cảm ơn tác giả và chủ sở hữu hình ảnh; ảnh tham khảo thuộc chủ sở hữu tương ứng. Ghi nguồn/mục đích demo không thay giấy phép. Quyền tái sử dụng ảnh thương hiệu chưa được xác minh: phải xin phép hoặc thay ảnh trước sử dụng thương mại. Giữ attribution tại [THIRD_PARTY_IMAGES.md](THIRD_PARTY_IMAGES.md).

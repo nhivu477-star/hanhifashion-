@@ -1,4 +1,4 @@
-# COD thu hộ và đối soát — Phase 2A
+# COD thu hộ và đối soát
 
 ## Kiến trúc
 Giữ nguyên Payment của đơn làm nghĩa vụ thanh toán VND. Không thêm Payment cho mỗi sự kiện thu/chuyển. Shipment liên kết duy nhất orderId và paymentId; expectedCOD snapshot từ Payment.amount khi tạo, kiểm tra bằng order.total. CODCollection ghi tiền nhà vận chuyển đã thu từ khách; CODRemittance ghi tiền đã chuyển về; CODReconciliation là lịch sử kết luận đối soát riêng.
@@ -12,7 +12,7 @@ Tất cả là dữ liệu người quản trị nhập local, không có xác m
 - outstandingCOD = max(collectedCOD − remittedCOD, 0): hãng còn phải chuyển.
 - Khách còn thiếu = max(expectedCOD − collectedCOD, 0).
 - Thu khác kỳ vọng hoặc chuyển vượt thu: cảnh báo DISPUTED; không che số chênh lệch có dấu.
-- Phí giao thực tế lưu riêng; Phase 2A đối chiếu số tiền COD gross, không tự trừ phí/khấu trừ vào tiền chuyển.
+- Phí giao thực tế lưu riêng; nghiệp vụ đối chiếu số tiền COD gross, không tự trừ phí/khấu trừ vào tiền chuyển.
 
 ## Quy trình
 1. Giao thành công vẫn UNPAID.
@@ -23,14 +23,14 @@ Tất cả là dữ liệu người quản trị nhập local, không có xác m
 6. Correction là record có dấu, correctsId trỏ bản gốc cùng kiện/kind, bắt buộc chứng từ và bằng chứng; không chỉnh sửa record gốc. Tổng không được âm. Có thể bổ sung thu thiếu hoặc chuyển thiếu bằng record mới. Sau RECONCILED khóa ghi tiền; phải mở điều tra trước.
 
 ## Chống trùng và quyền
-Chỉ ADMIN hợp lệ được tạo/ghi giao nhận/tài chính. STAFF/CUSTOMER/GUEST bị từ chối. Tất cả mutation check origin. eventKey unique theo loại ledger, reference unique theo provider trong mỗi loại. Retry cùng key và cùng dữ liệu là no-op; khác payload bị từ chối. CAS version Shipment + transaction ngăn ghi tổng/đối soát đồng thời sai. Reconcile lặp không tạo kết luận hoàn tất lần hai.
+Chỉ ADMIN được ghi thu/chuyển/đối soát/correction tài chính; SELLER có thể tạo/cập nhật giao nhận nhưng không ghi ledger COD. CUSTOMER/GUEST không có quyền quản trị. Tất cả mutation check origin. eventKey unique theo loại ledger, reference unique theo provider trong mỗi loại. Retry cùng key và cùng dữ liệu là no-op; khác payload bị từ chối. CAS version Shipment + transaction ngăn ghi tổng/đối soát đồng thời sai. Reconcile lặp không tạo kết luận hoàn tất lần hai.
 
 Ledger có FK Shipment, correction có FK bản gốc. Mỗi record lưu actor/time/reference/evidence/provider. Mọi mutation có AuditLog cùng transaction. Không nhận id/payment/provider sai từ client để ghi chéo kiện. Bản ghi ngày trước ngày tạo đơn hoặc ở tương lai bị chặn.
 
 ## Báo cáo và quyền riêng tư
-Payment PAID ở đơn có Shipment chỉ thể hiện khách đã trả đủ. Metric hiện có “Doanh thu đã thu” chỉ cộng tiền Shipment đã RECONCILED; đơn Phase 1 chưa có Shipment giữ cách tính cũ. Báo cáo theo ngày hiện có vẫn nhóm ngày tạo đơn, không tuyên bố là sổ kế toán thu tiền theo ngày.
+Payment PAID ở đơn có Shipment chỉ thể hiện khách đã trả đủ. Metric hiện có “Doanh thu đã thu” chỉ cộng tiền Shipment đã RECONCILED; đơn nghiệp vụ chưa có Shipment giữ cách tính cũ. Báo cáo theo ngày hiện có vẫn nhóm ngày tạo đơn, không tuyên bố là sổ kế toán thu tiền theo ngày.
 
-Khách thấy provider, mã nội bộ, trạng thái, timeline và trạng thái thanh toán; API dùng allowlist không gửi amount/evidence/actor/notes đối soát. Không đưa evidence nội bộ vào lịch sử đơn khách. Tra cứu code+phone giữ quy tắc Phase 1, chỉ thêm timeline công khai.
+Khách thấy provider, mã nội bộ, trạng thái, timeline và trạng thái thanh toán; API dùng allowlist không gửi amount/evidence/actor/notes đối soát. Không đưa evidence nội bộ vào lịch sử đơn khách. Tra cứu code+phone giữ quy tắc nghiệp vụ, chỉ thêm timeline công khai.
 
 ## Giới hạn
 Không split shipment, carrier live, bù trừ phí, gộp remittance nhiều kiện, refund hay kế toán đầy đủ. Không giả vờ tạo vận đơn. Dữ liệu manual cần người vận hành chịu trách nhiệm kiểm tra bằng chứng.

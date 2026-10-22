@@ -1,4 +1,4 @@
-# Máy trạng thái đổi trả — Phase 3
+# Máy trạng thái đổi trả
 
 ```mermaid
 stateDiagram-v2
@@ -25,4 +25,4 @@ EXCHANGE_PENDING chỉ do phân bổ đủ SKU thành công. COMPLETED chỉ khi
 
 REJECTED/COMPLETED/CLOSED là kết thúc. Không mở lại/xóa lịch sử. Gọi lại state hiện có là no-op, không thêm cạnh chuyển trạng thái tùy ý. Mỗi chuyển đổi lưu previousStatus/status/actor/createdAt/reason/request; order liên kết qua request. Event kiện thay thế ghi from/to riêng trong lý do lịch sử cùng audit có cấu trúc. Inspection và ledger không cho endpoint state chung bỏ qua.
 
-Giữ nguyên toàn bộ máy trạng thái đơn và Shipment Phase 1/2A. ReturnRequest là trục nghiệp vụ sau bán, không đổi Order.status thành CANCELLED hoặc thay OrderItem.
+Giữ nguyên toàn bộ máy trạng thái đơn và Shipment nghiệp vụ/2A. ReturnRequest là trục nghiệp vụ sau bán, không đổi Order.status thành CANCELLED hoặc thay OrderItem.

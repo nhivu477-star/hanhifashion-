@@ -1,4 +1,4 @@
-# Định nghĩa chỉ số — Phase 6
+# Định nghĩa chỉ số
 
 Tất cả tiền là VND nguyên; phép phân bổ giảm giá dùng thuật toán phần dư lớn nhất ổn định theo mã dòng hàng, tổng phân bổ đúng bằng giảm giá trên đơn. Ví dụ hai dòng 200.000đ và 100.000đ, giảm 30.000đ: giảm 20.000đ/10.000đ, hàng ròng trước hoàn 270.000đ.
 

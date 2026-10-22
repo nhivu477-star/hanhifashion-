@@ -1,4 +1,4 @@
-# Funnel và tracking — Phase 6
+# Funnel và tracking
 
 Sự kiện: SESSION_STARTED, PRODUCT_VIEWED, PRODUCT_SEARCHED, ADD_TO_CART_ATTEMPTED, ADD_TO_CART_SUCCEEDED, CHECKOUT_STARTED, ORDER_PLACED. Web app gửi session/view/search/checkout; API ghi attempt trước quyền truy cập và success sau transaction giỏ. Order/campaign ghi bên trong transaction đơn mới. Funnel dùng sự kiện đầu tiên mỗi bước trong cùng visitor session 30 phút, bắt buộc timestamp tăng theo từng bước. Mẫu chưa có bước trước không nhảy vào bước kế.
 

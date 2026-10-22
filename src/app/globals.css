@@ -5539,7 +5539,6 @@ html {
 .shipment-timeline { margin:32px 0; }
 @media(max-width:767px) { .shipping-form-grid { grid-template-columns:1fr; gap:16px; } }
 
-/* Phase 3: reuse the existing order/admin form language. */
 .returns-section { margin-block: 3rem; }
 .return-record { padding-block: 1.5rem; border-bottom: 1px solid var(--border, #ddd); overflow-wrap: anywhere; }
 .return-evidence { display: flex; gap: 1rem; flex-wrap: wrap; }

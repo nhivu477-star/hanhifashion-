@@ -1,6 +1,6 @@
 # Tiêu chuẩn nghiệm thu nghiệp vụ thương mại điện tử
 
-Ngày lập: 19/10/2026, điều chỉnh ngày 20/10/2026. Mốc nghiệm thu hiện hành là `business-acceptance-31.md` (31 Use Case phù hợp HÀ NHI). Mở rộng phạm vi phân hệ Chương 1–2 trong `admin-functional-scope.md` và đặc tả hiện tại. Thực thi trong ứng dụng hiện hữu, không tạo dự án khác.
+Ngày lập: 19/10/2026, điều chỉnh ngày 20/10/2026. Mốc nghiệm thu hiện hành là `business-acceptance-31.md` (31 Use Case phù hợp HÀ NHI). Phạm vi phân hệ tại `admin-functional-scope.md` và đặc tả hiện tại. Thực thi trong ứng dụng hiện hữu, không tạo dự án khác.
 
 ## Phạm vi và chuẩn quyết định
 
@@ -42,24 +42,24 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 ### AUTH-01 — Đăng ký
 
 - **Actors & RBAC:** Guest → CUSTOMER.
-- **Given / tiền điều kiện:** Không có tài khoản cùng email.
+- **Given / tiền điều kiện:** Không có tài khoản trùng định danh email/số điện thoại.
 - **When / main:** Nhập hồ sơ và mật khẩu hợp lệ → tạo tài khoản → đăng nhập.
 - **Alternative:** Email khác chữ hoa/thường được chuẩn hóa; wishlist được hợp nhất.
 - **Exception:** Email trùng, điện thoại sai, mật khẩu ngắn/không khớp; chèn role không được nâng quyền.
 - **Then / hậu điều kiện & integrity:** User duy nhất; passwordHash bcrypt; phiên HttpOnly; không lộ mật khẩu.
 - **State transitions:** Guest → CUSTOMER.
-- **Bằng chứng kiểm thử cần đối chiếu:** `business:BA-AUTH-02`, `browser:customer login`.
+- **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
 ### AUTH-02 — Đăng nhập / đăng xuất
 
 - **Actors & RBAC:** Mọi tài khoản hoạt động.
-- **Given / tiền điều kiện:** Thông tin đăng nhập hợp lệ; tài khoản chưa bị khóa.
+- **Given / tiền điều kiện:** Email hoặc số điện thoại và mật khẩu hợp lệ; tài khoản chưa bị khóa.
 - **When / main:** Đăng nhập → cookie → đúng trang theo quyền; đăng xuất → xóa phiên.
-- **Alternative:** returnTo nội bộ hợp lệ; ADMIN/SELLER/BUYER có điểm đến riêng.
+- **Alternative:** returnTo nội bộ hợp lệ; ADMIN/SELLER/CUSTOMER có điểm đến riêng.
 - **Exception:** Sai mật khẩu, khóa, returnTo bên ngoài, phiên cũ/hết hạn.
 - **Then / hậu điều kiện & integrity:** Không tái sử dụng phiên bị thu hồi; không nâng quyền từ client.
 - **State transitions:** Anonymous ↔ Authenticated.
-- **Bằng chứng kiểm thử cần đối chiếu:** `business:BA-AUTH-02`, `rbac:13 `, `rbac:24 `, `browser:login destination`.
+- **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
 ### AUTH-03 — Quên / đặt lại mật khẩu
 
@@ -70,7 +70,7 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 - **Exception:** Token hết hạn, đã dùng; hai yêu cầu đồng thời chỉ một thành công.
 - **Then / hậu điều kiện & integrity:** Claim token + hash + thu hồi phiên + audit cùng transaction.
 - **State transitions:** UNUSED → USED.
-- **Bằng chứng kiểm thử cần đối chiếu:** `business:BA-AUTH-03`, `business:BA-AUTH-04`, `business:BA-AUTH-06`.
+- **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
 ### AUTH-04 — Đổi mật khẩu
 
@@ -81,7 +81,7 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 - **Exception:** Sai mật khẩu cũ, phiên hết hạn, lỗi audit, hai lần đổi tranh chấp.
 - **Then / hậu điều kiện & integrity:** CAS hash cũ; hash và thu hồi phiên/audit atomic.
 - **State transitions:** Authenticated → Reauthentication required.
-- **Bằng chứng kiểm thử cần đối chiếu:** `business:BA-AUTH-05`.
+- **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
 ### AUTH-05 — Hồ sơ / địa chỉ
 
@@ -92,7 +92,7 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 - **Exception:** Truy cập ID người khác; điện thoại/địa chỉ sai; phiên hết hạn.
 - **Then / hậu điều kiện & integrity:** Không thay chủ sở hữu; không ghi địa chỉ người khác.
 - **State transitions:** Existing → Updated / Deleted.
-- **Bằng chứng kiểm thử cần đối chiếu:** `business:BA-AUTH-02`, `business:BA-CUSTOMER-03`.
+- **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
 ### CAT-01 — Tìm kiếm / xem / lọc sản phẩm
 
@@ -103,7 +103,7 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 - **Exception:** Slug không tồn tại, query không hợp lệ, ảnh thiếu.
 - **Then / hậu điều kiện & integrity:** Không lộ sản phẩm ẩn; giá hiển thị theo variant/sale/base.
 - **State transitions:** Active visible / Archived hidden.
-- **Bằng chứng kiểm thử cần đối chiếu:** `phase5:26 `, `browser:responsive`.
+- **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
 ### CAT-02 — Thêm / sửa sản phẩm
 
@@ -114,7 +114,7 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 - **Exception:** Giá không dương, sale ≥ base, SKU trùng, danh mục sai, audit thất bại.
 - **Then / hậu điều kiện & integrity:** Product + ảnh + audit atomic; đơn cũ không đổi.
 - **State transitions:** New → Active; Active → Updated.
-- **Bằng chứng kiểm thử cần đối chiếu:** `phase5:03 `, `business:BA-PRODUCT-01`, `order:12 `, `browser:SELLER:`.
+- **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
 ### CAT-03 — Ẩn / xóa mềm sản phẩm
 
@@ -125,7 +125,7 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 - **Exception:** Vai trò không có archive; mua sản phẩm đã ẩn.
 - **Then / hậu điều kiện & integrity:** Không xóa OrderItem/ledger; trả hàng cũ vẫn đối chiếu được.
 - **State transitions:** Active → Archived → Active.
-- **Bằng chứng kiểm thử cần đối chiếu:** `business:BA-PRODUCT-02`, `browser:Retired products`.
+- **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
 ### CAT-04 — Biến thể / SKU / giá
 
@@ -136,7 +136,7 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 - **Exception:** SKU trùng, stock âm/quá giới hạn, chuyển variant sang sản phẩm khác.
 - **Then / hậu điều kiện & integrity:** Variant + movement + audit atomic; historical SKU snapshot không đổi.
 - **State transitions:** New → Configured → Updated.
-- **Bằng chứng kiểm thử cần đối chiếu:** `phase5:02 `, `rbac:02 `, `browser:SELLER:`.
+- **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
 ### CAT-05 — Màu / gallery / gợi ý phối
 
@@ -147,7 +147,7 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 - **Exception:** Màu khác sản phẩm, file sai, outfit tự trỏ hoặc hàng hết.
 - **Then / hậu điều kiện & integrity:** Ghi cấu hình + invalidation + audit atomic.
 - **State transitions:** PENDING_ASSETS after catalogue change.
-- **Bằng chứng kiểm thử cần đối chiếu:** `phase5:04 `, `phase5:media traversal`.
+- **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
 ### CAT-06 — Danh mục / bộ sưu tập
 
@@ -158,7 +158,7 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 - **Exception:** Vòng/self-parent; chuyển cha sai; FK sản phẩm không tồn tại.
 - **Then / hậu điều kiện & integrity:** Danh mục/collection + liên kết + audit atomic.
 - **State transitions:** New → Active → Hidden.
-- **Bằng chứng kiểm thử cần đối chiếu:** `browser:Admin consistency`.
+- **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
 ### CAT-07 — Bảng size / xuất bản
 
@@ -169,7 +169,7 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 - **Exception:** Dữ liệu JSON sai, ảnh tham chiếu/chưa xác minh, tồn chưa rõ nguồn.
 - **Then / hậu điều kiện & integrity:** Không tự giả bằng chứng hàng thật; audit trong transaction.
 - **State transitions:** DRAFT ↔ PENDING_ASSETS → READY.
-- **Bằng chứng kiểm thử cần đối chiếu:** `phase5:01 `, `phase5:04 `.
+- **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
 ### CAT-08 — Upload / thư viện ảnh
 
@@ -180,7 +180,7 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 - **Exception:** SVG/file giả, traversal, quá dung lượng; xóa ảnh còn tham chiếu.
 - **Then / hậu điều kiện & integrity:** Không xóa ảnh snapshot đơn; quyền kiểm tra trước parse; metadata audited.
 - **State transitions:** PENDING → APPROVED / REJECTED.
-- **Bằng chứng kiểm thử cần đối chiếu:** `phase5:06 `, `phase5:07 `, `phase5:08 `, `phase5:valid raster`.
+- **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
 ### INV-01 — Nhập / xuất kho
 
@@ -191,7 +191,7 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 - **Exception:** OUT quá tồn; date tương lai; key khác nội dung.
 - **Then / hậu điều kiện & integrity:** Không âm tồn; delta đúng; chỉ một movement mỗi eventKey.
 - **State transitions:** stock N → N ± quantity.
-- **Bằng chứng kiểm thử cần đối chiếu:** `browser:stock forms`, `business:BA-DATA-01`.
+- **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
 ### INV-02 — Điều chỉnh / lịch sử tồn
 
@@ -202,7 +202,7 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 - **Exception:** Mất quyền, số âm, tranh chấp ghi, lỗi giữa transaction.
 - **Then / hậu điều kiện & integrity:** Movement delta=after-before; ghi actor/time/reason; không sửa ledger cũ.
 - **State transitions:** Current stock → Counted stock.
-- **Bằng chứng kiểm thử cần đối chiếu:** `rbac:03 `, `browser:SELLER:`, `browser:stock forms`.
+- **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
 ### CART-01 — Thêm / sửa / xóa giỏ
 
@@ -213,7 +213,7 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 - **Exception:** Lượng >99, thiếu tồn, key khác payload, guest/hết phiên.
 - **Then / hậu điều kiện & integrity:** Receipt độc lập analytics; mutation atomic; không thay tồn khi chỉ thêm giỏ.
 - **State transitions:** Empty ↔ Populated.
-- **Bằng chứng kiểm thử cần đối chiếu:** `business:BA-CART-01`, `business:BA-CART-02`, `business:BA-CART-03`, `business:BA-CART-04`, `business:BA-CART-05`, `business:BA-CART-06`.
+- **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
 ### CART-02 — Wishlist / hợp nhất sau login
 
@@ -224,7 +224,7 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 - **Exception:** ID không tồn tại; người khác không sửa được wishlist.
 - **Then / hậu điều kiện & integrity:** Unique wishlist/product; không đổi giỏ của tài khoản khác.
 - **State transitions:** Local → Account wishlist.
-- **Bằng chứng kiểm thử cần đối chiếu:** `browser:Retired products`, `order:11 `.
+- **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
 ### CHECKOUT-01 — Báo giá
 
@@ -235,7 +235,7 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 - **Exception:** Voucher sai/hết hạn/chưa bắt đầu/cạn lượt; giá 0; vùng ngoài VN.
 - **Then / hậu điều kiện & integrity:** VND integer; không nhận giá client; quote không trừ tồn/lượt.
 - **State transitions:** Cart → Quote.
-- **Bằng chứng kiểm thử cần đối chiếu:** `order:01 `, `business:BA-PROMO-01`, `business:BA-PROMO-02`, `browser:unsupported shipping`.
+- **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
 ### CHECKOUT-02 — Đặt COD
 
@@ -246,7 +246,7 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 - **Exception:** Tranh mua đơn vị cuối; tranh lượt voucher; lỗi giữa giao dịch.
 - **Then / hậu điều kiện & integrity:** Tất cả transaction; không âm tồn; payment UNPAID; snapshot lịch sử.
 - **State transitions:** Cart → PENDING / UNPAID.
-- **Bằng chứng kiểm thử cần đối chiếu:** `order:03 `, `order:05 `, `business:BA-PROMO-03`, `browser:customer login`.
+- **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
 ### CHECKOUT-03 — Retry checkout
 
@@ -257,7 +257,7 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 - **Exception:** Key của cart khác; đổi địa chỉ/voucher khi dùng lại key.
 - **Then / hậu điều kiện & integrity:** Một order/payment/trừ tồn; không xóa giỏ mới khi replay.
 - **State transitions:** Committed → Same result.
-- **Bằng chứng kiểm thử cần đối chiếu:** `order:04 `, `order:17 `, `business:BA-CHECKOUT-01`.
+- **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
 ### ORDER-01 — Danh sách / chi tiết / tra cứu
 
@@ -268,7 +268,7 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 - **Exception:** ID/code khác khách; token sai; không lộ address/email/token.
 - **Then / hậu điều kiện & integrity:** UI/API/DB khớp tổng tiền/trạng thái; public allowlist.
 - **State transitions:** Read only.
-- **Bằng chứng kiểm thử cần đối chiếu:** `order:11 `, `order:14 `, `shipping:14 `, `browser:customer login`.
+- **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
 ### ORDER-02 — Xác nhận / từ chối / đóng gói
 
@@ -279,7 +279,7 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 - **Exception:** Nhảy bước, lùi trạng thái, khách tự đóng gói.
 - **Then / hậu điều kiện & integrity:** CAS + history + audit; không tự ghi PAID từ status.
 - **State transitions:** Theo order-state-machine.md.
-- **Bằng chứng kiểm thử cần đối chiếu:** `order:09 `, `rbac:05 `, `browser:customer login`.
+- **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
 ### ORDER-03 — Hủy toàn bộ
 
@@ -290,7 +290,7 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 - **Exception:** Đã PAID; đang giao/chưa hoàn về; khách hủy muộn.
 - **Then / hậu điều kiện & integrity:** Hoàn tồn/coupon/history/audit atomic; paid dùng refund flow.
 - **State transitions:** PENDING/CONFIRMED/PROCESSING/RETURNED→CANCELLED.
-- **Bằng chứng kiểm thử cần đối chiếu:** `order:06 `, `order:07 `, `order:16 `, `business:BA-PARTIAL-07`.
+- **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
 ### ORDER-04 — Hủy một phần
 
@@ -301,7 +301,7 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 - **Exception:** Lặp dòng, vượt lượng, full removal, paid/prepared/shipment, ID không thuộc đơn.
 - **Then / hậu điều kiện & integrity:** Giữ originalQuantity/unitPrice; giảm discount đúng VND; payment=order.total; audit atomic.
 - **State transitions:** Order status unchanged; remaining quantity decreases.
-- **Bằng chứng kiểm thử cần đối chiếu:** `business:BA-PARTIAL-01`, `business:BA-PARTIAL-02`, `business:BA-PARTIAL-03`, `business:BA-PARTIAL-04`, `business:BA-PARTIAL-05`, `business:BA-PARTIAL-06`, `business:BA-PARTIAL-07`, `business:BA-PARTIAL-08`, `business:BA-PARTIAL-09`, `browser:Business acceptance UI: customer partial`, `browser:Business acceptance UI: admin customer`.
+- **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
 ### SHIP-01 — Tạo hồ sơ giao nhận nội bộ
 
@@ -312,7 +312,7 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 - **Exception:** Đơn sai trạng thái/đã có kiện; input parcel sai; carrier thật bị chặn.
 - **Then / hậu điều kiện & integrity:** Một shipment/order; không trừ tồn lần hai.
 - **State transitions:** None→PENDING.
-- **Bằng chứng kiểm thử cần đối chiếu:** `shipping:01 `, `shipping:02 `, `browser:customer login`.
+- **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
 ### SHIP-02 — Bàn giao / giao thành công
 
@@ -323,7 +323,7 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 - **Exception:** Nhảy bước; thiếu lý do; sửa order trực tiếp khi đã có kiện.
 - **Then / hậu điều kiện & integrity:** Order/shipment/event khớp; giao thành công vẫn UNPAID.
 - **State transitions:** Theo shipping-state-machine.md.
-- **Bằng chứng kiểm thử cần đối chiếu:** `shipping:03 `, `shipping:04 `, `shipping:05 `, `browser:customer login`.
+- **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
 ### SHIP-03 — Giao thất bại / giao lại / chuyển hoàn
 
@@ -334,7 +334,7 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 - **Exception:** Đánh delivered từ returned; hoàn tồn trước hàng về.
 - **Then / hậu điều kiện & integrity:** Không hoàn tồn tại cả RETURNED và CANCELLED; timeline thật.
 - **State transitions:** DELIVERY_FAILED / RETURNING / RETURNED.
-- **Bằng chứng kiểm thử cần đối chiếu:** `shipping:06 `, `shipping:07 `, `shipping:18 `.
+- **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
 ### COD-01 — Ghi nhận thu COD
 
@@ -345,7 +345,7 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 - **Exception:** Sai provider/amount/date; trùng key khác payload; thu trước giao.
 - **Then / hậu điều kiện & integrity:** Append-only; không nhân đôi từ retry; không ghi PAID từ delivery.
 - **State transitions:** UNPAID→PAID when actual recorded collected sufficient.
-- **Bằng chứng kiểm thử cần đối chiếu:** `shipping:08 `, `order:08 `, `browser:customer login`.
+- **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
 ### COD-02 — Chuyển tiền COD
 
@@ -356,7 +356,7 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 - **Exception:** Chưa thu, số âm không phải correction, ngày tương lai.
 - **Then / hậu điều kiện & integrity:** Không cộng lại doanh thu từ tiền chuyển về.
 - **State transitions:** OUTSTANDING→PARTIAL→READY.
-- **Bằng chứng kiểm thử cần đối chiếu:** `shipping:09 `, `shipping:10 `.
+- **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
 ### COD-03 — Đối soát / sai lệch
 
@@ -367,7 +367,7 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 - **Exception:** Đối soát khi còn lệch, không quyền, thao tác đồng thời.
 - **Then / hậu điều kiện & integrity:** Một settlement hợp lệ; audit; outstanding không bị xóa để che lệch.
 - **State transitions:** PENDING/PARTIAL/DISPUTED→RECONCILED.
-- **Bằng chứng kiểm thử cần đối chiếu:** `shipping:11 `, `shipping:12 `, `shipping:16 `, `analytics:22 `.
+- **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
 ### COD-04 — Điều chỉnh chứng từ
 
@@ -378,7 +378,7 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 - **Exception:** Bù quá giới hạn, key khác nội dung, số thu dưới khoản refund đã giữ.
 - **Then / hậu điều kiện & integrity:** Không sửa/xóa ledger; không hoàn vượt thực thu.
 - **State transitions:** Settlement recomputed / disputed.
-- **Bằng chứng kiểm thử cần đối chiếu:** `shipping:13 `, `returns:21 `.
+- **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
 ### RETURN-01 — Gửi yêu cầu lỗi / trả một phần
 
@@ -389,7 +389,7 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 - **Exception:** Quá 72h/thiếu mốc, sai chủ, vượt lượng/claim đồng thời, key khác payload.
 - **Then / hậu điều kiện & integrity:** Claim lượng/amount snapshot; không sửa shipment gốc.
 - **State transitions:** None→REQUESTED.
-- **Bằng chứng kiểm thử cần đối chiếu:** `returns:01 `, `returns:02 `, `returns:03 `, `returns:04 `, `returns:05 `, `returns:26 `.
+- **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
 ### RETURN-02 — Xem xét / duyệt / từ chối
 
@@ -400,7 +400,7 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 - **Exception:** Nhảy bước; tự duyệt bởi khách; thiếu lý do.
 - **Then / hậu điều kiện & integrity:** History/audit; không tự hoàn tiền khi duyệt.
 - **State transitions:** Theo returns-state-machine.md.
-- **Bằng chứng kiểm thử cần đối chiếu:** `returns:08 `, `returns:09 `, `rbac:08 `.
+- **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
 ### RETURN-03 — Nhận / kiểm hàng / hoàn tồn
 
@@ -411,7 +411,7 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 - **Exception:** Ghi đè kết luận cuối, thiếu quyền tồn, hai inspect đồng thời.
 - **Then / hậu điều kiện & integrity:** Inspection+movement+audit atomic; không trùng hoàn tồn.
 - **State transitions:** RECEIVED→INSPECTED/INSPECTION_FAILED.
-- **Bằng chứng kiểm thử cần đối chiếu:** `returns:10 `, `returns:11 `, `returns:12 `, `returns:13 `, `returns:14 `, `returns:15 `.
+- **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
 ### RETURN-04 — Đổi SKU và giao hàng thay thế
 
@@ -422,7 +422,7 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 - **Exception:** Hết tồn, SKU sai/giá lệch, hai allocate tranh đơn vị cuối.
 - **Then / hậu điều kiện & integrity:** Không sửa item/shipment gốc; atomic và audit.
 - **State transitions:** INSPECTED→EXCHANGE_PENDING→COMPLETED/CLOSED.
-- **Bằng chứng kiểm thử cần đối chiếu:** `returns:16 `, `returns:17 `, `returns:18 `.
+- **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
 ### RETURN-05 — Hoàn tiền một phần / nhiều hồ sơ
 
@@ -433,7 +433,7 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 - **Exception:** Số client chèn, vượt paid/refund cap, hai xác nhận đồng thời.
 - **Then / hậu điều kiện & integrity:** Tổng giữ/hoàn ≤ thực thu; không xóa COD; số hàng net đúng snapshot/rounding.
 - **State transitions:** PENDING→APPROVED→SIMULATED_COMPLETED.
-- **Bằng chứng kiểm thử cần đối chiếu:** `returns:19 `, `returns:20 `, `returns:21 `, `analytics:05 `, `analytics:06 `, `analytics:23 `, `browser:customer login`.
+- **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
 ### RETURN-06 — Ảnh lỗi / lịch sử riêng tư
 
@@ -444,7 +444,7 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 - **Exception:** Chủ khác, ảnh giả/SVG/quá pixel, public access.
 - **Then / hậu điều kiện & integrity:** Reencode bỏ metadata; không public evidence hoặc ghi chú nội bộ.
 - **State transitions:** Read only / private evidence.
-- **Bằng chứng kiểm thử cần đối chiếu:** `returns:22 `, `returns:23 `, `returns:28 `, `rbac:12 `.
+- **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
 ### CUSTOMER-01 — Hồ sơ khách / lịch sử mua
 
@@ -455,7 +455,7 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 - **Exception:** ID nhân viên, ID không tồn tại, Seller không customers.read.
 - **Then / hậu điều kiện & integrity:** Select allowlist, không password/token; support theo userId thật.
 - **State transitions:** Read only.
-- **Bằng chứng kiểm thử cần đối chiếu:** `business:BA-CUSTOMER-01`, `browser:Business acceptance UI: admin customer`.
+- **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
 ### CUSTOMER-02 — Tiếp nhận hỗ trợ
 
@@ -466,7 +466,7 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 - **Exception:** Nội dung ngắn, ID/email giả không được ghép vào lịch sử người khác.
 - **Then / hậu điều kiện & integrity:** Không backfill userId bằng email; ghi thay đổi status có audit.
 - **State transitions:** NEW→READ→RESOLVED.
-- **Bằng chứng kiểm thử cần đối chiếu:** `business:BA-CUSTOMER-01`, `browser:Admin consistency`.
+- **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
 ### CUSTOMER-03 — Khóa / mở khách hàng
 
@@ -477,7 +477,7 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 - **Exception:** Khóa staff qua endpoint khách, không quyền, lỗi audit.
 - **Then / hậu điều kiện & integrity:** Status/version/sessions/audit atomic; mở không hồi sinh token cũ.
 - **State transitions:** Active↔Disabled.
-- **Bằng chứng kiểm thử cần đối chiếu:** `business:BA-CUSTOMER-02`, `browser:BUYER:`.
+- **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
 ### PROMO-01 — Thêm / sửa / vô hiệu voucher
 
@@ -488,7 +488,7 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 - **Exception:** PERCENT>100, start>end, ngày không tồn tại, usageLimit<used.
 - **Then / hậu điều kiện & integrity:** Audit atomic; không sửa snapshot đơn đã đặt.
 - **State transitions:** Active↔Inactive; Scheduled→Effective→Expired.
-- **Bằng chứng kiểm thử cần đối chiếu:** `business:BA-PROMO-01`, `business:BA-PROMO-02`, `business:BA-PROMO-04`, `browser:Business acceptance UI: scheduled`.
+- **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
 ### PROMO-02 — Áp mã / tranh lượt
 
@@ -499,18 +499,18 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 - **Exception:** Mã sai/hết/chưa mở/cạn; hai khách tranh lượt cuối.
 - **Then / hậu điều kiện & integrity:** Không tăng used khi order thất bại; không tăng quá quota.
 - **State transitions:** used N→N+1 or rollback.
-- **Bằng chứng kiểm thử cần đối chiếu:** `business:BA-PROMO-03`, `order:06 `, `order:07 `.
+- **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
 ### STAFF-01 — Tạo / sửa / khóa tài khoản
 
 - **Actors & RBAC:** staff.* / accounts.manage.
 - **Given / tiền điều kiện:** Không tự nâng quyền; actor có grant phù hợp.
-- **When / main:** Tạo ADMIN/SELLER/BUYER hoặc role được phép; sửa, khóa/mở.
-- **Alternative:** Legacy roles giữ tương thích.
-- **Exception:** Email trùng, role client không cho phép, khóa chính mình, loại SUPER_ADMIN cuối.
+- **When / main:** Tạo ADMIN/SELLER/CUSTOMER (chỉ ba vai trò chuẩn); sửa, khóa/mở.
+- **Alternative:** Chỉ chấp nhận CUSTOMER, SELLER, ADMIN; vai trò khác bị từ chối.
+- **Exception:** Email trùng, role client không cho phép, khóa chính mình, loại ADMIN cuối.
 - **Then / hậu điều kiện & integrity:** Role/status/version/session/audit atomic; mật khẩu không log.
 - **State transitions:** Active↔Disabled; Role assigned.
-- **Bằng chứng kiểm thử cần đối chiếu:** `rbac:14 `, `rbac:15 `, `rbac:16 `, `rbac:17 `, `rbac:26 `, `browser:ADMIN account management`.
+- **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
 ### STAFF-02 — RBAC / chống leo quyền
 
@@ -521,7 +521,7 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 - **Exception:** Ẩn UI nhưng gọi API trực tiếp; role giả; hết phiên; sửa ID ngoài scope.
 - **Then / hậu điều kiện & integrity:** Không thay dữ liệu khi denied; denial audit không chứa bí mật.
 - **State transitions:** Authorized / Denied.
-- **Bằng chứng kiểm thử cần đối chiếu:** `rbac:01 `, `rbac:04 `, `rbac:10 `, `rbac:11 `, `rbac:24 `, `browser:staff role`, `browser:SELLER:`.
+- **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
 ### STAFF-03 — Nhật ký thao tác
 
@@ -532,7 +532,7 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 - **Exception:** Không có API sửa/xóa audit; token/password/PII nhạy cảm phải loại.
 - **Then / hậu điều kiện & integrity:** Read only; financial ledger không bị viết lại.
 - **State transitions:** Append-only.
-- **Bằng chứng kiểm thử cần đối chiếu:** `rbac:20 `, `rbac:27 `, `phase5:25 `.
+- **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
 ### ANALYTICS-01 — Doanh thu / số đơn / trạng thái
 
@@ -543,7 +543,7 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 - **Exception:** Khoảng đảo/ngày sai/>366; section vượt quyền.
 - **Then / hậu điều kiện & integrity:** VND chính xác; unpaid COD không coi đã thu; giữ layout Tổng quan đã duyệt.
 - **State transitions:** Read only.
-- **Bằng chứng kiểm thử cần đối chiếu:** `analytics:01 `, `analytics:02 `, `analytics:03 `, `analytics:04 `, `analytics:07 `, `analytics:08 `, `browser:Admin redesign: compact`.
+- **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
 ### ANALYTICS-02 — Sản phẩm / khách / cohort
 
@@ -554,7 +554,7 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 - **Exception:** Không giả khách hoặc dữ liệu lịch sử.
 - **Then / hậu điều kiện & integrity:** Tổng hàng/giảm/refund nhất quán; tài chính khách theo quyền.
 - **State transitions:** Read only.
-- **Bằng chứng kiểm thử cần đối chiếu:** `analytics:09 `, `analytics:10 `, `analytics:11 `, `analytics:12 `, `analytics:25 `, `business:BA-DATA-01`.
+- **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
 ### ANALYTICS-03 — Tồn / giá vốn / lợi nhuận
 
@@ -565,7 +565,7 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 - **Exception:** Role thiếu quyền, giá vốn âm, chi phí lịch sử thiếu nguồn.
 - **Then / hậu điều kiện & integrity:** Đọc report không thay tồn; không tự tạo lãi khi thiếu cost.
 - **State transitions:** Known / Unknown costs.
-- **Bằng chứng kiểm thử cần đối chiếu:** `analytics:20 `, `analytics:21 `, `analytics:24 `, `analytics:30 `.
+- **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
 ### ANALYTICS-04 — Funnel / giỏ bỏ dở / attribution
 
@@ -576,7 +576,7 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 - **Exception:** Event key khác nội dung; campaign chứa PII; bộ lọc không hỗ trợ.
 - **Then / hậu điều kiện & integrity:** Không hồi dựng giả; không lưu raw search/PII; giỏ đã mua loại bỏ.
 - **State transitions:** Session→Cart→Checkout→Order.
-- **Bằng chứng kiểm thử cần đối chiếu:** `analytics:13 `, `analytics:14 `, `analytics:15 `, `analytics:16 `, `analytics:17 `, `analytics:18 `, `analytics:19 `, `analytics:26 `.
+- **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
 ### ANALYTICS-05 — COD / đối chiếu dữ liệu
 
@@ -587,7 +587,7 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 - **Exception:** Không tự sửa ledger để report khớp.
 - **Then / hậu điều kiện & integrity:** Không đếm COD remittance hai lần; refund pending chưa realized.
 - **State transitions:** Read only / discrepancy flagged.
-- **Bằng chứng kiểm thử cần đối chiếu:** `analytics:22 `, `analytics:23 `, `analytics:32 `.
+- **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
 ### ANALYTICS-06 — Lọc / phân trang / xuất CSV-Excel
 
@@ -598,7 +598,7 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 - **Exception:** Format lạ, ngày sai, role không export hoặc không section.
 - **Then / hậu điều kiện & integrity:** CSV injection escaped; XLSX string literal, kiểu số/ngày; private no-store; bounded pages.
 - **State transitions:** Read only + export audit.
-- **Bằng chứng kiểm thử cần đối chiếu:** `analytics:27 `, `analytics:28 `, `analytics:29 `, `analytics:31 `, `business:BA-REPORT-01`, `business:BA-REPORT-02`, `browser:Business acceptance UI: scheduled`.
+- **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
 ### SETTINGS-01 — Thông tin cửa hàng / ngôn ngữ / tiền tệ
 
@@ -609,7 +609,7 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 - **Exception:** Email/url/phone/sizeGuide sai; role tài chính bị giới hạn.
 - **Then / hậu điều kiện & integrity:** Không đổi tiền VND của checkout/ledger; validate toàn bộ trước ghi.
 - **State transitions:** Existing→Updated.
-- **Bằng chứng kiểm thử cần đối chiếu:** `business:BA-SETTINGS-01`, `business:BA-SETTINGS-02`, `browser:Localization:`.
+- **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
 ### SETTINGS-02 — Thông tin chính sách bán / đổi trả
 
@@ -620,7 +620,7 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 - **Exception:** HTML/script chỉ là text; không dùng nội dung để đổi engine policy.
 - **Then / hậu điều kiện & integrity:** Giữ phiên bản rule 72h và snapshot hồ sơ cũ; không tự sửa policy cốt lõi.
 - **State transitions:** Existing instructions→Updated.
-- **Bằng chứng kiểm thử cần đối chiếu:** `business:BA-SETTINGS-03`, `browser:Business acceptance UI: scheduled`.
+- **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
 ### SYSTEM-01 — Lỗi / retry / recovery / backup
 
@@ -631,13 +631,13 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 - **Exception:** Audit fail, duplicate request, timeout, FK/unique violation.
 - **Then / hậu điều kiện & integrity:** Không tồn/tiền/ledger dở dang; main history giữ nguyên.
 - **State transitions:** Failure→Rollback→Retry→Committed.
-- **Bằng chứng kiểm thử cần đối chiếu:** `business:BA-CART-06`, `business:BA-PARTIAL-08`, `business:BA-SETTINGS-02`, `phase5:29 `, `browser:customer login`.
+- **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
 ## Cách thực thi và lưu bằng chứng
 
 - `npm test`: unit và biên tài chính/date/state/RBAC.
-- `npm run test:business`: migration + fixture DB mới + build production + toàn bộ API/integration Phase 1–6 + kịch bản mới BA-* (bao gồm concurrency, fault injection, recovery).
-- `npx tsx scripts/run-final-uat-browser.ts`: clone main vào DB thử riêng, thực thi mọi E2E UAT và backup/restore kiểm chứng; không reset main.
+- `npm run test:business`: migration + fixture DB mới + build production + toàn bộ API/integration 6 + kịch bản mới BA-* (bao gồm concurrency, fault injection, recovery).
+- `npx tsx scripts/testing/run-uat-browser.ts`: clone main vào DB thử riêng, thực thi mọi E2E UAT và backup/restore kiểm chứng; không reset main.
 - `npm run lint` và `npx tsc --noEmit`: kiểm tra tĩnh.
 - `verification/business-acceptance/`: kết quả hiện tại, ma trận status, nhật ký và ảnh; xem báo cáo kết quả để phân biệt PASS thực thi với BLOCKED ngoài phạm vi.
 

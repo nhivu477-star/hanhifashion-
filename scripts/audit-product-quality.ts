@@ -35,11 +35,11 @@ const summary = Object.fromEntries(
   ]),
 );
 await writeFile(
-  "verification/phase5-product-quality.json",
+  "verification/product-quality.json",
   JSON.stringify({ at: new Date().toISOString(), summary, records }, null, 2),
 );
 await writeFile(
-  "verification/phase5-media-audit.json",
+  "verification/media-audit.json",
   JSON.stringify(
     { total: urls.length, unavailable: unavailable.size, media },
     null,

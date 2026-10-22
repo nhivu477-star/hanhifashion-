@@ -8,7 +8,7 @@ export async function authenticateCartFixture(
 ) {
   if (cookies.has("hn_session")) return;
   if (
-    !/^file:\.\/phase1-orders-[\w-]+\.db$/.test(process.env.DATABASE_URL ?? "")
+    !/^file:\.\/business-tests-[\w-]+\.db$/.test(process.env.DATABASE_URL ?? "")
   )
     throw Error("Test DB required");
   const template = await db.user.findFirstOrThrow({
@@ -19,7 +19,7 @@ export async function authenticateCartFixture(
     data: {
       name: "QA authenticated cart",
       phone: "0900000000",
-      email: id + "@phase6.test",
+      email: id + "@analytics.test",
       passwordHash: template.passwordHash,
     },
   });

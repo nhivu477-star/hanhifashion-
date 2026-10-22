@@ -9,6 +9,7 @@ import {
 } from "@/lib/localization/server";
 import { currentUser } from "@/lib/auth";
 import { isStaff, can } from "@/lib/rbac";
+import { accountLoginDestination } from "@/lib/account-types";
 import { Suspense } from "react";
 import { AnalyticsTracker } from "@/components/analytics-tracker";
 import { ContactLinks } from "@/components/contact-links";
@@ -109,9 +110,7 @@ export default async function RootLayout({
             <Header
               managementHref={
                 viewer && isStaff(viewer.role)
-                  ? viewer.role === "SELLER"
-                    ? "/seller"
-                    : "/admin"
+                  ? accountLoginDestination(viewer.role)
                   : undefined
               }
               navigation={navigation}
@@ -172,7 +171,11 @@ export default async function RootLayout({
                 <div>
                   <h3>KẾT NỐI VỚI HÀ NHI FASHION</h3>
                   <ContactLinks compact />
-                  <Link href="/admin">Quản trị cửa hàng</Link>
+                  {viewer && isStaff(viewer.role) && (
+                    <Link href={accountLoginDestination(viewer.role)}>
+                      {viewer.role === "SELLER" ? "Bảng điều khiển bán hàng" : "Quản trị cửa hàng"}
+                    </Link>
+                  )}
                 </div>
               </div>
               <div className="footer-bottom">

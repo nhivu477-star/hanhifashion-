@@ -25,7 +25,11 @@ const env = {
 };
 await mkdir("verification/final-uat", { recursive: true });
 const original = await readFile("next-env.d.ts", "utf8");
-execFileSync("npx", ["tsx", "scripts/prepare-final-uat.ts"], {
+execFileSync("npx", ["prisma", "migrate", "deploy"], {
+  env,
+  stdio: "inherit",
+});
+execFileSync("npx", ["tsx", "scripts/testing/prepare-uat.ts"], {
   env,
   stdio: "inherit",
 });

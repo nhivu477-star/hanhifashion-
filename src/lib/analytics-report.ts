@@ -2,7 +2,8 @@ import { qualityInclude, productQuality } from "./product-quality";
 import { Prisma } from "@prisma/client";
 import { db } from "./db";
 import { ReportFilter, conversionRate, reportFilter } from "./analytics-rules";
-import { can } from "./rbac";
+import { can, assertRolePermission } from "./rbac";
+import { analyticsPermission } from "./analytics-access";
 export type Row = Record<string, string | number | null>;
 export type Report = {
   metrics: { label: string; value: number | null; unit?: string }[];
@@ -57,6 +58,7 @@ export async function analyticsRows(
   limit = 24,
   offset = (f.page - 1) * 24,
 ): Promise<{ rows: Row[]; count: number }> {
+  assertRolePermission(role, analyticsPermission[f.section]);
   let sql: Prisma.Sql;
   const order =
     f.sort === "name"
@@ -468,7 +470,7 @@ export async function analyticsReport(
     metric("Catalog cần xác minh (toàn bộ)", readiness["NEEDS REVIEW"] ?? 0);
     metric("Catalog lỗi cần rà soát (toàn bộ)", readiness.INVALID ?? 0);
     report.notes.push(
-      "Readiness catalog dùng cùng bộ kiểm tra với quản trị Phase 5 và áp dụng toàn catalog, độc lập bộ lọc doanh số. Không tự thay đổi giá, tồn hay trạng thái công bố.",
+      "Độ sẵn sàng danh mục dùng cùng bộ kiểm tra với quản trị và áp dụng toàn danh mục, độc lập bộ lọc doanh số. Không tự thay đổi giá, tồn hay trạng thái công bố.",
     );
   }
   if (f.section === "customers") {

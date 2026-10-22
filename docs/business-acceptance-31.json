@@ -1,7 +1,5 @@
 {
   "version": "2026-10-20",
-  "sourceDocument": "/Users/duyanh/Downloads/Nhóm 4-Lớp 1.docx",
-  "sourceChapters": "1–2; mẫu quy trình, không áp dụng máy móc cấu trúc CSDL/ngoại vi trong Word",
   "scope": "LOCAL E-COMMERCE DEMO; PROJECT_SPEC + các chính sách HÀ NHI đã duyệt",
   "useCases": [
     {
@@ -10,7 +8,7 @@
       "mappedBusinessFunctions": [
         "AUTH-01"
       ],
-      "applicableScope": "Tài khoản mua hàng dùng role CUSTOMER tương ứng BUYER; email là định danh đăng nhập duy nhất. SĐT là thông tin liên hệ, không ép unique vì dữ liệu cửa hàng hiện có và không dùng đăng nhập bằng SĐT. Đăng ký hiện tự đăng nhập; không tự cấp quyền từ payload.",
+      "applicableScope": "Tài khoản mua hàng dùng role CUSTOMER ; đăng nhập bằng email hoặc số điện thoại. Đăng ký yêu cầu ít nhất một trong hai; giữ validation và quy tắc duy nhất của định danh hiện hành. Đăng ký hiện tự đăng nhập; không tự cấp quyền từ payload.",
       "requiredEvidence": [
         "business:^BA-AUTH-02",
         "business:^BA-AUDIT-01",
@@ -20,7 +18,7 @@
         {
           "id": "UC01-M",
           "group": "Luồng chính",
-          "given": "Không có tài khoản cùng email",
+          "given": "Không có tài khoản trùng định danh email/số điện thoại",
           "when": "Nhập hồ sơ và mật khẩu hợp lệ → tạo tài khoản → đăng nhập",
           "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
           "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
@@ -28,7 +26,7 @@
         {
           "id": "UC01-A",
           "group": "Luồng phụ áp dụng",
-          "given": "Không có tài khoản cùng email",
+          "given": "Không có tài khoản trùng định danh email/số điện thoại",
           "when": "Email khác chữ hoa/thường được chuẩn hóa; wishlist được hợp nhất",
           "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
           "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
@@ -36,7 +34,7 @@
         {
           "id": "UC01-E",
           "group": "Ngoại lệ",
-          "given": "Không có tài khoản cùng email",
+          "given": "Không có tài khoản trùng định danh email/số điện thoại",
           "when": "Email trùng, điện thoại sai, mật khẩu ngắn/không khớp; chèn role không được nâng quyền",
           "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
           "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
@@ -44,7 +42,7 @@
         {
           "id": "UC01-P",
           "group": "Quyền",
-          "given": "Không có tài khoản cùng email",
+          "given": "Không có tài khoản trùng định danh email/số điện thoại",
           "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
           "then": "Guest → CUSTOMER",
           "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
@@ -52,7 +50,7 @@
         {
           "id": "UC01-I",
           "group": "Toàn vẹn và hậu điều kiện",
-          "given": "Không có tài khoản cùng email",
+          "given": "Không có tài khoản trùng định danh email/số điện thoại",
           "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
           "then": "User duy nhất; passwordHash bcrypt; phiên HttpOnly; không lộ mật khẩu",
           "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
@@ -60,7 +58,7 @@
         {
           "id": "UC01-U",
           "group": "UI/API/DB và trạng thái",
-          "given": "Không có tài khoản cùng email",
+          "given": "Không có tài khoản trùng định danh email/số điện thoại",
           "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
           "then": "Guest → CUSTOMER",
           "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
@@ -85,13 +83,13 @@
         "business:^BA-AUTH-06",
         "rbac:^24 ",
         "browser:^SELLER:",
-        "browser:^BUYER:"
+        "browser:^CUSTOMER:"
       ],
       "acceptanceCriteria": [
         {
           "id": "UC02-M",
           "group": "Luồng chính",
-          "given": "Thông tin đăng nhập hợp lệ; tài khoản chưa bị khóa; Token còn hạn 30 phút, chưa dùng; Mật khẩu hiện tại đúng; tài khoản hoạt động",
+          "given": "Email hoặc số điện thoại và mật khẩu hợp lệ; tài khoản chưa bị khóa; Token còn hạn 30 phút, chưa dùng; Mật khẩu hiện tại đúng; tài khoản hoạt động",
           "when": "Đăng nhập → cookie → đúng trang theo quyền; đăng xuất → xóa phiên; Tạo mail local → dùng token → đổi hash → thu hồi phiên; Kiểm tra mật khẩu → đổi → thu hồi tất cả phiên",
           "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
           "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
@@ -99,15 +97,15 @@
         {
           "id": "UC02-A",
           "group": "Luồng phụ áp dụng",
-          "given": "Thông tin đăng nhập hợp lệ; tài khoản chưa bị khóa; Token còn hạn 30 phút, chưa dùng; Mật khẩu hiện tại đúng; tài khoản hoạt động",
-          "when": "returnTo nội bộ hợp lệ; ADMIN/SELLER/BUYER có điểm đến riêng; Email không tồn tại nhận cùng thông báo; retry sau rollback; Đăng nhập lại bằng mật khẩu mới",
+          "given": "Email hoặc số điện thoại và mật khẩu hợp lệ; tài khoản chưa bị khóa; Token còn hạn 30 phút, chưa dùng; Mật khẩu hiện tại đúng; tài khoản hoạt động",
+          "when": "returnTo nội bộ hợp lệ; ADMIN/SELLER/CUSTOMER có điểm đến riêng; Email không tồn tại nhận cùng thông báo; retry sau rollback; Đăng nhập lại bằng mật khẩu mới",
           "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
           "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
         },
         {
           "id": "UC02-E",
           "group": "Ngoại lệ",
-          "given": "Thông tin đăng nhập hợp lệ; tài khoản chưa bị khóa; Token còn hạn 30 phút, chưa dùng; Mật khẩu hiện tại đúng; tài khoản hoạt động",
+          "given": "Email hoặc số điện thoại và mật khẩu hợp lệ; tài khoản chưa bị khóa; Token còn hạn 30 phút, chưa dùng; Mật khẩu hiện tại đúng; tài khoản hoạt động",
           "when": "Sai mật khẩu, khóa, returnTo bên ngoài, phiên cũ/hết hạn; Token hết hạn, đã dùng; hai yêu cầu đồng thời chỉ một thành công; Sai mật khẩu cũ, phiên hết hạn, lỗi audit, hai lần đổi tranh chấp",
           "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
           "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
@@ -115,7 +113,7 @@
         {
           "id": "UC02-P",
           "group": "Quyền",
-          "given": "Thông tin đăng nhập hợp lệ; tài khoản chưa bị khóa; Token còn hạn 30 phút, chưa dùng; Mật khẩu hiện tại đúng; tài khoản hoạt động",
+          "given": "Email hoặc số điện thoại và mật khẩu hợp lệ; tài khoản chưa bị khóa; Token còn hạn 30 phút, chưa dùng; Mật khẩu hiện tại đúng; tài khoản hoạt động",
           "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
           "then": "Mọi tài khoản hoạt động; Guest với token bí mật một lần; Tài khoản đăng nhập",
           "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
@@ -123,7 +121,7 @@
         {
           "id": "UC02-I",
           "group": "Toàn vẹn và hậu điều kiện",
-          "given": "Thông tin đăng nhập hợp lệ; tài khoản chưa bị khóa; Token còn hạn 30 phút, chưa dùng; Mật khẩu hiện tại đúng; tài khoản hoạt động",
+          "given": "Email hoặc số điện thoại và mật khẩu hợp lệ; tài khoản chưa bị khóa; Token còn hạn 30 phút, chưa dùng; Mật khẩu hiện tại đúng; tài khoản hoạt động",
           "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
           "then": "Không tái sử dụng phiên bị thu hồi; không nâng quyền từ client; Claim token + hash + thu hồi phiên + audit cùng transaction; CAS hash cũ; hash và thu hồi phiên/audit atomic",
           "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
@@ -131,7 +129,7 @@
         {
           "id": "UC02-U",
           "group": "UI/API/DB và trạng thái",
-          "given": "Thông tin đăng nhập hợp lệ; tài khoản chưa bị khóa; Token còn hạn 30 phút, chưa dùng; Mật khẩu hiện tại đúng; tài khoản hoạt động",
+          "given": "Email hoặc số điện thoại và mật khẩu hợp lệ; tài khoản chưa bị khóa; Token còn hạn 30 phút, chưa dùng; Mật khẩu hiện tại đúng; tài khoản hoạt động",
           "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
           "then": "Anonymous ↔ Authenticated; UNUSED → USED; Authenticated → Reauthentication required",
           "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
@@ -213,9 +211,9 @@
       ],
       "applicableScope": "Preview local có ảnh tham chiếu, không coi là hàng/ảnh đã xác minh thương mại. Chế độ commercial vẫn kiểm publication/readiness.",
       "requiredEvidence": [
-        "phase5:^01 ",
-        "phase5:^05 ",
-        "phase5:^26 ",
+        "quality:^01 ",
+        "quality:^05 ",
+        "quality:^26 ",
         "browser:^responsive"
       ],
       "acceptanceCriteria": [
@@ -278,7 +276,7 @@
       "applicableScope": "Áp dụng các luồng hợp lệ trong module hiện hữu, theo PROJECT_SPEC và RBAC hiện tại.",
       "requiredEvidence": [
         "business:^BA-SEARCH-01",
-        "phase5:^26 ",
+        "quality:^26 ",
         "browser:^responsive"
       ],
       "acceptanceCriteria": [
@@ -344,7 +342,7 @@
       "requiredEvidence": [
         "business:^BA-CATALOG-02",
         "business:^BA-CATALOG-03",
-        "phase5:^04 ",
+        "quality:^04 ",
         "browser:^customer login"
       ],
       "acceptanceCriteria": [
@@ -684,7 +682,7 @@
         "order:^14 ",
         "shipping:^14 ",
         "returns:^23 ",
-        "browser:^BUYER:"
+        "browser:^CUSTOMER:"
       ],
       "acceptanceCriteria": [
         {
@@ -1212,14 +1210,14 @@
         "rbac:^14 ",
         "rbac:^15 ",
         "browser:^ADMIN account management",
-        "browser:^BUYER:"
+        "browser:^CUSTOMER:"
       ],
       "acceptanceCriteria": [
         {
           "id": "UC19-M",
           "group": "Luồng chính",
           "given": "Đúng CUSTOMER; phân trang; CUSTOMER; không phải chính tài khoản thao tác; Không tự nâng quyền; actor có grant phù hợp",
-          "when": "Danh sách → hồ sơ → đơn và số đã thu → yêu cầu hỗ trợ; Khóa→thu hồi phiên; mở cho đăng nhập mới; Tạo ADMIN/SELLER/BUYER hoặc role được phép; sửa, khóa/mở",
+          "when": "Danh sách → hồ sơ → đơn và số đã thu → yêu cầu hỗ trợ; Khóa→thu hồi phiên; mở cho đăng nhập mới; Tạo ADMIN/SELLER/CUSTOMER (chỉ ba vai trò chuẩn); sửa, khóa/mở",
           "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
           "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
         },
@@ -1227,7 +1225,7 @@
           "id": "UC19-A",
           "group": "Luồng phụ áp dụng",
           "given": "Đúng CUSTOMER; phân trang; CUSTOMER; không phải chính tài khoản thao tác; Không tự nâng quyền; actor có grant phù hợp",
-          "when": "Khách chưa mua/chưa hỗ trợ; quyền chỉ đọc; Retry trạng thái cùng kết quả; lịch sử mua vẫn giữ; Legacy roles giữ tương thích",
+          "when": "Khách chưa mua/chưa hỗ trợ; quyền chỉ đọc; Retry trạng thái cùng kết quả; lịch sử mua vẫn giữ; Chỉ chấp nhận CUSTOMER, SELLER, ADMIN; vai trò khác bị từ chối",
           "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
           "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
         },
@@ -1235,7 +1233,7 @@
           "id": "UC19-E",
           "group": "Ngoại lệ",
           "given": "Đúng CUSTOMER; phân trang; CUSTOMER; không phải chính tài khoản thao tác; Không tự nâng quyền; actor có grant phù hợp",
-          "when": "ID nhân viên, ID không tồn tại, Seller không customers.read; Khóa staff qua endpoint khách, không quyền, lỗi audit; Email trùng, role client không cho phép, khóa chính mình, loại SUPER_ADMIN cuối",
+          "when": "ID nhân viên, ID không tồn tại, Seller không customers.read; Khóa staff qua endpoint khách, không quyền, lỗi audit; Email trùng, role client không cho phép, khóa chính mình, loại ADMIN cuối",
           "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
           "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
         },
@@ -1291,7 +1289,7 @@
           "id": "UC20-M",
           "group": "Luồng chính",
           "given": "Không tự nâng quyền; actor có grant phù hợp; Phiên active/version đúng; quyền tại backend/service; Nhân viên có quyền đọc nhật ký",
-          "when": "Tạo ADMIN/SELLER/BUYER hoặc role được phép; sửa, khóa/mở; Menu/form theo quyền; API/service xác minh riêng; Lọc/xem audit theo actor/resource/result",
+          "when": "Tạo ADMIN/SELLER/CUSTOMER (chỉ ba vai trò chuẩn); sửa, khóa/mở; Menu/form theo quyền; API/service xác minh riêng; Lọc/xem audit theo actor/resource/result",
           "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
           "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
         },
@@ -1299,7 +1297,7 @@
           "id": "UC20-A",
           "group": "Luồng phụ áp dụng",
           "given": "Không tự nâng quyền; actor có grant phù hợp; Phiên active/version đúng; quyền tại backend/service; Nhân viên có quyền đọc nhật ký",
-          "when": "Legacy roles giữ tương thích; Vai trò chuyên biệt chỉ được nhóm việc tương ứng; Bản ghi cũ thiếu actor được giữ",
+          "when": "Chỉ chấp nhận CUSTOMER, SELLER, ADMIN; vai trò khác bị từ chối; Vai trò chuyên biệt chỉ được nhóm việc tương ứng; Bản ghi cũ thiếu actor được giữ",
           "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
           "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
         },
@@ -1307,7 +1305,7 @@
           "id": "UC20-E",
           "group": "Ngoại lệ",
           "given": "Không tự nâng quyền; actor có grant phù hợp; Phiên active/version đúng; quyền tại backend/service; Nhân viên có quyền đọc nhật ký",
-          "when": "Email trùng, role client không cho phép, khóa chính mình, loại SUPER_ADMIN cuối; Ẩn UI nhưng gọi API trực tiếp; role giả; hết phiên; sửa ID ngoài scope; Không có API sửa/xóa audit; token/password/PII nhạy cảm phải loại",
+          "when": "Email trùng, role client không cho phép, khóa chính mình, loại ADMIN cuối; Ẩn UI nhưng gọi API trực tiếp; role giả; hết phiên; sửa ID ngoài scope; Không có API sửa/xóa audit; token/password/PII nhạy cảm phải loại",
           "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
           "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
         },
@@ -1354,11 +1352,11 @@
         "business:^BA-PRODUCT-02",
         "business:^BA-CATALOG-02",
         "business:^BA-CATALOG-03",
-        "phase5:^02 ",
-        "phase5:^03 ",
-        "phase5:^06 ",
-        "phase5:^07 ",
-        "phase5:^08 ",
+        "quality:^02 ",
+        "quality:^03 ",
+        "quality:^06 ",
+        "quality:^07 ",
+        "quality:^08 ",
         "order:^12 ",
         "browser:^SELLER:"
       ],
@@ -2069,8 +2067,8 @@
         "business:^BA-FEEDBACK-04",
         "rbac:^20 ",
         "rbac:^27 ",
-        "phase5:^17-20",
-        "phase5:^27 "
+        "quality:^17-20",
+        "quality:^27 "
       ],
       "acceptanceCriteria": [
         {

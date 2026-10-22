@@ -1,14 +1,14 @@
-import { packPreparedFixture } from "./test-support/packing-test-fixture";
-import { authenticateCartFixture } from "./test-support/analytics-test-client";
+import { packPreparedFixture } from "../test-support/packing-test-fixture";
+import { authenticateCartFixture } from "../test-support/analytics-test-client";
 import assert from "node:assert/strict";
 import { readFile, writeFile } from "node:fs/promises";
 import { randomUUID, createHash } from "node:crypto";
 import { PrismaClient } from "@prisma/client";
-if (!process.env.DATABASE_URL?.includes("phase1-orders"))
+if (!/^file:\.\/business-tests-[\w-]+\.db$/.test(process.env.DATABASE_URL ?? ""))
   throw Error("Isolated database required");
 const db = new PrismaClient();
 const fixture = JSON.parse(
-  await readFile("verification/phase1-fixtures.json", "utf8"),
+  await readFile("verification/business-fixtures.json", "utf8"),
 );
 const base = "http://127.0.0.1:3101";
 class Client {
@@ -72,7 +72,7 @@ async function run(test: string, fn: () => Promise<void>) {
 const customer = {
   name: "Khách Giao Nhận QA",
   phone: "0912345678",
-  email: "shipping@phase2a.test",
+  email: "shipping@shipping.test",
   province: "Hưng Yên",
   ward: "Phường kiểm thử",
   street: "123 Đường kiểm thử",
@@ -280,16 +280,25 @@ await run(
     assert.equal(fresh.outstandingCOD, s.expectedCOD);
     assert.equal(fresh.order.paymentStatus, "PAID");
     assert.equal(await db.payment.count({ where: { orderId: first.o.id } }), 1);
-    const r = await admin.req("/admin/bao-cao");
-    const legacy = await db.order.aggregate({
-      where: { paymentStatus: "PAID", shipment: null },
-      _sum: { total: true },
+    const reports = await admin.req("/admin/phan-tich/reports");
+    assert.equal(reports.status, 200);
+    assert(reports.body.includes("Doanh số hàng đã thanh toán"));
+    const finance = await admin.req("/api/analytics/report?section=finance&period=30");
+    assert.equal(finance.status, 200);
+    const ledger = await db.shipment.aggregate({
+      _sum: { collectedCOD: true, remittedCOD: true, outstandingCOD: true },
     });
-    assert(
-      r.body.includes(
-        `<span>Doanh thu đã thu</span><strong>${new Intl.NumberFormat("vi-VN").format(legacy._sum.total ?? 0)}đ</strong>`,
-      ),
-    );
+    for (const [label, value] of [
+      ["Khách đã trả COD", ledger._sum.collectedCOD ?? 0],
+      ["COD đã chuyển về", ledger._sum.remittedCOD ?? 0],
+      ["COD còn phải chuyển", ledger._sum.outstandingCOD ?? 0],
+    ] as const) {
+      const metric = finance.body.metrics.find(
+        (entry: { label: string; value: number | null }) => entry.label === label,
+      );
+      assert(metric, `Canonical finance report includes ${label}`);
+      assert.equal(metric.value, value);
+    }
   },
 );
 await run(
@@ -551,16 +560,16 @@ await run("14 cross-customer shipment access denied", async () => {
   assert.notEqual(t.status, 200);
 });
 await run(
-  "15 unauthorized STAFF/customer cannot record or reconcile",
+  "15 SELLER/customer/guest cannot record or reconcile financial collections",
   async () => {
     const raw = randomUUID();
     const staff = await db.user.create({
       data: {
         name: "Staff QA",
-        email: `staff-${raw}@phase2a.test`,
+        email: `staff-${raw}@shipping.test`,
         phone: "",
         passwordHash: "unusable",
-        role: "STAFF",
+        role: "SELLER",
       },
     });
     await db.session.create({
@@ -640,9 +649,9 @@ await run(
     );
   },
 );
-await run("17 Phase 1 regression evidence 17/17", async () => {
+await run("17 order regression evidence 17/17", async () => {
   const r = JSON.parse(
-    await readFile("verification/order-phase1-results.json", "utf8"),
+    await readFile("verification/order-results.json", "utf8"),
   );
   assert.equal(r.database, process.env.DATABASE_URL);
   assert.equal(r.results.length, 17);
@@ -683,7 +692,7 @@ await run(
   },
 );
 await writeFile(
-  "verification/shipping-phase2a-results.json",
+  "verification/shipping-results.json",
   JSON.stringify(
     {
       date: new Date().toISOString(),

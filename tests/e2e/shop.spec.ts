@@ -246,7 +246,7 @@ test("11 admin dashboard and all management routes", async ({ request }) => {
     "/admin/kho-hang",
     "/admin/ma-giam-gia",
     "/admin/banner",
-    "/admin/bao-cao",
+    "/admin/phan-tich/reports",
     "/admin/cai-dat",
   ])
     expect((await request.get(route)).status(), route).toBe(200);
@@ -400,10 +400,10 @@ test("17 guest wishlist persists and merges on registration", async ({
   await expect(page.locator(".product-card")).toHaveCount(1);
   await page.goto("/dang-ky");
   await page.getByLabel("Họ và tên", { exact: true }).fill("Khách Yêu Thích");
-  await page.getByLabel("Email", { exact: true }).fill("wishlist@hanhi.test");
-  await page.getByLabel("Số điện thoại", { exact: true }).fill("0912345678");
+  await page.locator('input[name="email"]').fill("wishlist@hanhi.test");
+  await page.locator('input[name="phone"]').fill("0912345678");
   await page
-    .getByLabel("Mật khẩu (ít nhất 10 ký tự)", { exact: true })
+    .locator('input[name="password"]')
     .fill("Wishlist-password-123");
   await page
     .getByLabel("Xác nhận mật khẩu", { exact: true })

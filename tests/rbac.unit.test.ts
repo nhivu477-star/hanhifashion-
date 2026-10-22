@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  accountRoles,
   permissions,
   can,
   isStaff,
@@ -8,59 +9,55 @@ import {
   assertRolePermission,
 } from "../src/lib/rbac";
 import { safeAuditValue } from "../src/lib/authorization";
-describe("Phase 4 permission boundaries", () => {
-  it("SUPER_ADMIN explicit full grants", () => {
-    expect(permissions.every((p) => can("SUPER_ADMIN", p))).toBe(true);
+import { authorizeAdminAction } from "../src/lib/admin-authorization";
+import { analyticsRows } from "../src/lib/analytics-report";
+import { reportFilter } from "../src/lib/analytics-rules";
+
+describe("Canonical account permission boundaries", () => {
+  it("exposes exactly three tiers and ADMIN has every permission", () => {
+    expect(Object.keys(rolePermissions).sort()).toEqual([...accountRoles].sort());
+    expect(accountRoles).toEqual(["CUSTOMER", "SELLER", "ADMIN"]);
+    expect(assignableRoles).toEqual(["SELLER", "ADMIN"]);
+    expect(permissions.every((p) => can("ADMIN", p))).toBe(true);
   });
-  it("unknown roles and generic STAFF default deny", () => {
-    expect(isStaff("STAFF")).toBe(false);
-    expect(
-      permissions.some(
-        (p) => can("STAFF", p) || can("untrusted", p) || can("CUSTOMER", p),
-      ),
-    ).toBe(false);
+  it("customer, unknown, retired and prototype names default deny", () => {
+    for (const role of ["CUSTOMER", "STAFF", "SUPER_ADMIN", "PRODUCT_STAFF", "untrusted", "__proto__", "constructor"])
+      expect(permissions.some((permission) => can(role, permission))).toBe(false);
+    expect(isStaff("CUSTOMER")).toBe(false);
+    expect(isStaff("SUPER_ADMIN")).toBe(false);
+    expect(isStaff("__proto__")).toBe(false);
   });
-  it("operational manager cannot assign roles or execute financial actions", () => {
-    expect(can("STORE_MANAGER", "orders.manage")).toBe(true);
-    expect(can("STORE_MANAGER", "roles.assign")).toBe(false);
-    expect(can("STORE_MANAGER", "refunds.execute")).toBe(false);
+  it("seller operates sales, stock, shipping and support without identity or financial powers", () => {
+    expect(isStaff("SELLER")).toBe(true);
+    for (const permission of ["products.create", "inventory.adjust", "orders.manage", "shipping.update", "returns.review", "returns.inspect", "returns.exchange", "inquiries.manage"] as const)
+      expect(can("SELLER", permission)).toBe(true);
+    for (const permission of ["accounts.manage", "staff.read", "staff.create", "staff.update", "staff.disable", "roles.assign", "customers.manage", "customers.read", "audit.read", "cod.read", "cod.collection.confirm", "cod.remittance.record", "cod.reconcile", "refunds.read", "refunds.approve", "refunds.execute", "analytics.profit.read", "analytics.finance.read", "analytics.costs.manage"] as const)
+      expect(can("SELLER", permission)).toBe(false);
   });
-  it("inventory and finance duties are separated", () => {
-    expect(can("INVENTORY_STAFF", "inventory.adjust")).toBe(true);
-    expect(can("INVENTORY_STAFF", "refunds.approve")).toBe(false);
-    expect(can("FINANCE_STAFF", "inventory.adjust")).toBe(false);
-    expect(can("FINANCE_STAFF", "cod.reconcile")).toBe(true);
+  it("all grants refer to known permissions", () => {
+    for (const role of accountRoles)
+      expect(rolePermissions[role].every((p) => permissions.includes(p))).toBe(true);
+    expect(() => assertRolePermission("SELLER", "roles.assign")).toThrow();
   });
-  it("support reviews without refund execution, content without ledger", () => {
-    expect(can("CUSTOMER_SUPPORT", "returns.review")).toBe(true);
-    expect(can("CUSTOMER_SUPPORT", "refunds.execute")).toBe(false);
-    expect(can("CONTENT_STAFF", "cod.read")).toBe(false);
+  it("guards management API actions independently of supplied payload roles", async () => {
+    for (const action of ["admin/accounts/create", "admin/staff/role", "admin/customer", "admin/returns/refund", "admin/shipping/collection", "admin/settings"])
+      await expect(authorizeAdminAction("SELLER", action, { role: "ADMIN" })).rejects.toThrow();
+    for (const action of ["admin/product", "admin/stock", "admin/order/pack", "admin/shipping/create", "admin/inquiry"])
+      await expect(authorizeAdminAction("SELLER", action, {})).resolves.toBeUndefined();
+    await expect(authorizeAdminAction("CUSTOMER", "admin/product", {})).rejects.toThrow();
+    await expect(authorizeAdminAction("ADMIN", "admin/accounts/create", {})).resolves.toBeUndefined();
+    await expect(authorizeAdminAction("ADMIN", "admin/unknown", {})).rejects.toThrow();
   });
-  it("legacy ADMIN keeps operations but is not silently promoted", () => {
-    expect(can("ADMIN", "cod.reconcile")).toBe(true);
-    expect(can("ADMIN", "roles.assign")).toBe(false);
-    expect(can("ADMIN", "staff.create")).toBe(false);
-  });
-  it("all role grants refer to known permissions", () => {
-    for (const role of assignableRoles)
-      expect(rolePermissions[role].every((p) => permissions.includes(p))).toBe(
-        true,
-      );
-    expect(() => assertRolePermission("ORDER_STAFF", "roles.assign")).toThrow();
+  it("denies unauthorized direct analytics reads before querying data", async () => {
+    await expect(analyticsRows(reportFilter({ section: "finance" }), "SELLER")).rejects.toThrow();
+    await expect(analyticsRows(reportFilter({ section: "inventory" }), "CUSTOMER")).rejects.toThrow();
   });
   it("audit sanitizer drops credentials and unrelated identity recursively", () => {
-    const s = JSON.stringify(
-      safeAuditValue({
-        password: "private-password",
-        sessionToken: "private-token",
-        nested: {
-          email: "private-email",
-          role: "ORDER_STAFF",
-          passwordHash: "private-hash",
-        },
-      }),
-    );
+    const s = JSON.stringify(safeAuditValue({
+      password: "private-password", sessionToken: "private-token",
+      nested: { email: "private-email", role: "SELLER", passwordHash: "private-hash" },
+    }));
     expect(s).not.toContain("private");
-    expect(s).toContain("ORDER_STAFF");
+    expect(s).toContain("SELLER");
   });
 });

@@ -15,7 +15,7 @@ export async function packPreparedFixture(
   id: string,
 ) {
   if (
-    !/^file:\.\/phase1-orders-[\w-]+\.db$/.test(process.env.DATABASE_URL ?? "")
+    !/^file:\.\/business-tests-[\w-]+\.db$/.test(process.env.DATABASE_URL ?? "")
   )
     throw Error("Isolated fixture only");
   const order = await db.order.findUniqueOrThrow({

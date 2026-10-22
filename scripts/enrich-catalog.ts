@@ -318,10 +318,10 @@ export async function enrichCatalog(db: PrismaClient, refreshOutfits = false) {
       ).map((p) => (/^HN\d+$/.test(p.sku) ? Number(p.sku.slice(2)) : 0)),
     ) + 1;
   // Seed the original 180 first so fresh test databases preserve the same SKU/asset mapping as upgraded stores.
-  for (const phase of [0, 1]) {
+  for (const catalogPass of [0, 1]) {
     for (const [slug, fullList] of Object.entries(designs)) {
       const originalCount = fullList.length - expandedDesigns[slug].length;
-      const list = phase === 0 ? fullList.slice(0, originalCount) : fullList;
+      const list = catalogPass === 0 ? fullList.slice(0, originalCount) : fullList;
       const category = await db.category.findUniqueOrThrow({ where: { slug } });
       const kind = kindOf(slug);
       const chart = sampleChart(kind);
@@ -355,7 +355,7 @@ export async function enrichCatalog(db: PrismaClient, refreshOutfits = false) {
         orderBy: { sku: "asc" },
       });
       for (const [i, design] of list.entries()) {
-        if (phase === 1 && i < originalCount) continue;
+        if (catalogPass === 1 && i < originalCount) continue;
         const old = existing[i];
         const sku = old?.sku ?? `HN${String(next++).padStart(3, "0")}`;
         const title = `${prefixes[slug]} ${design}`;

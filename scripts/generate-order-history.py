@@ -9,7 +9,7 @@ batch='synthetic-history-2025-v1';now=int(datetime.datetime.now().timestamp()*10
 if c.execute('select 1 from SyntheticBatch where id=?',(batch,)).fetchone():
  print('Batch already exists; no changes');raise SystemExit
 uid=lambda:uuid.uuid4().hex
-actor=c.execute("select id from User where role='SUPER_ADMIN' and active=1 limit 1").fetchone()[0]
+actor=c.execute("select id from User where role='ADMIN' and active=1 limit 1").fetchone()[0]
 stock={x['id']:x['stock'] for x in c.execute('select id,stock from ProductVariant')};ledger=[]
 def put(t,**d):
  c.execute('insert into "'+t+'" ('+','.join('"'+k+'"' for k in d)+') values ('+','.join('?' for _ in d)+')',list(d.values()));return d.get('id')

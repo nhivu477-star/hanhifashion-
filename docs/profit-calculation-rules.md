@@ -1,4 +1,4 @@
-# Giá vốn và lợi nhuận — Phase 6
+# Giá vốn và lợi nhuận
 
 Giá vốn đơn vị chỉ dùng bản ghi hiệu lực không muộn hơn lúc tạo đơn, ưu tiên variant rồi product. Snapshot dòng hàng đóng băng giá vốn đã biết. Không có thì NULL, không gán 0 và không suy từ giá bán. Nhập giá vốn mới chỉ ảnh hưởng đơn mới; cập nhật giá vốn lịch sử yêu cầu mã OrderItem, snapshot ròng tồn tại, người có `analytics.costs.manage`, nguồn chứng từ tối thiểu 20 ký tự, transaction và operational audit.
 

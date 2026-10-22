@@ -1,6 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { writeFile } from "node:fs/promises";
-import { catalogQuery } from "../src/lib/queries";
+import { catalogQuery } from "../../src/lib/queries";
 const db = new PrismaClient();
 const results = [];
 for (const params of [
@@ -27,7 +27,7 @@ for (const params of [
   });
 }
 await writeFile(
-  "verification/phase5-query-" +
+  "verification/catalog-query-" +
     (process.argv.includes("--after") ? "after" : "before") +
     ".json",
   JSON.stringify(

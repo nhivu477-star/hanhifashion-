@@ -1,76 +1,50 @@
-# Kết quả nghiệm thu nghiệp vụ HÀ NHI
+# Báo cáo kiểm chứng HÀ NHI FASHION
 
-Cập nhật: 2026-10-19T17:12:06.047Z. Word là mẫu quy trình; bộ chuẩn thực thi tại [31 Use Case](business-acceptance-31.md) và [dữ liệu tiêu chí](business-acceptance-31.json).
+## Phạm vi
 
-## Phạm vi đã kiểm
+Ứng dụng local thống nhất ba vai trò CUSTOMER / SELLER / ADMIN. ADMIN toàn quyền; SELLER vận hành sản phẩm, tồn, đơn, giao nhận và hỗ trợ nhưng không quản trị tài khoản/nhân viên/tài chính/giá vốn/lợi nhuận; CUSTOMER chỉ thao tác dữ liệu của mình. Menu và API/service cùng dùng ma trận quyền, vai trò không hợp lệ mặc định bị từ chối.
 
-**31/31 PASS, 0 FAIL** trong phạm vi local đã điều chỉnh cho cửa hàng; 186 nhóm tiêu chí main/alternative/exception/permission/integrity/UI–API–DB. Các nhánh chưa có chính sách hoặc ngoài phạm vi được ghi riêng là BLOCKED, không tính thành nghiệp vụ đã triển khai.
+## Kết quả thực thi
 
-- Unit: 120 PASS.
-- API/integration/concurrency/fault injection/regression: 199 PASS.
-- E2E trình duyệt: 34 PASS; kiểm tra responsive 360/390/768/1024/1440px và thao tác form thật.
-- TypeScript, ESLint và production build: PASS; build CkvRgMmlweEkuAh4Xv0Dp.
-- Main: lịch sử nghiệp vụ giữ nguyên; integrity/FK: PASS. Hoạt động duyệt trang có thể cập nhật VisitorSession/AnalyticsEvent, được tách khỏi đối chiếu lịch sử nghiệp vụ.
+| Kiểm tra | Kết quả |
+|---|---|
+| Unit (`npm test`) | 115 đạt, 16 tệp |
+| Nghiệp vụ (`npm run test:business -- --reuse-build`) | 199 đạt: đơn 17, giao nhận 18, đổi trả 28, phân quyền 28, danh mục 17, analytics 33, nghiệm thu 58 |
+| ESLint (`npm run lint`) | Đạt |
+| TypeScript (`npx tsc --noEmit`) | Đạt |
+| Production build (`npm run build`) | Đạt |
+| Browser UAT (`npx tsx scripts/testing/run-uat-browser.ts`) | 26/26 đạt; responsive 360/390/768/1024/1440 px |
+| Backup/restore database UAT | Integrity/FK đạt; toàn bộ bảng và nội dung sau phục hồi bằng bản nguồn |
+| Liên kết tài liệu | 34 tệp Markdown, không có liên kết nội bộ bị hỏng tại thời điểm kiểm |
+| SQLite chính | `quick_check`: ok; không có lỗi khóa ngoại |
 
-## Thay đổi chính
+Các bộ nghiệp vụ tạo database cô lập, chạy qua HTTP/API với SQLite thật; bao gồm cạnh tranh tồn kho, thu hồi phiên, quản trị viên hoạt động cuối, kiểm quyền độc lập tại service, audit rollback và quyền sở hữu dữ liệu. Không dùng kết quả của các phiên bản cũ để thay thế kiểm tra hiện tại.
 
-- Receipt giỏ độc lập analytics; kiểm payload key checkout, giới hạn lượng, báo lỗi khoảng giá và giỏ clear scoped theo người dùng. Giữ màu/size/lượng khi quay lại sau đăng nhập.
-- Giao dịch DB và audit atomic cho catalog, voucher, cài đặt, hồ sơ/địa chỉ, nhân viên và các nghiệp vụ tồn/tiền; lỗi ghi audit rollback đã được chủ động kiểm thử.
-- Checklist SKU/màu/size/lượng, tạm dừng đóng gói, packedAt/packedBy trước bàn giao; phân công và ưu tiên đơn.
-- Phiếu kiểm kê nháp/gửi/duyệt/hủy, so tồn trước–sau; chặn kiểm kê cũ ghi đè giao dịch mới; tách hàng hỏng khỏi tồn bán được.
-- Đánh giá xác minh đơn đã nhận, trả lời/kiểm duyệt có lịch sử; hỗ trợ theo tài khoản và phản hồi đúng khách. SELLER chỉ được bổ sung quyền hỗ trợ phi tài chính.
-- Hồ sơ khách, địa chỉ mặc định, lịch sử mua/hỗ trợ; start/end voucher giờ VN; Excel .xlsx thật cùng scope/quyền với CSV; hướng dẫn chính sách bổ sung giữ rule lỗi 72 giờ.
-- Sửa khôi phục mật khẩu local và cập nhật mật khẩu/thu hồi phiên atomic; đăng nhập thành công không bị tính thành chuỗi đăng nhập sai.
+## Kiểm tra giao diện thực tế
 
-## Ma trận 31 Use Case
+- Đã đăng nhập qua form bằng tài khoản ADMIN, SELLER và CUSTOMER trên database thử riêng. ADMIN mở tổng quan; SELLER đến `/admin/don-hang`, không có liên kết quản trị tài khoản/tài chính; CUSTOMER đến cửa hàng, dùng trang tài khoản và bị từ chối khi mở quản lý tài khoản.
+- Đã xác nhận cookie đăng nhập hoạt động trên trình duyệt WebKit với bản production chạy HTTP loopback. Host production ngoài loopback vẫn dùng cookie Secure.
+- Trang `/gioi-thieu` hiển thị tiêu đề **Thời trang nữ, giày, túi xách & phụ kiện**, cùng đề mục và nội dung tương ứng; tiêu đề trình duyệt đồng bộ. Giao diện công khai không hiển thị liên kết quản trị khi chưa có vai trò nhân viên/quản trị.
+- Form tài khoản dùng POST để tránh đưa mật khẩu lên URL nếu submit trước khi JavaScript sẵn sàng. Đăng ký chấp nhận email hoặc số điện thoại và mật khẩu từ tám ký tự, khớp validator API.
 
-| Use Case | Nghiệp vụ | Trạng thái |
-|---|---|---|
-| UC01 | Đăng ký tài khoản | PASS |
-| UC02 | Đăng nhập và xác thực | PASS |
-| UC03 | Quản lý thông tin cá nhân | PASS |
-| UC04 | Xem danh sách sản phẩm | PASS |
-| UC05 | Tìm kiếm và lọc sản phẩm | PASS |
-| UC06 | Xem chi tiết sản phẩm | PASS |
-| UC07 | Thêm sản phẩm vào giỏ hàng | PASS |
-| UC08 | Quản lý giỏ hàng | PASS |
-| UC09 | Đặt hàng | PASS |
-| UC10 | Thanh toán và COD | PASS |
-| UC11 | Theo dõi đơn hàng | PASS |
-| UC12 | Hủy đơn hàng | PASS |
-| UC13 | Xem và tiếp nhận đơn mới | PASS |
-| UC14 | Xác nhận đơn hàng | PASS |
-| UC15 | Đóng gói sản phẩm | PASS |
-| UC16 | Cập nhật giao hàng | PASS |
-| UC17 | Kiểm tra, nhập và xuất kho | PASS |
-| UC18 | Đánh giá và hỗ trợ khách hàng | PASS |
-| UC19 | Quản lý người dùng | PASS |
-| UC20 | Quản lý nhân viên và phân quyền | PASS |
-| UC21 | Quản lý sản phẩm | PASS |
-| UC22 | Quản lý danh mục | PASS |
-| UC23 | Quản lý khuyến mãi | PASS |
-| UC24 | Quản lý đơn hàng | PASS |
-| UC25 | Báo cáo thống kê | PASS |
-| UC26 | Đổi trả sản phẩm | PASS |
-| UC27 | Hoàn tiền | PASS |
-| UC28 | Đối soát COD | PASS |
-| UC29 | Kiểm kê và xử lý chênh lệch kho | PASS |
-| UC30 | Ngôn ngữ, khu vực và tiền tệ | PASS |
-| UC31 | Nhật ký và kiểm soát vận hành | PASS |
+## Bảo toàn dữ liệu và ảnh
 
-## BLOCKED và giới hạn còn lại
+Backup trước thay đổi: `verification/backups/before-role-consolidation.db`. Không reset/seed database chính, không đổi mật khẩu, không xóa uploads hoặc ảnh đang dùng. Chuyển vai trò cũ sang ba vai trò chuẩn, tăng phiên bản quyền và thu hồi phiên nhân viên để đăng nhập lại.
 
-- **POLICY-PARTIAL-CANCEL:** Chưa có chính sách tài chính hủy một phần được chủ cửa hàng phê duyệt. Database chính không có approval, API từ chối và UI ẩn. Ca positive chỉ dùng policy fixture trong DB thử nghiệm. Chốt từ chối an toàn đã kiểm: PASS.
-- **POLICY-EXCHANGE-PRICE-DIFFERENCE:** Chưa có quy tắc bù chênh lệch giá khi đổi SKU. Engine chỉ chấp nhận cùng đơn giá lịch sử; không tự thu/hoàn phần chênh. Chốt từ chối an toàn đã kiểm: PASS.
-- **LIVE-PAYMENT-CARRIER:** Ngoài phạm vi: PROJECT_SPEC cấm kết nối tiền/hãng vận chuyển thật. Kết quả kiểm thử là local, không chứng nhận giao dịch production. Chốt từ chối an toàn đã kiểm: PASS.
-- **MERCHANDISE-COMMERCIAL-VERIFICATION:** Ảnh hàng thật, quyền sử dụng, nguồn tồn và giá vốn cần chủ cửa hàng xác minh; không dùng dữ liệu demo để tự xác nhận. Chốt từ chối an toàn đã kiểm: PASS.
+Đối chiếu với backup: 55 bảng nghiệp vụ không thay nội dung; mọi trường ColorImage ngoài `position` được giữ nguyên. Migration chỉ sửa gallery có vị trí trùng/âm, không xóa ảnh hay sửa ID/URL. Không còn cặp `(colorId, position)` trùng; integrity/FK đạt.
 
-Đã kiểm trên SQLite local và database thử nghiệm riêng; kết quả không chứng minh tải production nhiều instance, tính hợp pháp của nguồn hàng/ảnh, tiền thật hoặc vận chuyển thật. Không reset main, không push/deploy.
+Đã chạy chính script đồng bộ gallery với fixture local và database sao chép: gallery có ảnh ở vị trí 9 thêm ảnh mới ở vị trí 10; lần chạy tiếp theo thêm 0 ảnh. Không tải mạng trong smoke này; fixture đã được dọn sau kiểm tra.
 
-## Bằng chứng và tái chạy
+Audit read-only hiện tại: 235 sản phẩm, 4.167 URL ảnh; không có tệp ảnh thiếu/không hợp lệ. Sau sửa thứ tự gallery: 234 sản phẩm NEEDS REVIEW, một INVALID do giá 0 (`HN-TP-0167`, Bộ Buzz), không có sản phẩm tự nâng READY.
 
-- `npm run test:business`: tạo DB thử riêng, migrate, production build, toàn bộ API/integration và BA-* (bao gồm concurrency và fault injection).
-- `npx tsx scripts/run-final-uat-browser.ts`: clone main thành DB riêng, E2E và kiểm backup/restore.
-- `npm test`, `npm run lint`, `npx tsc --noEmit`.
-- `verification/business-acceptance/acceptance-results.json`: từng nhóm tiêu chí và bằng chứng theo tên bài kiểm thử, kiểm gate và database.
-- `verification/business-acceptance/integration-final.log`, `e2e.log`, `unit-results.json`, `data-preservation.json`: kết quả thực thi.
+## Giới hạn còn lại
+
+- Giá chính xác của Bộ Buzz, giá vốn, hàng thật, nguồn tồn và quyền sử dụng ảnh cần chủ cửa hàng xác minh; không tự suy đoán hoặc sửa giá để đạt kiểm tra.
+- Tệp credential local cũ không khớp database chính; đã sửa hướng dẫn để không khẳng định sai rằng đăng nhập được. Không tự đặt lại mật khẩu tài khoản hiện hữu. Tài khoản thử chỉ dùng với database cô lập.
+- Hủy một phần chưa có chính sách tài chính được duyệt: API chặn và UI không cung cấp trên database chính; positive fixture không phải phê duyệt. Đổi SKU chỉ cùng đơn giá lịch sử, không tự bù chênh lệch.
+- Đổi trả chỉ lỗi được xác minh trong đủ 72 giờ từ mốc nhận hàng. Giao nhận LOCAL_MANUAL và COD/hoàn tiền là mô phỏng, không phải giao dịch tiền hoặc hãng vận chuyển thật.
+- Không chứng nhận production nhiều instance, tải lớn, WCAG đầy đủ, quyền thương mại của ảnh hay sẵn sàng mở bán. Analytics không bịa hành vi quá khứ/giá vốn; doanh số theo ngày tạo đơn không phải dòng tiền theo ngày thu.
+
+## Tái chạy
+
+`npm test`, `npm run lint`, `npx tsc --noEmit`, `npm run build`; `npm run test:business -- --reuse-build` sau build; browser UAT: `npx tsx scripts/testing/run-uat-browser.ts`; dữ liệu: `npm run data:quality`. Không chạy reset/seed lên `prisma/dev.db`. Không ghi credential vào báo cáo.

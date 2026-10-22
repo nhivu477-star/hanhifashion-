@@ -1,6 +1,6 @@
-# Mô hình dữ liệu phân tích — Phase 6
+# Mô hình dữ liệu phân tích
 
-Migration additive `20261019030000_local_analytics` thêm sáu bảng: `VisitorSession`, `AnalyticsEvent`, `CartAnalyticsCycle`, `OrderAttribution`, `ProductCostHistory`, `OrderLineAnalytics`; thêm index truy vấn theo ngày/trạng thái, sự kiện, sản phẩm và chu kỳ giỏ. Bốn mươi sáu bảng nghiệp vụ cũ không đổi cột và được kiểm hash trước/sau migration.
+Mô hình gồm `VisitorSession`, `AnalyticsEvent`, `CartAnalyticsCycle`, `OrderAttribution`, `ProductCostHistory`, `OrderLineAnalytics`, với index theo ngày/trạng thái, sự kiện, sản phẩm và chu kỳ giỏ. Schema/migration hiện hành là nguồn cấu trúc; thay đổi phải bảo toàn dữ liệu nghiệp vụ, không lấy kiểm hash lịch sử làm bằng chứng phiên bản mới.
 
 `VisitorSession.keyHash` lưu SHA-256 của cookie first-party ngẫu nhiên, tự hết hạn logic 30 phút. `AnalyticsEvent.eventKey` unique để retry idempotent; `productId` không ràng buộc cứng để sự kiện cũ không cản xóa catalog. Metadata là JSON tối giản. `CartAnalyticsCycle` giữ snapshot mặt hàng và vòng đời riêng, unique một chu kỳ đang mở cho mỗi giỏ. `OrderAttribution` là first-touch theo phiên tại thời điểm đặt. `ProductCostHistory` ghi nguồn, tác giả, effective time. `OrderLineAnalytics` giữ hàng ròng và giá vốn snapshot theo dòng đơn.
 

@@ -44,17 +44,17 @@ export const content: Record<string, ContentEntry> = {
     ],
   },
   "gioi-thieu": {
-    title: "Về HÀ NHI",
+    title: "Thời trang nữ, giày, túi xách & phụ kiện",
     intro:
-      "HÀ NHI FASHION mang đến những cảm hứng thời trang nữ, giày, túi và phụ kiện cho phong cách riêng.",
+      "HÀ NHI FASHION giới thiệu trang phục nữ, giày, túi xách và phụ kiện để nàng lựa chọn và kết hợp theo phong cách riêng.",
     sections: [
       [
-        "Một tủ đồ, nhiều khoảnh khắc",
-        "Từ những lựa chọn hằng ngày đến thiết kế tạo dấu ấn, chúng tôi trân trọng cách mỗi người phụ nữ thể hiện cá tính qua trang phục.",
+        "Trang phục nữ cho nhiều phong cách",
+        "Khám phá áo, đầm, quần, chân váy và bộ trang phục với màu sắc, kích cỡ phù hợp với nàng.",
       ],
       [
-        "Sự tinh tế nằm ở lựa chọn",
-        "Phom dáng, chất liệu và cách kết hợp tạo nên ngôn ngữ riêng của từng thiết kế. Website hiện là bản trải nghiệm; hình ảnh và danh mục tham khảo chưa phải cam kết về hàng hóa thực tế.",
+        "Giày, túi xách và phụ kiện phối cùng",
+        "Kết hợp trang phục với giày, túi xách và phụ kiện để hoàn thiện phong cách. Website hiện là bản trải nghiệm; hình ảnh và danh mục tham khảo chưa phải cam kết về hàng hóa thực tế.",
       ],
     ],
   },

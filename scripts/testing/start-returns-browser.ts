@@ -6,7 +6,7 @@ const fixture = JSON.parse(
     "utf8",
   ),
 );
-if (!/^file:\.\/phase1-orders-[\w-]+\.db$/.test(fixture.database))
+if (!/^file:\.\/business-tests-[\w-]+\.db$/.test(fixture.database))
   throw Error("Isolated DB required");
 const child = spawn(
   "node",

@@ -1,4 +1,4 @@
-# Trạng thái giao nhận — Phase 2A
+# Trạng thái giao nhận
 
 ```mermaid
 stateDiagram-v2
@@ -19,7 +19,7 @@ DELIVERY_FAILED --> RETURNING
 RETURNING --> RETURNED
 ```
 
-DELIVERED, RETURNED, CANCELED là kết thúc cho kiện này. Không tạo kiện thứ hai cho cùng đơn ở Phase 2A.
+DELIVERED, RETURNED, CANCELED là kết thúc cho kiện này. Không tạo kiện thứ hai cho cùng đơn ở nghiệp vụ.
 
 | Sự kiện kiện | Đồng bộ trạng thái đơn |
 |---|---|
@@ -29,9 +29,9 @@ DELIVERED, RETURNED, CANCELED là kết thúc cho kiện này. Không tạo ki�
 | DELIVERY_FAILED | SHIPPING → DELIVERY_FAILED; lưu DeliveryAttempt |
 | RETURNING | Nếu đơn còn SHIPPING, ghi DELIVERY_FAILED; không hoàn tồn |
 | RETURNED | DELIVERY_FAILED → RETURNED; không hoàn tồn |
-| CANCELED trước bàn giao | PROCESSING → CANCELLED, hoàn tồn theo Phase 1 |
+| CANCELED trước bàn giao | PROCESSING → CANCELLED, hoàn tồn theo nghiệp vụ |
 | DELIVERED | SHIPPING → DELIVERED; không tự thanh toán |
 
-Khi RETURNED, admin kiểm tra hàng đã về rồi hủy đơn ở trang đơn hàng; CAS Phase 1 hoàn tồn duy nhất. Giao thất bại cần reasonCode và note. Các lý do: không liên hệ được, từ chối nhận, địa chỉ sai, giao không thành công. Mọi cập nhật lưu previousStatus/status/createdAt/actorId/source=LOCAL_MANUAL; không nhận source từ client.
+Khi RETURNED, admin kiểm tra hàng đã về rồi hủy đơn ở trang đơn hàng; CAS nghiệp vụ hoàn tồn duy nhất. Giao thất bại cần reasonCode và note. Các lý do: không liên hệ được, từ chối nhận, địa chỉ sai, giao không thành công. Mọi cập nhật lưu previousStatus/status/createdAt/actorId/source=LOCAL_MANUAL; không nhận source từ client.
 
-Đơn cũ chưa có Shipment vẫn dùng quy trình Phase 1. Đơn đã có Shipment bị chặn các chuyển giao/thu COD ở endpoint cũ, buộc đi qua hồ sơ để hai trạng thái thống nhất. Cập nhật đơn và kiện cùng transaction, rollback nếu một phía không hợp lệ.
+Đơn cũ chưa có Shipment vẫn dùng quy trình nghiệp vụ. Đơn đã có Shipment bị chặn các chuyển giao/thu COD ở endpoint cũ, buộc đi qua hồ sơ để hai trạng thái thống nhất. Cập nhật đơn và kiện cùng transaction, rollback nếu một phía không hợp lệ.

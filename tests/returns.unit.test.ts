@@ -5,7 +5,7 @@ import {
   netLineAmounts,
   validateReturnTransition,
 } from "../src/lib/returns-rules";
-describe("Phase 3 return invariants", () => {
+describe("Return invariants", () => {
   it("72 hours from actual delivery, inclusive deadline, no calendar midnight reset", () => {
     const t = new Date("2026-10-18T15:42:00Z");
     expect(returnDeadline(t).toISOString()).toBe("2026-10-21T15:42:00.000Z");

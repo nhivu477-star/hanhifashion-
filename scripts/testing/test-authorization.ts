@@ -1,15 +1,15 @@
-import { packPreparedFixture } from "./test-support/packing-test-fixture";
-import { authenticateCartFixture } from "./test-support/analytics-test-client";
+import { packPreparedFixture } from "../test-support/packing-test-fixture";
+import { authenticateCartFixture } from "../test-support/analytics-test-client";
 import assert from "node:assert/strict";
 import { readFile, writeFile } from "node:fs/promises";
 import { randomUUID, createHash } from "node:crypto";
 import { PrismaClient } from "@prisma/client";
 import { hash } from "bcryptjs";
-if (!/^file:\.\/phase1-orders-[\w-]+\.db$/.test(process.env.DATABASE_URL ?? ""))
+if (!/^file:\.\/business-tests-[\w-]+\.db$/.test(process.env.DATABASE_URL ?? ""))
   throw Error("Isolated RBAC tests only");
 const db = new PrismaClient(),
   fixture = JSON.parse(
-    await readFile("verification/phase1-fixtures.json", "utf8"),
+    await readFile("verification/business-fixtures.json", "utf8"),
   ),
   base = "http://127.0.0.1:3101";
 class Client {
@@ -61,10 +61,6 @@ class Client {
 const admin = new Client("admin"),
   bob = new Client("bob"),
   guest = new Client();
-await db.user.update({
-  where: { id: fixture.users.find((u: any) => u.name === "admin").id },
-  data: { role: "SUPER_ADMIN" },
-}); // Isolated fixture only, not a production bootstrap.
 const results: { test: string; status: string; error?: string }[] = [];
 async function run(test: string, fn: () => Promise<void>) {
   try {
@@ -86,40 +82,29 @@ async function denied(p: Promise<{ status: number; body: any }>) {
   assert.notEqual(r.status, 200);
   return r;
 }
-const accounts: any[] = [];
+const accounts: { id: string; role: "SELLER"; purpose: string; email: string; password: string }[] = [];
 const staff: Record<string, Client> = {};
-for (const role of [
-  "STORE_MANAGER",
-  "PRODUCT_STAFF",
-  "INVENTORY_STAFF",
-  "ORDER_STAFF",
-  "CUSTOMER_SUPPORT",
-  "CONTENT_STAFF",
-  "MARKETING_STAFF",
-  "FINANCE_STAFF",
-]) {
-  const email = `${role.toLowerCase()}-${randomUUID()}@phase4.test`,
+for (const purpose of ["operations", "catalog", "inventory", "orders", "support", "content", "session", "finance"]) {
+  const email = `${purpose}-${randomUUID()}@authorization.test`,
     password = randomUUID();
-  const created = await ok(
-    admin.post("admin/staff/create", {
-      name: `QA ${role}`,
-      email,
-      password,
-      role,
-      reason: "Cấp vai trò kiểm thử local",
-    }),
-  );
-  const c = new Client();
-  await ok(c.post("login", { email, password }));
-  staff[role] = c;
-  accounts.push({ id: created.id, role, email, password });
+  const created = await ok(admin.post("admin/staff/create", {
+    name: `QA seller ${purpose}`,
+    email,
+    password,
+    role: "SELLER",
+    reason: "Cấp tài khoản bán hàng kiểm thử local",
+  }));
+  const client = new Client();
+  await ok(client.post("login", { email, password }));
+  staff[purpose] = client;
+  accounts.push({ id: created.id, role: "SELLER", purpose, email, password });
 }
-const inventory = staff.INVENTORY_STAFF,
-  orderStaff = staff.ORDER_STAFF,
-  content = staff.CONTENT_STAFF,
-  support = staff.CUSTOMER_SUPPORT,
-  finance = staff.FINANCE_STAFF,
-  manager = staff.STORE_MANAGER;
+const inventory = staff.inventory,
+  orderStaff = staff.orders,
+  content = staff.content,
+  support = staff.support,
+  finance = admin,
+  manager = staff.operations;
 const v = await db.productVariant.findUniqueOrThrow({
   where: { id: fixture.fixtures[18].variantId },
 });
@@ -143,7 +128,7 @@ const customerPassword = randomUUID(),
 const customerUser = await db.user.create({
   data: {
     name: "RBAC customer",
-    email: `customer-${randomUUID()}@phase4.test`,
+    email: `customer-${randomUUID()}@authorization.test`,
     phone: "0912345678",
     role: "CUSTOMER",
     passwordHash: await hash(customerPassword, 10),
@@ -161,7 +146,7 @@ customer.cookies.set("hn_session", customerToken);
 let testOrderId = "",
   testShipmentId = "";
 await run(
-  "01 SUPER_ADMIN manages staff with explicit audit and bcrypt",
+  "01 ADMIN manages staff with explicit audit and bcrypt",
   async () => {
     assert(
       (await ok(admin.req("/admin/nhan-vien"))).includes("Tạo nhân viên local"),
@@ -177,7 +162,7 @@ await run(
   },
 );
 await run(
-  "02 customer guest manager cannot create or assign staff",
+  "02 customer guest seller cannot create or assign staff",
   async () => {
     for (const c of [customer, guest, manager])
       await denied(
@@ -185,7 +170,7 @@ await run(
           name: "No privilege",
           email: `no-${randomUUID()}@qa.test`,
           password: randomUUID(),
-          role: "SUPER_ADMIN",
+          role: "ADMIN",
           reason: "Không được cấp quyền",
         }),
       );
@@ -213,7 +198,7 @@ await run(
     assert(
       log.beforeJson &&
         log.afterJson &&
-        log.actorId === accounts.find((a) => a.role === "INVENTORY_STAFF").id,
+        log.actorId === accounts.find((a) => a.purpose === "inventory")!.id,
     );
   },
 );
@@ -233,11 +218,11 @@ await run("04 inventory cannot approve or execute refunds", async () => {
     }),
   );
 });
-await run("05 ORDER_STAFF manages actual order state", async () => {
+await run("05 SELLER manages actual order state", async () => {
   const variant = await db.productVariant.create({
     data: {
       productId: v.productId,
-      sku: `P4-${randomUUID()}`,
+      sku: `RBAC-${randomUUID()}`,
       size: "M",
       color: "Hồng",
       colorHex: "#ffdddd",
@@ -250,7 +235,7 @@ await run("05 ORDER_STAFF manages actual order state", async () => {
     customer.post("checkout", {
       name: "Khách QA RBAC",
       phone: "0912345678",
-      email: "customer@phase4.test",
+      email: "customer@authorization.test",
       province: "Hà Nội",
       ward: "Hoàn Kiếm",
       street: "123 Đường kiểm thử",
@@ -279,31 +264,19 @@ await run("05 ORDER_STAFF manages actual order state", async () => {
 await run("06 order staff cannot assign own roles", async () => {
   await denied(
     orderStaff.post("admin/staff/role", {
-      id: accounts.find((a) => a.role === "ORDER_STAFF").id,
-      role: "SUPER_ADMIN",
+      id: accounts.find((a) => a.purpose === "orders")!.id,
+      role: "ADMIN",
       reason: "Không tự nâng quyền",
     }),
   );
 });
-await run(
-  "07 content staff cannot access financial data or operations",
-  async () => {
-    await denied(
-      content.post("admin/shipping/collection", { id: shipment.id }),
-    );
-    assert(
-      (await ok(content.req("/admin/van-chuyen"))).includes(
-        "Không có quyền truy cập",
-      ),
-    );
-    assert(
-      (await ok(content.req("/admin/doi-tra"))).includes(
-        "Không có quyền truy cập",
-      ),
-    );
-  },
-);
-await run("08 customer support reads and reviews returns", async () => {
+await run("07 SELLER cannot access content or financial operations", async () => {
+  await denied(content.post("admin/banner", { title: "Forbidden seller banner" }));
+  await denied(content.post("admin/shipping/collection", { id: shipment.id }));
+  assert((await ok(content.req("/admin/phan-tich/finance"))).includes("Không có quyền xem báo cáo này."));
+  assert.equal((await content.req("/api/analytics/report?section=finance")).status, 403);
+});
+await run("08 SELLER reads and reviews returns", async () => {
   await ok(
     support.post("admin/returns/status", {
       id: request.id,
@@ -316,32 +289,25 @@ await run("08 customer support reads and reviews returns", async () => {
   assert(!html.includes("Tính và tạo khoản hoàn"));
   assert(!html.includes("Chứng từ mô phỏng QA nội bộ"));
 });
-await run("09 support cannot inspect restock or execute refunds", async () => {
-  await denied(
-    support.post("admin/returns/inspect", {
-      id: request.id,
-      itemId: "forged",
-      condition: "SELLABLE",
-      reason: "Không được kiểm kho",
-      evidence: "Không được",
-    }),
-  );
-  await denied(
-    support.post("admin/returns/refund-status", {
-      id: request.id,
-      status: "SIMULATED_COMPLETED",
-      reason: "Không được hoàn",
-    }),
-  );
+await run("09 SELLER cannot execute financial refunds and CUSTOMER cannot inspect", async () => {
+  await denied(customer.post("admin/returns/inspect", {
+    id: request.id, itemId: "forged", condition: "SELLABLE",
+    reason: "Khách không được kiểm kho", evidence: "Không được",
+  }));
+  for (const operation of ["refund", "refund-status"])
+    assert.equal((await support.post(`admin/returns/${operation}`, {
+      id: request.id, status: "SIMULATED_COMPLETED", refundShipping: false,
+      reason: "Bán hàng không được hoàn tiền",
+    })).status, 403);
 });
 await run(
-  "10 finance records remittance and reconciles without order-admin role",
+  "10 ADMIN records remittance and reconciles",
   async () => {
     const money = {
       id: shipment.id,
       amount: shipment.collectedCOD,
       provider: "LOCAL_MANUAL",
-      reference: `P4-${randomUUID()}`,
+      reference: `RBAC-${randomUUID()}`,
       evidence: "Chứng từ chuyển mô phỏng",
       occurredAt: new Date().toISOString(),
       eventKey: randomUUID(),
@@ -377,7 +343,7 @@ await run(
         phone: "0912345678",
         password: customerPassword,
         confirmPassword: customerPassword,
-        role: "SUPER_ADMIN",
+        role: "ADMIN",
       }),
     );
     assert.equal(
@@ -395,7 +361,7 @@ await run("12 ownership and private evidence remain protected", async () => {
   );
 });
 await run("13 disabled staff cannot log in", async () => {
-  const a = accounts.find((a) => a.role === "PRODUCT_STAFF");
+  const a = accounts.find((a) => a.purpose === "catalog")!;
   await ok(
     admin.post("admin/staff/status", {
       id: a.id,
@@ -410,8 +376,8 @@ await run("13 disabled staff cannot log in", async () => {
 await run(
   "14 disabling revokes pre-existing sessions and reactivation never revives them",
   async () => {
-    const a = accounts.find((a) => a.role === "PRODUCT_STAFF");
-    await denied(staff.PRODUCT_STAFF.post("admin/category", {}));
+    const a = accounts.find((a) => a.purpose === "catalog")!;
+    await denied(staff.catalog.post("admin/category", {}));
     assert.equal(await db.session.count({ where: { userId: a.id } }), 0);
     await ok(
       admin.post("admin/staff/status", {
@@ -420,59 +386,50 @@ await run(
         reason: "Mở lại tài khoản QA",
       }),
     );
-    await denied(staff.PRODUCT_STAFF.post("admin/category", {}));
+    await denied(staff.catalog.post("admin/category", {}));
     await ok(
-      staff.PRODUCT_STAFF.post("login", {
+      staff.catalog.post("login", {
         email: a.email,
         password: a.password,
       }),
     );
   },
 );
+await run("15 role changes invalidate stale sessions and grant only the current role", async () => {
+  const account = accounts.find((entry) => entry.purpose === "inventory")!;
+  await ok(admin.post("admin/staff/role", {
+    id: account.id, role: "ADMIN", reason: "Kiểm thử cấp quyền quản trị",
+  }));
+  const before = await db.productVariant.findUniqueOrThrow({ where: { id: v.id } });
+  try {
+    assert.equal((await inventory.post("admin/stock", {
+      variantId: v.id, stock: 99, reason: "Phiên cũ phải thu hồi",
+    })).status, 403);
+    assert.equal(await db.session.count({ where: { userId: account.id } }), 0);
+    assert.equal(
+      (await db.productVariant.findUniqueOrThrow({ where: { id: v.id } })).stock,
+      before.stock,
+    );
+    await ok(inventory.post("login", { email: account.email, password: account.password }));
+    assert((await ok(inventory.req("/admin/nhan-vien"))).includes("Tạo nhân viên local"));
+  } finally {
+    await ok(admin.post("admin/staff/role", {
+      id: account.id, role: "SELLER", reason: "Thu hồi quyền quản trị kiểm thử",
+    }));
+  }
+  assert.equal((await inventory.post("admin/shipping/reconcile", {})).status, 403);
+  assert.equal(await db.session.count({ where: { userId: account.id } }), 0);
+  await ok(inventory.post("login", { email: account.email, password: account.password }));
+  assert.equal((await inventory.post("admin/shipping/reconcile", {})).status, 403);
+});
 await run(
-  "15 changed roles take effect and stale session is rejected",
+  "16 SELLER cannot self-promote or gain implicit finance grants",
   async () => {
-    const a = accounts.find((a) => a.role === "INVENTORY_STAFF");
-    await ok(
-      admin.post("admin/staff/role", {
-        id: a.id,
-        role: "CONTENT_STAFF",
-        reason: "Thu hồi quyền kho theo phân công",
-      }),
-    );
-    await denied(
-      inventory.post("admin/stock", {
-        variantId: v.id,
-        stock: 99,
-        reason: "Phiên đã bị thu hồi",
-      }),
-    );
-    await ok(inventory.post("login", { email: a.email, password: a.password }));
-    await denied(
-      inventory.post("admin/stock", {
-        variantId: v.id,
-        stock: 99,
-        reason: "Vai trò mới không có quyền kho",
-      }),
-    );
-    await ok(
-      admin.post("admin/staff/role", {
-        id: a.id,
-        role: "INVENTORY_STAFF",
-        reason: "Khôi phục vai trò QA",
-      }),
-    );
-    await ok(inventory.post("login", { email: a.email, password: a.password }));
-  },
-);
-await run(
-  "16 staff cannot self-promote and manager has no implicit finance grants",
-  async () => {
-    for (const c of [manager, finance, support])
+    for (const c of [manager, orderStaff, support])
       await denied(
         c.post("admin/staff/role", {
           id: accounts[0].id,
-          role: "SUPER_ADMIN",
+          role: "ADMIN",
           reason: "Không được cấp quyền",
         }),
       );
@@ -487,7 +444,7 @@ await run(
   },
 );
 await run(
-  "17 last active SUPER_ADMIN cannot be disabled/demoted or bypassed via customer endpoint",
+  "17 last active ADMIN cannot be disabled/demoted or bypassed via customer endpoint",
   async () => {
     const id = fixture.users.find((u: any) => u.name === "admin").id;
     await denied(
@@ -500,32 +457,32 @@ await run(
     await denied(
       admin.post("admin/staff/role", {
         id,
-        role: "CONTENT_STAFF",
+        role: "SELLER",
         reason: "Không được tự hạ vai trò",
       }),
     );
     await denied(admin.post("admin/customer", { id, active: false }));
     assert.equal(
-      await db.user.count({ where: { role: "SUPER_ADMIN", active: true } }),
+      await db.user.count({ where: { role: "ADMIN", active: true } }),
       1,
     );
   },
 );
 await run(
-  "18 forged payload cannot bypass product stock permissions",
+  "18 CUSTOMER forged payload cannot bypass product stock permissions",
   async () => {
     const pv = await db.productVariant.findUniqueOrThrow({
       where: { id: fixture.fixtures[19].variantId },
     });
     await denied(
-      staff.PRODUCT_STAFF.post("admin/variant", { ...pv, stock: 10000 }),
+      customer.post("admin/variant", { ...pv, stock: 10000 }),
     );
     assert.equal(
       (await db.productVariant.findUniqueOrThrow({ where: { id: pv.id } }))
         .stock,
       pv.stock,
     );
-    await denied(content.post("admin/unknown", { role: "SUPER_ADMIN" }));
+    await denied(content.post("admin/unknown", { role: "ADMIN" }));
   },
 );
 await run(
@@ -562,7 +519,7 @@ await run("20 audit is read-only and permission protected", async () => {
   assert((await db.auditLog.count()) >= count);
 });
 await run(
-  "21 finance can approve and complete mock refund after inspection",
+  "21 ADMIN can approve and complete mock refund after inspection",
   async () => {
     await ok(
       finance.post("admin/returns/refund", {
@@ -589,18 +546,17 @@ await run(
     );
   },
 );
-await run("22 permission-aware menus hide unrelated operations", async () => {
-  const html = await ok(content.req("/admin/banner"));
-  assert(!html.includes('href="/admin/van-chuyen"'));
+await run("22 SELLER menus show operations but hide identities and promotions", async () => {
+  const html = await ok(content.req("/admin/san-pham"));
+  assert(html.includes('href="/admin/van-chuyen"'));
+  assert(html.includes('href="/admin/san-pham"'));
   assert(!html.includes('href="/admin/nhan-vien"'));
-  assert(html.includes('href="/admin/banner"'));
-  const supportHtml = await ok(
-    support.req(`/admin/doi-tra/${refundCandidate.id}`),
-  );
-  assert(!supportHtml.includes("HN-REFUND-"));
-  assert(!supportHtml.includes("Audit log"));
+  assert(!html.includes('href="/admin/banner"'));
+  const returnHtml = await ok(support.req(`/admin/doi-tra/${refundCandidate.id}`));
+  assert(!returnHtml.includes("HN-REFUND-"));
+  assert(!returnHtml.includes("Audit log"));
 });
-await run("23 ORDER_STAFF manual shipping remains functional", async () => {
+await run("23 SELLER manual shipping remains functional", async () => {
   const s = await ok(
     orderStaff.post("admin/shipping/create", {
       orderId: testOrderId,
@@ -608,7 +564,7 @@ await run("23 ORDER_STAFF manual shipping remains functional", async () => {
       shippingFee: 30000,
       weightGrams: 500,
       parcelCount: 1,
-      parcelDescription: "Kiện Phase 4 thủ công",
+      parcelDescription: "Kiện kiểm thử phân quyền thủ công",
     }),
   );
   testShipmentId = s.id;
@@ -633,28 +589,28 @@ await run("23 ORDER_STAFF manual shipping remains functional", async () => {
 await run(
   "24 session version mismatch and expiration reject protected requests",
   async () => {
-    const a = accounts.find((a) => a.role === "MARKETING_STAFF");
+    const a = accounts.find((a) => a.purpose === "session")!;
     await db.user.update({
       where: { id: a.id },
       data: { permissionVersion: { increment: 1 } },
     });
-    await denied(staff.MARKETING_STAFF.post("admin/coupon", {}));
+    await denied(staff.session.post("admin/stock", { variantId: v.id, stock: 17, reason: "Phiên phải thu hồi" }));
     const c = new Client();
     await ok(c.post("login", { email: a.email, password: a.password }));
     await db.session.updateMany({
       where: { userId: a.id },
       data: { expiresAt: new Date(Date.now() - 1000) },
     });
-    await denied(c.post("admin/coupon", {}));
+    await denied(c.post("admin/stock", { variantId: v.id, stock: 17, reason: "Phiên hết hạn" }));
   },
 );
 await run(
-  "25 all Phase 1/2A/3 regressions passed in same isolated database",
+  "25 all order/shipping/returns regressions passed in same isolated database",
   async () => {
     for (const name of [
-      "order-phase1-results",
-      "shipping-phase2a-results",
-      "returns-phase3-results",
+      "order-results",
+      "shipping-results",
+      "returns-results",
     ]) {
       const r = JSON.parse(await readFile(`verification/${name}.json`, "utf8"));
       assert.equal(r.database, process.env.DATABASE_URL);
@@ -667,71 +623,82 @@ await run(
   },
 );
 await run(
-  "26 concurrent SUPER_ADMIN demotions preserve one active owner",
+  "26 concurrent ADMIN demotions preserve one active owner",
   async () => {
+    assert.equal(
+      await db.user.count({ where: { role: "ADMIN", active: true } }),
+      1,
+      "Administrator race starts with only the primary administrator",
+    );
     const primary = fixture.users.find((u: any) => u.name === "admin"),
-      email = `second-super-${randomUUID()}@qa.test`,
+      email = `second-admin-${randomUUID()}@qa.test`,
       password = randomUUID();
     const second = await ok(
       admin.post("admin/staff/create", {
-        name: "Second QA super",
+        name: "Second QA admin",
         email,
         password,
-        role: "SUPER_ADMIN",
+        role: "ADMIN",
         reason: "Kiểm thử hai quản trị đồng thời",
       }),
     );
     const other = new Client();
     await ok(other.post("login", { email, password }));
-    const races = await Promise.all([
-      admin.post("admin/staff/role", {
-        id: second.id,
-        role: "CONTENT_STAFF",
-        reason: "Kiểm thử cạnh tranh hạ quyền",
-      }),
-      other.post("admin/staff/role", {
-        id: primary.id,
-        role: "CONTENT_STAFF",
-        reason: "Kiểm thử cạnh tranh hạ quyền",
-      }),
-    ]);
-    assert.equal(races.filter((r) => r.status === 200).length, 1);
-    assert.equal(
-      await db.user.count({ where: { role: "SUPER_ADMIN", active: true } }),
-      1,
-    );
-    const current = await db.user.findUniqueOrThrow({
-      where: { id: primary.id },
-    });
-    if (current.role !== "SUPER_ADMIN") {
-      await ok(
-        other.post("admin/staff/role", {
-          id: primary.id,
-          role: "SUPER_ADMIN",
-          reason: "Khôi phục owner kiểm thử",
-        }),
-      );
-      await ok(
-        admin.post("login", {
-          email: primary.email,
-          password: primary.password,
-        }),
-      );
-      await ok(
+    try {
+      const races = await Promise.all([
         admin.post("admin/staff/role", {
           id: second.id,
-          role: "CONTENT_STAFF",
-          reason: "Kết thúc kiểm thử cạnh tranh",
+          role: "SELLER",
+          reason: "Kiểm thử cạnh tranh hạ quyền",
         }),
+        other.post("admin/staff/role", {
+          id: primary.id,
+          role: "SELLER",
+          reason: "Kiểm thử cạnh tranh hạ quyền",
+        }),
+      ]);
+      assert.equal(races.filter((r) => r.status === 200).length, 1);
+      assert.equal(
+        await db.user.count({ where: { role: "ADMIN", active: true } }),
+        1,
       );
+    } finally {
+      const current = await db.user.findUniqueOrThrow({
+        where: { id: primary.id },
+      });
+      if (current.role !== "ADMIN") {
+        await ok(
+          other.post("admin/staff/role", {
+            id: primary.id,
+            role: "ADMIN",
+            reason: "Khôi phục owner kiểm thử",
+          }),
+        );
+        await ok(
+          admin.post("login", {
+            email: primary.email,
+            password: primary.password,
+          }),
+        );
+      }
+      const secondary = await db.user.findUniqueOrThrow({ where: { id: second.id } });
+      if (secondary.role === "ADMIN") {
+        await ok(
+          admin.post("admin/staff/role", {
+            id: second.id,
+            role: "SELLER",
+            reason: "Kết thúc kiểm thử cạnh tranh",
+          }),
+        );
+      }
     }
   },
 );
 await run(
-  "27 product content marketing positive operations and audit",
+  "27 SELLER catalog and ADMIN promotions retain positive operations and audit",
   async () => {
     await ok(
-      staff.PRODUCT_STAFF.post("admin/category", {
+      staff.catalog.post("admin/category", {
         name: "QA RBAC Category",
         slug: `qa-rbac-${randomUUID()}`,
         description: "Danh mục kiểm thử local",
@@ -742,7 +709,7 @@ await run(
       }),
     );
     await ok(
-      content.post("admin/banner", {
+      admin.post("admin/banner", {
         title: "QA content local",
         subtitle: "Banner QA",
         image: "/images/lsoul/products/dam-ricci-dress-nguyen-ban-1.webp",
@@ -750,15 +717,15 @@ await run(
         active: false,
       }),
     );
-    const a = accounts.find((a) => a.role === "MARKETING_STAFF");
+    const a = accounts.find((a) => a.purpose === "session")!;
     await ok(
-      staff.MARKETING_STAFF.post("login", {
+      staff.session.post("login", {
         email: a.email,
         password: a.password,
       }),
     );
     const coupon = await ok(
-      staff.MARKETING_STAFF.post("admin/coupon", {
+      admin.post("admin/coupon", {
         code: `QA${randomUUID()}`,
         type: "PERCENT",
         value: 10,
@@ -776,27 +743,29 @@ await run(
     assert(log.afterJson && log.result === "SUCCESS");
   },
 );
-await run(
-  "28 manager reads staff without identity management or financial exposure",
-  async () => {
-    const html = await ok(manager.req("/admin/nhan-vien"));
-    assert(html.includes("QA ORDER_STAFF"));
-    assert(!html.includes('name="password"'));
-    assert(
-      (await ok(admin.req("/admin/nhan-vien?role=CUSTOMER"))).includes(
-        "Không có nhân viên phù hợp.",
-      ),
-    );
-    assert(!html.includes('name="role" defaultValue'));
-    const shipping = await ok(
-      orderStaff.req(`/admin/van-chuyen/${testShipmentId}`),
-    );
-    assert(!shipping.includes("Chứng từ chuyển mô phỏng"));
-    assert(!shipping.includes("Hãng đã thu từ khách"));
-  },
+await run("28 SELLER cannot read staff identities or shipping financial evidence", async () => {
+  const html = await ok(manager.req("/admin/nhan-vien"));
+  assert(html.includes("Không có quyền truy cập"));
+  assert(!html.includes("QA seller orders"));
+  assert(!html.includes('name="password"'));
+  assert((await ok(admin.req("/admin/nhan-vien?role=CUSTOMER"))).includes("Không có nhân viên phù hợp."));
+  const shipping = await ok(orderStaff.req(`/admin/van-chuyen/${testShipmentId}`));
+  assert(!shipping.includes("Chứng từ chuyển mô phỏng"));
+  assert(!shipping.includes("Hãng đã thu từ khách"));
+});
+const primaryFixture = fixture.users.find(
+  (user: { name: string }) => user.name === "admin",
+);
+const primaryToken = admin.cookies.get("hn_session");
+assert(primaryToken, "Primary administrator remains authenticated after role races");
+primaryFixture.token = primaryToken;
+await writeFile(
+  "verification/business-fixtures.json",
+  JSON.stringify(fixture),
+  { mode: 0o600 },
 );
 await writeFile(
-  "verification/phase4-results.json",
+  "verification/authorization-results.json",
   JSON.stringify(
     {
       date: new Date().toISOString(),
@@ -808,7 +777,7 @@ await writeFile(
   ),
 );
 await writeFile(
-  "verification/phase4-fixtures.json",
+  "verification/authorization-fixtures.json",
   JSON.stringify({
     database: process.env.DATABASE_URL,
     accounts,

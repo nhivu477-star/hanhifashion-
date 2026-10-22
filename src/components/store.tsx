@@ -1098,6 +1098,7 @@ export function SimpleForm({
       {
         <form
           className="form"
+          method="post"
           onSubmit={async (e) => {
             e.preventDefault();
             setBusy(true);
@@ -1147,7 +1148,11 @@ export function SimpleForm({
                 defaultValue={f.value ?? initial[f.name] ?? ""}
                 required={f.required !== false}
                 minLength={
-                  action === "login" || f.name === "oldPassword" ? 1 : 10
+                  action === "login" || f.name === "oldPassword"
+                    ? 1
+                    : action === "register"
+                      ? 8
+                      : 10
                 }
                 maxLength={128}
                 autoComplete={

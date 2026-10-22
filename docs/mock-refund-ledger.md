@@ -1,4 +1,4 @@
-# Sổ hoàn tiền mô phỏng — Phase 3
+# Sổ hoàn tiền mô phỏng
 
 **SIMULATED REFUND**. Không ngân hàng, cổng thanh toán, API hoặc chuyển tiền thật.
 
@@ -23,7 +23,7 @@ Không có chỉnh sửa âm hoặc correction refund sau hoàn tất trong ph�
 ## Phân biệt các sổ
 
 - Payment/collectedCOD: khách đã trả mô phỏng bao nhiêu.
-- remittedCOD/outstandingCOD: tiền đã về/chưa về shop theo Phase 2A.
+- remittedCOD/outstandingCOD: tiền đã về/chưa về shop theo nghiệp vụ.
 - MockRefund: phần shop xác nhận hoàn mô phỏng cho khách.
 
-Hoàn không tự làm RECONCILED, không bù trừ nợ vận chuyển, không đổi Order.total/Payment.amount, không đổi lịch sử PAID. Admin giữ cảnh báo COD gốc và thấy bảng hoàn riêng; chỉ số doanh thu gross Phase 2A vẫn giữ ý nghĩa cũ, chưa coi là báo cáo net kế toán. Không tuyên bố đối soát thật hoặc tiền đã về khách.
+Hoàn không tự làm RECONCILED, không bù trừ nợ vận chuyển, không đổi Order.total/Payment.amount, không đổi lịch sử PAID. Admin giữ cảnh báo COD gốc và thấy bảng hoàn riêng; chỉ số doanh thu gross nghiệp vụ vẫn giữ ý nghĩa cũ, chưa coi là báo cáo net kế toán. Không tuyên bố đối soát thật hoặc tiền đã về khách.

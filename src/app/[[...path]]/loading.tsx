@@ -7,7 +7,7 @@ import Link from "next/link";
 
 export default function Loading() {
   const path = usePathname();
-  if (/^\/(admin|seller)(\/|$)/.test(path)) {
+  if (/^\/admin(\/|$)/.test(path)) {
     return (
       <main className="admin-shell admin-redesign" aria-busy="true">
         <div className="admin-workspace">

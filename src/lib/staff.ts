@@ -1,6 +1,5 @@
 import { hash } from "bcryptjs";
 import { z } from "zod";
-import { db } from "./db";
 import { orderTransaction, OrderActor } from "./order-lifecycle";
 import { requireActorPermission, operationalAudit } from "./authorization";
 import { assignableRoles, isStaff } from "./rbac";
@@ -109,14 +108,14 @@ export async function updateStaff(
     if (u.id === actor.id && (operation === "role" || operation === "status"))
       throw Error("Không tự thay vai trò hoặc khóa tài khoản đang dùng.");
     if (
-      u.role === "SUPER_ADMIN" &&
+      u.role === "ADMIN" &&
       u.active &&
       (("active" in d && !d.active) ||
-        ("role" in d && d.role !== "SUPER_ADMIN")) &&
-      (await tx.user.count({ where: { role: "SUPER_ADMIN", active: true } })) <=
+        ("role" in d && d.role !== "ADMIN")) &&
+      (await tx.user.count({ where: { role: "ADMIN", active: true } })) <=
         1
     )
-      throw Error("Không được loại bỏ SUPER_ADMIN hoạt động cuối cùng.");
+      throw Error("Không được loại bỏ ADMIN hoạt động cuối cùng.");
     const before = { role: u.role, active: u.active, name: u.name };
     const data =
       "role" in d
@@ -143,37 +142,6 @@ export async function updateStaff(
         permissionVersion: updated.permissionVersion,
       },
       d.reason,
-    );
-    return { id: u.id };
-  });
-}
-/** One-time local owner action. No public bootstrap endpoint or automatic migration promotion. */
-export async function bootstrapOwner() {
-  return orderTransaction(async (tx) => {
-    if (await tx.user.count({ where: { role: "SUPER_ADMIN" } }))
-      throw Error("SUPER_ADMIN đã tồn tại; dùng quản lý nhân viên.");
-    const candidates = await tx.user.findMany({
-      where: { role: "ADMIN", active: true },
-    });
-    if (candidates.length !== 1)
-      throw Error(
-        "Cần chọn chính xác một ADMIN hiện hữu bằng quy trình được chủ dự án duyệt.",
-      );
-    const u = candidates[0];
-    await tx.user.update({
-      where: { id: u.id },
-      data: { role: "SUPER_ADMIN", permissionVersion: { increment: 1 } },
-    });
-    await tx.session.deleteMany({ where: { userId: u.id } });
-    await operationalAudit(
-      tx,
-      "local-owner-bootstrap",
-      "OWNER_SUPER_ADMIN_APPROVED",
-      "USER",
-      u.id,
-      { role: "ADMIN" },
-      { role: "SUPER_ADMIN" },
-      "Chủ dự án xác nhận nâng tài khoản quản trị hiện tại trong yêu cầu Phase 4 ngày 19/10/2026",
     );
     return { id: u.id };
   });

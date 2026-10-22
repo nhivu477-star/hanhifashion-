@@ -36,13 +36,12 @@
     "scripts/**/*.ts",
     "src/**/*.ts",
     "src/**/*.tsx",
-    "tests/**/*.ts",
-    ".next-uat-dev/types/**/*.ts"
+    "tests/**/*.ts"
   ],
   "exclude": [
     "node_modules",
     ".next-test",
     ".next-production",
-    ".next-phase1"
+    ".next-business"
   ]
 }

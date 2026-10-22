@@ -1,6 +1,6 @@
 import { readFile, writeFile } from "node:fs/promises";
 const fixture = JSON.parse(
-  await readFile("verification/phase1-fixtures.json", "utf8"),
+  await readFile("verification/business-fixtures.json", "utf8"),
 );
 const results = [];
 for (const route of [
@@ -13,7 +13,7 @@ for (const route of [
   "/bo-suu-tap",
   "/sale",
   "/tim-kiem?q=Ricci",
-  "/tim-kiem?q=NO_MATCH_PHASE5",
+  "/tim-kiem?q=NO_MATCH_CATALOG",
   "/san-pham/ls-yeri-dress",
   "/yeu-thich",
   "/gio-hang",
@@ -59,7 +59,7 @@ for (const route of ["/tai-khoan", "/tai-khoan/don-hang"]) {
   });
 }
 await writeFile(
-  "verification/phase5-route-smoke.json",
+  "verification/storefront-route-smoke.json",
   JSON.stringify(results, null, 2),
 );
 console.log(

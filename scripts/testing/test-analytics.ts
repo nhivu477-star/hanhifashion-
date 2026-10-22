@@ -2,23 +2,23 @@ import assert from "node:assert/strict";
 import { readFile, writeFile } from "node:fs/promises";
 import { randomUUID, createHash } from "node:crypto";
 import { Prisma } from "@prisma/client";
-import { db } from "../src/lib/db";
+import { db } from "../../src/lib/db";
 import {
   analyticsReport,
   analyticsRows,
   analyticsConsistency,
-} from "../src/lib/analytics-report";
-import { reportFilter, sections, csvRows } from "../src/lib/analytics-rules";
+} from "../../src/lib/analytics-report";
+import { reportFilter, sections, csvRows } from "../../src/lib/analytics-rules";
 import {
   backfillNetAnalytics,
   trackEvent,
-} from "../src/lib/analytics-tracking";
-import { saveAnalyticsCost } from "../src/lib/analytics-cost";
-import { qualityInclude, productQuality } from "../src/lib/product-quality";
-if (!/^file:\.\/phase1-orders-[\w-]+\.db$/.test(process.env.DATABASE_URL ?? ""))
+} from "../../src/lib/analytics-tracking";
+import { saveAnalyticsCost } from "../../src/lib/analytics-cost";
+import { qualityInclude, productQuality } from "../../src/lib/product-quality";
+if (!/^file:\.\/business-tests-[\w-]+\.db$/.test(process.env.DATABASE_URL ?? ""))
   throw Error("Isolated DB only");
 const fixture = JSON.parse(
-  await readFile("verification/phase1-fixtures.json", "utf8"),
+  await readFile("verification/business-fixtures.json", "utf8"),
 );
 const results: { test: string; status: string; error?: string }[] = [];
 async function run(test: string, fn: () => Promise<void>) {
@@ -43,16 +43,16 @@ const filter = (section = "sales", extra = {}) =>
     new Date("2001-02-02T00:00:00Z"),
   );
 const report = (section = "sales", extra = {}) =>
-  analyticsReport(filter(section, extra), "SUPER_ADMIN");
+  analyticsReport(filter(section, extra), "ADMIN");
 const metric = (r: Awaited<ReturnType<typeof report>>, label: string) =>
   r.metrics.find((m) => m.label === label)!.value;
 const admin = await db.user.findFirstOrThrow({
-  where: { role: { in: ["ADMIN", "SUPER_ADMIN"] } },
+  where: { role: "ADMIN" },
 });
 const buyer = await db.user.create({
   data: {
     name: "Analytics fixture",
-    email: randomUUID() + "@phase6.test",
+    email: randomUUID() + "@analytics.test",
     phone: "0900000000",
     passwordHash: admin.passwordHash,
     createdAt: new Date("2001-01-01"),
@@ -195,7 +195,7 @@ await run("08 VN dates inclusive end", async () => {
   assert.equal(filter().from.toISOString(), "2000-12-31T17:00:00.000Z");
 });
 await run(
-  "catalog readiness matches existing Phase5 quality rules",
+  "catalog readiness matches existing catalog quality rules",
   async () => {
     const products = await db.product.findMany({ include: qualityInclude });
     const expected = products.reduce<Record<string, number>>(
@@ -402,7 +402,7 @@ await run("21 validated historical cost snapshot", async () => {
 await run("22 COD collected/remitted separated", async () => {
   const r = await analyticsReport(
     reportFilter({ section: "finance" }),
-    "SUPER_ADMIN",
+    "ADMIN",
   );
   assert(r.metrics.some((m) => m.label === "Khách đã trả COD"));
   assert(r.metrics.some((m) => m.label === "COD đã chuyển về"));
@@ -474,13 +474,13 @@ await run("27 CSV formula/quotes and totals", async () => {
 await run("28 unauthenticated API blocked", async () =>
   assert.equal((await req("/api/analytics/report", undefined, "")).status, 401),
 );
-await run("29 marketing cannot read finance/costs", async () => {
+await run("29 SELLER cannot read finance/profit/customers or write costs", async () => {
   const u = await db.user.create({
     data: {
-      name: "Marketing QA",
-      email: randomUUID() + "@phase6.test",
+      name: "Seller analytics QA",
+      email: randomUUID() + "@analytics.test",
       phone: "0900000000",
-      role: "MARKETING_STAFF",
+      role: "SELLER",
       passwordHash: admin.passwordHash,
     },
   });
@@ -539,20 +539,20 @@ await run("31 larger dataset benchmark / pagination / plans", async () => {
         from: "2002-01-01",
         to: "2002-01-31",
       }),
-      "SUPER_ADMIN",
+      "ADMIN",
     );
     times[section] = Math.round((performance.now() - t) * 100) / 100;
     assert(r.rows.length <= 24);
   }
   assert.equal(
-    (await analyticsRows(filter("inventory"), "SUPER_ADMIN", 3, 0)).rows.length,
+    (await analyticsRows(filter("inventory"), "ADMIN", 3, 0)).rows.length,
     3,
   );
   const plan = await db.$queryRaw(
     Prisma.sql`EXPLAIN QUERY PLAN SELECT id FROM "Order" WHERE status='COMPLETED' AND createdAt>=${new Date("2002-01-01").getTime()}`,
   );
   await writeFile(
-    "verification/phase6-performance.json",
+    "verification/analytics-performance.json",
     JSON.stringify(
       { times, plan, memory: process.memoryUsage(), syntheticOrders: 1000 },
       (_, v) => (typeof v === "bigint" ? Number(v) : v),
@@ -565,7 +565,7 @@ await run("32 consistency flags without repair", async () => {
   assert(r.every((x) => Number(x.value) >= 0));
 });
 await writeFile(
-  "verification/phase6-results.json",
+  "verification/analytics-results.json",
   JSON.stringify({ database: process.env.DATABASE_URL, results }, null, 2),
 );
 await db.$disconnect();

@@ -527,7 +527,7 @@ export async function POST(
         user.id,
         Array.isArray(b.wishlist) ? b.wishlist : [],
       );
-      return ok({ redirect: "/" });
+      return ok({ redirect: accountLoginDestination(user.role, b.returnTo) });
     }
     if (action === "login") {
       const { email, password } = z

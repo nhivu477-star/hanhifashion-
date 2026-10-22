@@ -7,30 +7,10 @@ prisma/*.db*
 playwright-report
 test-results
 public/uploads
-.next-test
 .test-credentials.json
-.next-production
-.next-phase1
-verification/phase1-fixtures.json
-verification/backups/
-verification/ghn-test-controls.json
-
-verification/returns-browser-fixture.json
-verification/returns-browser-current.json
-verification/phase4-fixtures.json
 
 .local-accounts.md
 .local-demo-accounts.json
-verification/final-uat/fixtures.json
-verification/final-uat/backups/
-verification/final-uat/test-backups/
-verification/final-uat/browser-artifacts/
-verification/final-uat/browser-artifacts-*/
-.next-uat-dev/
-verification/data-update/*.db*
-verification/data-update/backups/
-verification/fullstack/backups/
-verification/fullstack/*.db*
 
 # Local artifacts and private configuration
 .DS_Store

@@ -70,12 +70,14 @@ try {
     if (!color) continue;
     if (await db.colorImage.findFirst({where: {colorId: color.id, url: job.path}})) continue;
     await db.$transaction(async tx => {
+      const lastImage = await tx.colorImage.aggregate({where: {colorId: color.id}, _max: {position: true}});
+      const position = (lastImage._max.position ?? -1) + 1;
       const media = await tx.mediaAsset.upsert({where: {localPath: job.path}, update: {}, create: {
         localPath: job.path, originalSourceUrl: job.url, creator: 'LSOUL', licenseType: 'REFERENCE_ONLY', licenseReference: job.color.sourceUrl,
         authorizedUse: 'LOCAL_REFERENCE_DEMO', role: 'DEVELOPMENT', reviewStatus: 'PENDING', productId: actualProduct.id,
         verificationNotes: `Original source gallery photograph; ${job.product.sourceName}; ${job.color.sourceColor}.`,
       }});
-      await tx.colorImage.create({data: {colorId: color.id, url: job.path, alt: `${job.product.title} — ${color.name} — ảnh ${job.position + 1}`, position: job.position, mediaAssetId: media.id}});
+      await tx.colorImage.create({data: {colorId: color.id, url: job.path, alt: `${job.product.title} — ${color.name} — ảnh ${job.position + 1}`, position, mediaAssetId: media.id}});
     });
     added++;
   }

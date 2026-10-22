@@ -1,4 +1,4 @@
-# Máy trạng thái đơn hàng — Phase 1
+# Máy trạng thái đơn hàng
 
 ## Trạng thái đơn
 ```mermaid
@@ -29,7 +29,7 @@ CANCELLED --> [*]
 ## Ba trạng thái độc lập
 - Order.status: tiến trình xử lý.
 - Order.shippingStatus: NOT_DISPATCHED, IN_TRANSIT, DELIVERED, FAILED, RETURNED. Chỉ cập nhật qua sự kiện giao nhận thủ công, không giả kết nối hãng.
-- Order.paymentStatus và Payment.status: UNPAID/PAID ở Phase 1. Giao thành công hay hoàn tất vẫn có thể UNPAID.
+- Order.paymentStatus và Payment.status: UNPAID/PAID ở nghiệp vụ. Giao thành công hay hoàn tất vẫn có thể UNPAID.
 - COD_COLLECTED là sự kiện riêng, không chuyển order.status. Chỉ ADMIN, sau DELIVERED/COMPLETED, có reason + mã chứng từ. Ghi actor/time/amount/currency và audit trong cùng transaction. Lặp sau PAID là no-op.
 
 ## Tương thích dữ liệu

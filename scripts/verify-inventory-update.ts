@@ -4,7 +4,7 @@ if (!process.env.DATABASE_URL?.includes("pilot.db"))
 const { db } = await import("../src/lib/db");
 const { moveStock } = await import("../src/lib/inventory-operations");
 const actor = await db.user.findFirstOrThrow({
-  where: { role: "SUPER_ADMIN", active: true },
+  where: { role: "ADMIN", active: true },
 });
 const buyer = await db.user.findFirstOrThrow({
   where: { role: "CUSTOMER", active: true },

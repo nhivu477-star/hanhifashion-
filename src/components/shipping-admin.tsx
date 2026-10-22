@@ -52,8 +52,9 @@ export async function ShippingAdmin({
         {
           <>
             <p>
-              Quản lý giao nhận, thu COD và đối soát. Không giao hàng hoặc
-              chuyển tiền thật.
+              {can(role, "cod.read")
+                ? "Quản lý giao nhận, thu COD và đối soát. Không giao hàng hoặc chuyển tiền thật."
+                : "Quản lý giao nhận và cập nhật tiến trình xử lý kiện hàng."}
             </p>
             <form className="filter-row">
               <label>
@@ -75,10 +76,14 @@ export async function ShippingAdmin({
                   <tr>
                     <th>Mã tham chiếu / Đơn</th>
                     <th>Giao nhận</th>
-                    <th>COD kỳ vọng</th>
-                    <th>Đã thu / Đã chuyển</th>
-                    <th>Còn phải chuyển</th>
-                    <th>Đối soát</th>
+                    {can(role, "cod.read") && (
+                      <>
+                        <th>COD kỳ vọng</th>
+                        <th>Đã thu / Đã chuyển</th>
+                        <th>Còn phải chuyển</th>
+                        <th>Đối soát</th>
+                      </>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
@@ -103,22 +108,14 @@ export async function ShippingAdmin({
                           {shipmentLabels[s.status]}
                         </span>
                       </td>
-                      <td>
-                        {can(role, "cod.read") ? money(s.expectedCOD) : "—"}
-                      </td>
-                      <td>
-                        {can(role, "cod.read")
-                          ? `${money(s.collectedCOD)} / ${money(s.remittedCOD)}`
-                          : "—"}
-                      </td>
-                      <td>
-                        {can(role, "cod.read") ? money(s.outstandingCOD) : "—"}
-                      </td>
-                      <td>
-                        {can(role, "cod.read")
-                          ? settlementLabels[s.reconciliationStatus]
-                          : "—"}
-                      </td>
+                      {can(role, "cod.read") && (
+                        <>
+                          <td>{money(s.expectedCOD)}</td>
+                          <td>{money(s.collectedCOD)} / {money(s.remittedCOD)}</td>
+                          <td>{money(s.outstandingCOD)}</td>
+                          <td>{settlementLabels[s.reconciliationStatus]}</td>
+                        </>
+                      )}
                     </tr>
                   ))}
                 </tbody>
@@ -283,7 +280,7 @@ export async function ShippingAdmin({
               {e.reason}
             </p>
           ))}
-          {s.provider === "GHN_STAGING" && (
+          {s.provider === "GHN_STAGING" && role === "ADMIN" && (
             <section>
               <h3>Sự kiện provider (chỉ quản trị)</h3>
               {s.events

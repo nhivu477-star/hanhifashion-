@@ -17,7 +17,7 @@ async function login(page: Page, role: string, destination?: string) {
       (destination ? "?returnTo=" + encodeURIComponent(destination) : ""),
   );
   await page
-    .getByLabel("Email", { exact: true })
+    .locator('input[name="email"]')
     .fill(fixture.accounts[role].email);
   await page
     .getByLabel("Mật khẩu", { exact: true })
@@ -32,14 +32,25 @@ test.beforeEach(async ({ context }) => {
 test.afterAll(async () => {
   await db.$disconnect();
 });
+test("Anonymous cannot access staff reports or mutate management data", async ({ page }) => {
+  for (const section of ["products", "inventory", "finance", "profit", "customers"])
+    expect((await page.request.get("/api/analytics/report?section=" + section)).status()).toBe(401);
+  for (const action of ["accounts/create", "staff/role", "product", "stock", "shipping/create", "returns/refund", "customer"]) {
+    const response = await page.request.post("/api/admin/" + action, {
+      headers: { origin: base },
+      data: { id: fixture.accounts.CUSTOMER.id, role: "ADMIN" },
+    });
+    expect(response.status(), action).toBe(403);
+  }
+});
 test("ADMIN account management: create three types, audit and strict role assignment", async ({
   page,
 }) => {
-  await login(page, "SUPER_ADMIN", "/admin/tai-khoan");
+  await login(page, "ADMIN", "/admin/tai-khoan");
   await expect(
     page.getByRole("heading", { name: "Quản lý tài khoản", exact: true }),
   ).toBeVisible();
-  for (const accountType of ["ADMIN", "SELLER", "BUYER"] as const) {
+  for (const accountType of ["ADMIN", "SELLER", "CUSTOMER"] as const) {
     const email = `ui-${accountType.toLowerCase()}-${randomUUID()}@uat.local`;
     const form = page.locator("form").filter({
       has: page.getByRole("heading", {
@@ -80,8 +91,8 @@ test("ADMIN account management: create three types, audit and strict role assign
   const self = await page.request.post("/api/admin/accounts/type", {
     headers: { origin: base },
     data: {
-      id: fixture.accounts.SUPER_ADMIN.id,
-      accountType: "BUYER",
+      id: fixture.accounts.ADMIN.id,
+      accountType: "CUSTOMER",
       reason: "Test tự hạ quyền",
     },
   });
@@ -92,8 +103,8 @@ test("ADMIN account management: create three types, audit and strict role assign
       name: "Attack",
       email: "attack@uat.local",
       password: randomUUID(),
-      accountType: "BUYER",
-      role: "SUPER_ADMIN",
+      accountType: "CUSTOMER",
+      role: "ADMIN",
       reason: "Inject role",
     },
   });
@@ -107,7 +118,7 @@ test("SELLER: login destination, product/inventory permission and service/API es
   page,
 }) => {
   await login(page, "SELLER");
-  await expect(page).toHaveURL(base + "/seller");
+  await expect(page).toHaveURL(base + "/admin/don-hang");
   await page.goto("/admin/san-pham");
   await expect(
     page.getByRole("heading", { name: "Sản phẩm", exact: true }).first(),
@@ -121,7 +132,7 @@ test("SELLER: login destination, product/inventory permission and service/API es
   const token = randomUUID().slice(0, 8);
   const payload = {
     name: "Thiết kế Seller UAT",
-    sku: "SELLER-UAT-" + token,
+    sku: "",
     slug: "seller-uat-" + token,
     description: "Sản phẩm tổng hợp để kiểm thử quyền seller",
     categoryId: category.id,
@@ -142,6 +153,7 @@ test("SELLER: login destination, product/inventory permission and service/API es
   });
   expect(created.status(), await created.text()).toBe(200);
   const productId = (await created.json()).id;
+  payload.sku = (await db.product.findUniqueOrThrow({ where: { id: productId } })).sku;
   const edited = await page.request.post("/api/admin/product", {
     headers: { origin: base },
     data: { ...payload, id: productId, price: 690000 },
@@ -178,7 +190,7 @@ test("SELLER: login destination, product/inventory permission and service/API es
       data: {
         id: fixture.accounts.CUSTOMER.id,
         active: false,
-        role: "SUPER_ADMIN",
+        role: "ADMIN",
         reason: "Test privilege escalation",
       },
     });
@@ -190,7 +202,7 @@ test("SELLER: login destination, product/inventory permission and service/API es
       "status",
       {
         id: fixture.accounts.SELLER.id,
-        role: "SUPER_ADMIN",
+        role: "ADMIN",
         label: "forged actor role",
       },
     ),
@@ -206,7 +218,7 @@ test("SELLER: login destination, product/inventory permission and service/API es
       ).status(),
     ).toBe(403);
 });
-test("BUYER: own data only, no management, disabled session revoked and unlock works", async ({
+test("CUSTOMER: own data only, no management, disabled session revoked and unlock works", async ({
   page,
   browser,
 }) => {
@@ -216,22 +228,29 @@ test("BUYER: own data only, no management, disabled session revoked and unlock w
   await expect(
     page.getByRole("heading", { name: "Quyền truy cập bị giới hạn" }),
   ).toBeVisible();
+  for (const action of ["accounts/status", "staff/role", "product", "stock", "shipping/create", "customer"]) {
+    const response = await page.request.post("/api/admin/" + action, {
+      headers: { origin: base },
+      data: { id: fixture.accounts.CUSTOMER.id, active: false, role: "ADMIN" },
+    });
+    expect(response.status(), action).toBe(403);
+  }
   const customerOrder = await db.order.findFirst({
     where: { userId: fixture.accounts.CUSTOMER.id },
   });
   // A different customer is created via account management, then denied the order URL.
-  const owner = fixture.accounts.SUPER_ADMIN;
+  const owner = fixture.accounts.ADMIN;
   const privatePassword = randomUUID();
   const otherAccount = await manageAccount(
     {
       name: "Khách riêng UAT",
       email: `private-${randomUUID()}@uat.local`,
       password: privatePassword,
-      accountType: "BUYER",
+      accountType: "CUSTOMER",
       reason: "Kiểm thử quyền riêng tư",
     },
     "create",
-    { id: owner.id, role: "SUPER_ADMIN", label: "owner" },
+    { id: owner.id, role: "ADMIN", label: "owner" },
   );
   const separate = await browser.newContext({ baseURL: base });
   await separate.setExtraHTTPHeaders({
@@ -241,7 +260,7 @@ test("BUYER: own data only, no management, disabled session revoked and unlock w
   const u = await db.user.findUniqueOrThrow({ where: { id: otherAccount.id } });
   expect(customerOrder).not.toBeNull();
   await alternate.goto("/dang-nhap");
-  await alternate.getByLabel("Email", { exact: true }).fill(u.email);
+  await alternate.locator('input[name="email"]').fill(u.email);
   await alternate.getByLabel("Mật khẩu", { exact: true }).fill(privatePassword);
   await alternate
     .getByRole("button", { name: "ĐĂNG NHẬP", exact: true })
@@ -263,7 +282,7 @@ test("BUYER: own data only, no management, disabled session revoked and unlock w
   });
   await login(
     alternate,
-    "SUPER_ADMIN",
+    "ADMIN",
     "/admin/tai-khoan?q=" + encodeURIComponent(fixture.accounts.CUSTOMER.email),
   );
   const row = alternate

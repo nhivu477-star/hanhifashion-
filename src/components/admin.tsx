@@ -19,6 +19,7 @@ import { AdminPagination, adminPage } from "./admin-pagination";
 import { qualityInclude, productQuality } from "@/lib/product-quality";
 import { StaffAdmin, AuditAdmin, PermissionOverview } from "./staff-admin";
 import { can, isStaff, adminPagePermission, rolePermissions } from "@/lib/rbac";
+import { accountLoginDestination } from "@/lib/account-types";
 import { ReturnsAdmin } from "./returns";
 import { ShippingAdmin } from "./shipping-admin";
 import { OrderActions } from "./order-actions";
@@ -82,7 +83,7 @@ export async function AdminPage({
         {
           <main className="container empty">
             <h1>Quyền truy cập bị giới hạn</h1>
-            <p>Chỉ tài khoản quản trị mới có thể truy cập khu vực này.</p>
+            <p>Chỉ nhân viên bán hàng và quản trị viên mới có thể truy cập khu vực này.</p>
             <Link className="button" href="/tai-khoan">
               VỀ TÀI KHOẢN
             </Link>
@@ -91,32 +92,20 @@ export async function AdminPage({
       </LocalizedContent>
     );
   const tab = path[0] ?? "";
-  if (tab === "" && !can(user.role, "analytics.read")) {
-    const first = tabs.find(
-      ([slug]) =>
-        slug !== "phan-quyen" &&
-        adminPagePermission[slug] &&
-        can(user.role, adminPagePermission[slug]),
-    );
-    redirect("/admin/" + (first?.[0] ?? "phan-quyen"));
-  }
-  if (
-    tab !== "phan-quyen" &&
-    (!adminPagePermission[tab] || !can(user.role, adminPagePermission[tab]))
-  )
+  if (tab === "" && user.role === "SELLER")
+    redirect(accountLoginDestination(user.role));
+  if (!adminPagePermission[tab] || !can(user.role, adminPagePermission[tab]))
     return (
       <LocalizedContent>
         {
           <main className="container empty">
             <h1>Không có quyền truy cập</h1>
             <p>Vai trò {user.role} không có quyền xem chức năng này.</p>
-            <Link href="/admin">Về chức năng được cấp</Link>
+            <Link href={accountLoginDestination(user.role)}>Về chức năng được cấp</Link>
           </main>
         }
       </LocalizedContent>
     );
-  if (tab === "bao-cao" && !can(user.role, "analytics.finance.read"))
-    redirect("/admin/phan-tich");
   const grants = rolePermissions[user.role] ?? [];
 
   let view: React.ReactNode;
@@ -136,164 +125,6 @@ export async function AdminPage({
     view = <ShippingAdmin id={path[1]} query={query} role={user.role} />;
   } else if (tab === "thu-vien-anh") {
     view = <MediaLibrary query={query} />;
-  } else if (tab === "bao-cao") {
-    const [orders, active, low, customers] = await Promise.all([
-      db.order.findMany({
-        select: {
-          id: true,
-          code: true,
-          name: true,
-          status: true,
-          paymentStatus: true,
-          total: true,
-          createdAt: true,
-          items: { select: { productId: true, name: true, quantity: true } },
-          shipment: {
-            select: { reconciliationStatus: true, remittedCOD: true },
-          },
-        },
-        orderBy: { createdAt: "asc" },
-      }),
-      db.product.count({ where: { active: true } }),
-      db.productVariant.count({
-        where: { stock: { lt: 5 }, product: { active: true } },
-      }),
-      db.user.count({ where: { role: "CUSTOMER" } }),
-    ]);
-    const received = (o: (typeof orders)[number]) =>
-      o.shipment
-        ? o.shipment.reconciliationStatus === "RECONCILED"
-          ? o.shipment.remittedCOD
-          : 0
-        : o.paymentStatus === "PAID"
-          ? o.total
-          : 0;
-    const paid = orders.reduce((n, o) => n + received(o), 0);
-    const statusCounts = new Map<string, number>();
-    for (const order of orders)
-      statusCounts.set(order.status, (statusCounts.get(order.status) ?? 0) + 1);
-    const metrics = [
-      ["Tổng đơn hàng", orders.length],
-      ["Chờ xác nhận", statusCounts.get("PENDING") ?? 0],
-      ["Hoàn tất", statusCounts.get("COMPLETED") ?? 0],
-      ["Đã hủy", statusCounts.get("CANCELLED") ?? 0],
-      ["Doanh thu đã thu", money(paid)],
-      ["Sản phẩm hoạt động", active],
-      ["Biến thể sắp hết", low],
-      ["Khách hàng", customers],
-    ];
-    const days = Array.from({ length: 7 }, (_, i) => {
-      const d = new Date(Date.now() - (6 - i) * 86400000)
-        .toISOString()
-        .slice(0, 10);
-      const daily = orders.filter((o) =>
-        o.createdAt.toISOString().startsWith(d),
-      );
-      return {
-        day: d.slice(5),
-        revenue: daily.reduce((n, o) => n + received(o), 0),
-        count: daily.length,
-      };
-    });
-    const maxDailyRevenue = Math.max(1, ...days.map((d) => d.revenue));
-    const maxDailyOrders = Math.max(1, ...days.map((d) => d.count));
-    const top = new Map<string, { name: string; count: number }>();
-    for (const o of orders.filter((o) => o.status !== "CANCELLED"))
-      for (const i of o.items) {
-        const old = top.get(i.productId);
-        top.set(i.productId, {
-          name: i.name,
-          count: (old?.count ?? 0) + i.quantity,
-        });
-      }
-    view = (
-      <>
-        <p className="admin-notice">
-          Số liệu đơn hàng được cập nhật từ cơ sở dữ liệu.
-        </p>
-        <div className="metrics">
-          {metrics.map(([label, value]) => (
-            <div key={label}>
-              <span>{label}</span>
-              <strong>{value}</strong>
-            </div>
-          ))}
-        </div>
-        <div className="report-grid">
-          <section>
-            <h2>Doanh thu 7 ngày</h2>
-            <div className="chart">
-              {days.map((d) => (
-                <div key={d.day}>
-                  <span className="small">{money(d.revenue)}</span>
-                  <div
-                    className="chart-bar"
-                    style={{
-                      height: Math.max(
-                        2,
-                        (d.revenue / maxDailyRevenue) * 140,
-                      ),
-                    }}
-                  />
-                  <span>{d.day}</span>
-                </div>
-              ))}
-            </div>
-          </section>
-          <section>
-            <h2>Đơn hàng 7 ngày</h2>
-            <div className="chart">
-              {days.map((d) => (
-                <div key={d.day}>
-                  <span>{d.count}</span>
-                  <div
-                    className="chart-bar"
-                    style={{
-                      height: Math.max(
-                        2,
-                        (d.count / maxDailyOrders) * 140,
-                      ),
-                    }}
-                  />
-                  <span>{d.day}</span>
-                </div>
-              ))}
-            </div>
-          </section>
-          <section>
-            <h2>Trạng thái đơn hàng</h2>
-            {Object.entries(transitions).map(([status]) => (
-              <div className="summary-row" key={status}>
-                <span>{statusLabels[status]}</span>
-                <strong>{statusCounts.get(status) ?? 0}</strong>
-              </div>
-            ))}
-          </section>
-          <section>
-            <h2>Thiết kế được đặt nhiều</h2>
-            {top.size ? (
-              [...top.values()]
-                .sort((a, b) => b.count - a.count)
-                .slice(0, 5)
-                .map((p) => (
-                  <div className="summary-row" key={p.name}>
-                    <span>{p.name}</span>
-                    <strong>{p.count}</strong>
-                  </div>
-                ))
-            ) : (
-              <p>Chưa có dữ liệu đặt hàng.</p>
-            )}
-          </section>
-        </div>
-        {can(user.role, "orders.read") && (
-          <>
-            <h2>Đơn hàng gần đây</h2>
-            <OrderTable orders={orders.slice(-8).reverse()} />
-          </>
-        )}
-      </>
-    );
   } else if (tab === "san-pham") {
     if (path[1]) {
       const product =
@@ -1317,9 +1148,9 @@ export async function AdminPage({
             ])}
           tabs={tabs.filter(
             ([slug]) =>
-              slug === "phan-quyen" ||
-              (adminPagePermission[slug] &&
-                can(user.role, adminPagePermission[slug])),
+              adminPagePermission[slug] &&
+              can(user.role, adminPagePermission[slug]) &&
+              (slug !== "" || can(user.role, analyticsPermission.overview)),
           )}
         >
           {!path[1] && ["don-hang", "khach-hang", "san-pham"].includes(tab) && (

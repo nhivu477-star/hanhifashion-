@@ -74,7 +74,7 @@ const valid = () =>
       },
     ],
   }) as unknown as QualityProduct;
-describe("Phase 5 quality", () => {
+describe("Product quality", () => {
   it("READY does not require positive stock", () =>
     expect(productQuality(valid()).status).toBe("READY"));
   it("missing content is INCOMPLETE", () => {
@@ -110,7 +110,7 @@ describe("Phase 5 quality", () => {
       productQuality(valid(), new Set(["/images/test.jpg"])).missing,
     ).toContain("image.file"));
 });
-describe("Phase 5 security", () => {
+describe("Return destination security", () => {
   it("preserves local query context", () =>
     expect(safeReturnTo("/trang-phuc?color=Be")).toBe("/trang-phuc?color=Be"));
   it("blocks open redirect/control/loop", () => {

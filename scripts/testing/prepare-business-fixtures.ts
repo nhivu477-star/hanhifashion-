@@ -2,12 +2,13 @@ import { PrismaClient } from "@prisma/client";
 import { randomBytes, createHash } from "node:crypto";
 import { writeFile } from "node:fs/promises";
 import { hash } from "bcryptjs";
-if (!process.env.DATABASE_URL?.includes("phase1-orders"))
-  throw Error("Isolated Phase 1 database required");
+if (!/^file:\.\/business-tests-[\w-]+\.db$/.test(process.env.DATABASE_URL ?? ""))
+  throw Error("Isolated business test database required");
 const db = new PrismaClient();
 const users = [];
 for (const [role, name] of [
   ["ADMIN", "admin"],
+  ["SELLER", "seller"],
   ["CUSTOMER", "alice"],
   ["CUSTOMER", "bob"],
 ]) {
@@ -16,7 +17,7 @@ for (const [role, name] of [
     data: {
       name,
       role,
-      email: `${name}@phase1.test`,
+      email: `${name}@orders.test`,
       phone: "0912345678",
       passwordHash: await hash(password, 10),
     },
@@ -35,7 +36,7 @@ const cat = await db.category.create({
   data: {
     name: "Trang phục",
     slug: "trang-phuc",
-    description: "Dữ liệu Phase 1",
+    description: "Dữ liệu kiểm thử đơn hàng",
     image: "/images/lsoul/products/dam-ricci-dress-nguyen-ban-1.webp",
   },
 });
@@ -46,7 +47,7 @@ for (let i = 0; i < 24; i++) {
       name: `Thiết kế kiểm thử ${i}`,
       slug: `qa-order-${i}`,
       sku: `QA-ORDER-${i}`,
-      description: "Sản phẩm chỉ sử dụng trong kiểm thử Phase 1",
+      description: "Sản phẩm chỉ sử dụng trong kiểm thử đơn hàng",
       material: "Cotton",
       style: "Thời trang",
       fit: "regular",
@@ -73,7 +74,7 @@ for (let i = 0; i < 24; i++) {
 }
 await db.coupon.create({
   data: {
-    code: "PHASE1",
+    code: "ORDERTEST",
     type: "PERCENT",
     value: 10,
     minimum: 0,
@@ -83,9 +84,9 @@ await db.coupon.create({
   },
 });
 await writeFile(
-  "verification/phase1-fixtures.json",
+  "verification/business-fixtures.json",
   JSON.stringify({ users, fixtures }),
   { mode: 0o600 },
 );
 await db.$disconnect();
-console.log("Isolated fixtures created: 24 products, 3 users.");
+console.log("Isolated fixtures created: 24 products, 4 users across 3 roles.");

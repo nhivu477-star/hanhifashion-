@@ -26,7 +26,7 @@ async function localOnly(context: BrowserContext) {
 async function login(page: Page, role: string, returnTo = "/tai-khoan") {
   const c = fixture.accounts[role];
   await page.goto("/dang-nhap?returnTo=" + encodeURIComponent(returnTo));
-  await page.getByLabel("Email", { exact: true }).fill(c.email);
+  await page.locator('input[name="email"]').fill(c.email);
   await page.getByLabel("Mật khẩu", { exact: true }).fill(c.password);
   await page.getByRole("button", { name: "ĐĂNG NHẬP", exact: true }).click();
   if (returnTo === "/admin")
@@ -116,7 +116,7 @@ test("customer login → cart → COD checkout → shipping → defect return �
     .click();
   await expect(page).toHaveURL(/dang-nhap\?returnTo=/);
   await page
-    .getByLabel("Email", { exact: true })
+    .locator('input[name="email"]')
     .fill(fixture.accounts.CUSTOMER.email);
   const password = page.getByLabel("Mật khẩu", { exact: true });
   await password.fill(fixture.accounts.CUSTOMER.password);
@@ -184,7 +184,7 @@ test("customer login → cart → COD checkout → shipping → defect return �
   const adminContext = await browser.newContext({ baseURL: base });
   await localOnly(adminContext);
   const admin = await adminContext.newPage();
-  await login(admin, "SUPER_ADMIN", "/admin/don-hang/" + order.id);
+  await login(admin, "ADMIN", "/admin/don-hang/" + order.id);
   for (const next of ["Đã xác nhận", "Đang chuẩn bị"]) {
     await admin.getByLabel("Lý do xử lý đơn").fill("Xác nhận nghiệm thu local");
     const response = admin.waitForResponse(
@@ -547,7 +547,7 @@ for (const width of [360, 390, 768, 1024, 1440]) {
         await page.keyboard.press("Escape");
       }
     }
-    await login(page, "SUPER_ADMIN", "/admin/phan-tich/products");
+    await login(page, "ADMIN", "/admin/phan-tich/products");
     for (const section of ["products", "sales", "finance", "profit"]) {
       await page.goto("/admin/phan-tich/" + section);
       await expect(page.locator(".analytics-admin")).toBeVisible();

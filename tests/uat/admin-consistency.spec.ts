@@ -12,11 +12,11 @@ test("Admin consistency: operational pages, forms, tables and responsive shell",
   await context.setExtraHTTPHeaders({ "x-forwarded-for": "127.0.0.41" });
   await page.goto("/dang-nhap");
   await page
-    .getByLabel("Email", { exact: true })
-    .fill(fixture.accounts.SUPER_ADMIN.email);
+    .locator('input[name="email"]')
+    .fill(fixture.accounts.ADMIN.email);
   await page
     .getByLabel("Mật khẩu", { exact: true })
-    .fill(fixture.accounts.SUPER_ADMIN.password);
+    .fill(fixture.accounts.ADMIN.password);
   await page.getByRole("button", { name: "ĐĂNG NHẬP", exact: true }).click();
   await expect(page).toHaveURL("http://127.0.0.1:3102/admin");
   mkdirSync("verification/admin-unified", { recursive: true });

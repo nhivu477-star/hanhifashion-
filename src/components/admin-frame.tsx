@@ -1,9 +1,10 @@
 "use client";
 import { LocalizedContent } from "./localization";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { BrandLogo } from "./brand-logo";
 import { ActionButton } from "./store";
+import { accountLoginDestination } from "@/lib/account-types";
 import {
   Search,
   Bell,
@@ -111,7 +112,19 @@ export function AdminFrame({
   activePath: string;
 }) {
   const [open, setOpen] = useState(false),
-    [search, setSearch] = useState("");
+    [search, setSearch] = useState(""),
+    [compact, setCompact] = useState(true);
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 1023px)");
+    const update = () => {
+      setCompact(media.matches);
+      setOpen(false);
+    };
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
+  const managementHref = accountLoginDestination(role);
   const activeSlug = analyticsLinks.some(([slug]) => slug === activePath)
     ? activePath
     : tab;
@@ -129,10 +142,10 @@ export function AdminFrame({
           }
         }}
       >
-        <aside className={"admin-nav " + (open ? "is-open" : "")} inert={!open}>
+        <aside className={"admin-nav " + (open ? "is-open" : "")} inert={compact && !open}>
           <Link
             className="admin-brand"
-            href={role === "SELLER" ? "/seller" : "/admin"}
+            href={managementHref}
           >
             <BrandLogo />
           </Link>
@@ -217,7 +230,7 @@ export function AdminFrame({
               </button>
               <Link
                 className="admin-header-logo"
-                href={role === "SELLER" ? "/seller" : "/admin"}
+                href={managementHref}
                 aria-label="HÀ NHI FASHION — Quản trị"
               >
                 <BrandLogo />
@@ -302,7 +315,7 @@ export function AdminFrame({
               <div className="admin-heading">
                 <div>
                   <p className="admin-breadcrumb">
-                    <Link href="/admin">Quản trị</Link>
+                    <Link href={managementHref}>{role === "SELLER" ? "Bán hàng" : "Quản trị"}</Link>
                     <span>/</span>
                     {tabs.find((t) => t[0] === tab)?.[1]}
                   </p>

@@ -1,4 +1,4 @@
-/** Explicit local staff permissions. Unknown/legacy STAFF roles have no grants. */
+/** Canonical account tiers; unknown roles never receive staff permissions. */
 export const permissions = [
   "accounts.manage",
   "staff.read",
@@ -78,17 +78,12 @@ const returns: Permission[] = [
   "returns.inspect",
   "returns.exchange",
 ];
-const finance: Permission[] = [
-  "cod.read",
-  "cod.collection.confirm",
-  "cod.remittance.record",
-  "cod.reconcile",
-  "refunds.read",
-  "refunds.approve",
-  "refunds.execute",
-];
+export const accountRoles = ["CUSTOMER", "SELLER", "ADMIN"] as const;
+export type AccountRole = (typeof accountRoles)[number];
+export const isAccountRole = (role: string): role is AccountRole =>
+  accountRoles.some((candidate) => candidate === role);
 export const rolePermissions: Record<string, readonly Permission[]> = {
-  SUPER_ADMIN: permissions,
+  ADMIN: permissions,
   SELLER: [
     "inquiries.read",
     "inquiries.manage",
@@ -96,139 +91,19 @@ export const rolePermissions: Record<string, readonly Permission[]> = {
     ...inventory,
     ...orders,
     ...shipping,
-    "returns.read",
-    "analytics.read",
-    "analytics.products.read",
-    "analytics.inventory.read",
-  ],
-  STORE_MANAGER: [
-    "analytics.read",
-    "analytics.sales.read",
-    "analytics.products.read",
-    "analytics.customers.read",
-    "analytics.inventory.read",
-    "analytics.marketing.read",
-    "analytics.export",
-    ...product,
-    ...inventory,
-    ...orders,
-    ...shipping,
     ...returns,
-    "content.read",
-    "content.manage",
-    "promotions.read",
-    "promotions.manage",
-    "staff.read",
-    "customers.read",
-    "inquiries.read",
-    "inquiries.manage",
-  ],
-  PRODUCT_STAFF: [
     "analytics.read",
     "analytics.products.read",
     "analytics.inventory.read",
-    ...product,
-    "inventory.read",
-    "inventory.movements.read",
-  ],
-  INVENTORY_STAFF: [
-    "analytics.read",
-    "analytics.inventory.read",
-    ...inventory,
-    "returns.read",
-    "returns.inspect",
-  ],
-  ORDER_STAFF: [
-    "analytics.read",
-    "analytics.sales.read",
-    "analytics.products.read",
-    ...orders,
-    ...shipping,
-    "returns.read",
-    "returns.exchange",
-    "inventory.read",
-  ],
-  CUSTOMER_SUPPORT: [
-    "orders.read",
-    "shipping.read",
-    "returns.read",
-    "returns.review",
-    "customers.read",
-    "inquiries.read",
-    "inquiries.manage",
-  ],
-  CONTENT_STAFF: ["content.read", "content.manage"],
-  MARKETING_STAFF: [
-    "analytics.read",
-    "analytics.sales.read",
-    "analytics.products.read",
-    "analytics.marketing.read",
-    "analytics.export",
-    "promotions.read",
-    "promotions.manage",
-    "content.read",
-    "content.manage",
-  ],
-  FINANCE_STAFF: [
-    "analytics.read",
-    "analytics.sales.read",
-    "analytics.customers.read",
-    "analytics.inventory.read",
-    "analytics.profit.read",
-    "analytics.finance.read",
-    "analytics.costs.manage",
-    "analytics.export",
-    ...finance,
-    "orders.read",
-    "shipping.read",
-    "returns.read",
-  ],
-  // Compatibility: preserve existing operational capabilities, no new identity administration grants.
-  ADMIN: [
-    "analytics.read",
-    "analytics.sales.read",
-    "analytics.products.read",
-    "analytics.customers.read",
-    "analytics.inventory.read",
-    "analytics.profit.read",
-    "analytics.marketing.read",
-    "analytics.finance.read",
-    "analytics.costs.manage",
-    "analytics.export",
-    ...product,
-    ...inventory,
-    ...orders,
-    ...shipping,
-    ...returns,
-    ...finance,
-    "content.read",
-    "content.manage",
-    "promotions.read",
-    "promotions.manage",
-    "analytics.read",
-    "customers.read",
-    "customers.manage",
-    "inquiries.read",
-    "inquiries.manage",
   ],
   CUSTOMER: [],
 };
-export const assignableRoles = [
-  "SUPER_ADMIN",
-  "SELLER",
-  "STORE_MANAGER",
-  "PRODUCT_STAFF",
-  "INVENTORY_STAFF",
-  "ORDER_STAFF",
-  "CUSTOMER_SUPPORT",
-  "CONTENT_STAFF",
-  "MARKETING_STAFF",
-  "FINANCE_STAFF",
-] as const;
+export const assignableRoles = ["SELLER", "ADMIN"] as const;
 export const isStaff = (role: string) =>
-  role !== "CUSTOMER" && Object.hasOwn(rolePermissions, role);
+  role === "SELLER" || role === "ADMIN";
 export const can = (role: string, permission: Permission) =>
-  rolePermissions[role]?.includes(permission) ?? false;
+  Object.hasOwn(rolePermissions, role) &&
+  rolePermissions[role].includes(permission);
 export class AuthorizationError extends Error {
   constructor(readonly permission: string) {
     super(`Không có quyền: ${permission}.`);
@@ -241,7 +116,6 @@ export function assertRolePermission(role: string, p: Permission) {
 export const adminPagePermission: Record<string, Permission> = {
   "tai-khoan": "accounts.manage",
   "": "analytics.read",
-  "bao-cao": "analytics.read",
   "phan-tich": "analytics.read",
   "san-pham": "products.read",
   "thu-vien-anh": "products.read",

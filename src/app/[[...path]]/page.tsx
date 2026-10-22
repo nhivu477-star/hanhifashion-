@@ -12,6 +12,7 @@ import { LocalizedContent } from "@/components/localization";
 import { AdminPagination, adminPage } from "@/components/admin-pagination";
 import { safeReturnTo } from "@/lib/safe-redirect";
 import { can, isStaff } from "@/lib/rbac";
+import { accountLoginDestination } from "@/lib/account-types";
 import { CustomerReturns } from "@/components/returns";
 import { ShipmentTimeline } from "@/components/shipment-timeline";
 import { publicShipmentSelect } from "@/lib/shipping";
@@ -707,7 +708,8 @@ async function OrderDetail({
               <p className="small muted">
                 Trạng thái giao nhận do cửa hàng ghi nhận thủ công.
               </p>
-              {canCustomerCancel(order.status, order.paymentStatus) && (
+              {(u?.id === order.userId || (!u && code && access === order.accessToken)) &&
+                canCustomerCancel(order.status, order.paymentStatus) && (
                 <OrderActions
                   id={order.id}
                   code={order.code}
@@ -801,7 +803,11 @@ async function AccountPage({ path, query }: { path: string[]; query: Params }) {
               ))}
               <Link href="/cai-dat-hien-thi">Cài đặt hiển thị</Link>
               <Link href="/yeu-thich">Sản phẩm yêu thích</Link>
-              {isStaff(u.role) && <Link href="/admin">Quản trị cửa hàng</Link>}
+              {isStaff(u.role) && (
+                <Link href={accountLoginDestination(u.role)}>
+                  {u.role === "SELLER" ? "Bảng điều khiển bán hàng" : "Quản trị cửa hàng"}
+                </Link>
+              )}
               <ActionButton action="logout" data={{}}>
                 Đăng xuất
               </ActionButton>
@@ -989,12 +995,6 @@ export default async function Page({
   const query = await searchParams;
   const slug = path[0] ?? "";
   if (!slug) return <LocalizedContent>{<Home />}</LocalizedContent>;
-  if (slug === "seller")
-    return (
-      <LocalizedContent>
-        {<AdminPage path={[]} query={query} />}
-      </LocalizedContent>
-    );
   if (slug === "admin")
     return (
       <LocalizedContent>
@@ -1191,8 +1191,8 @@ export default async function Page({
                   reg
                     ? [
                         { name: "name", label: "Họ và tên" },
-                        { name: "email", label: "Email (hoặc để trống nếu dùng SĐT)", type: "email" },
-                        { name: "phone", label: "Số điện thoại (hoặc để trống nếu dùng email)", type: "tel" },
+                        { name: "email", label: "Email (hoặc để trống nếu dùng SĐT)", type: "email", required: false },
+                        { name: "phone", label: "Số điện thoại (hoặc để trống nếu dùng email)", type: "tel", required: false },
                         {
                           name: "password",
                           label: "Mật khẩu (ít nhất 8 ký tự)",

@@ -261,7 +261,7 @@ test("commercial readiness blocks unverified product assets and keeps media priv
   ).toBe(400);
   const creds = JSON.parse(readFileSync(".test-credentials.json", "utf8"));
   await page.goto("/dang-nhap");
-  await page.getByLabel("Email", { exact: true }).fill(creds.email);
+  await page.locator('input[name="email"]').fill(creds.email);
   await page.getByLabel("Mật khẩu", { exact: true }).fill(creds.password);
   await page.getByRole("button", { name: "ĐĂNG NHẬP", exact: true }).click();
   await expect(page).toHaveURL(/tai-khoan|admin/);

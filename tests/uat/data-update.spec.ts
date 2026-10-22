@@ -11,7 +11,7 @@ const origin = "http://127.0.0.1:3102";
 async function login(page: Page, role: string) {
   await page.goto("/dang-nhap");
   await page
-    .getByLabel("Email", { exact: true })
+    .locator('input[name="email"]')
     .fill(fixture.accounts[role].email);
   await page
     .getByLabel("Mật khẩu", { exact: true })
@@ -25,7 +25,7 @@ test.afterAll(() => db.$disconnect());
 test("Data update: dashboard chart, filtered database metrics and storefront return", async ({
   page,
 }) => {
-  await login(page, "SUPER_ADMIN");
+  await login(page, "ADMIN");
   await expect(page.locator(".revenue-plot svg")).toBeVisible();
   const chart = page.locator(".revenue-card");
   await chart.getByRole("button", { name: "Theo tháng", exact: true }).click();
@@ -50,7 +50,7 @@ test("Data update: stock forms, atomic ledger, tracking ID privacy and visible w
   page,
   browser,
 }) => {
-  await login(page, "SUPER_ADMIN");
+  await login(page, "ADMIN");
   await page.goto("/admin/kho-hang");
   await page.getByText("Nhập / xuất kho theo SKU", { exact: true }).click();
   const form = page
