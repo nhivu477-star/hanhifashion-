@@ -6,6 +6,8 @@
 
 Đây là **LOCAL E-COMMERCE DEMO**, không phải hệ thống giao dịch thương mại đã được chứng nhận. Không deploy, push/sync remote, cấu hình hosting/domain, yêu cầu cloud trả phí hoặc kết nối thanh toán, ngân hàng, hãng vận chuyển thật (kể cả sandbox). Giao nhận, COD, đối soát và hoàn tiền chỉ là bản ghi/mô phỏng nội bộ. Không yêu cầu token/Shop ID hãng. Mã `HN-SHIP-*` là mã hồ sơ nội bộ, không phải vận đơn hãng; không dựng tracking hoặc timeline giả.
 
+Hồ sơ phân tích nghiệp vụ: [BRD và chỉ mục tài liệu](docs/business-requirements.md), [31 use case](docs/use-cases.md), [quy trình](docs/business-processes.md), [business rules](docs/business-rules.md), [ERD](docs/data-model.md), [test scenarios có truy vết](docs/test-scenarios.md). Các tài liệu này mô tả baseline và expected results, không tự chứng minh PASS.
+
 ## Ba vai trò duy nhất
 
 | Vai trò lưu trữ và hiển thị | Phạm vi |
@@ -16,7 +18,9 @@
 
 Không có vai trò chuyên biệt hoặc lớp ánh xạ tên vai trò thứ hai. SELLER không quản trị tài khoản/nhân viên, không thu/đối soát COD, duyệt/thực hiện hoàn tiền, quản trị tài chính, giá vốn hoặc lợi nhuận. Xem [ma trận quyền](docs/rbac-role-permission-matrix.md) và [quản lý tài khoản](docs/account-management.md).
 
-Mọi route, API và service phải kiểm quyền độc lập, mặc định từ chối; không tin actor/role/userId do client cung cấp. CUSTOMER bị giới hạn quyền sở hữu. Phiên HttpOnly được kiểm token hash, hạn dùng, active và permissionVersion với DB hiện tại. Đổi quyền/trạng thái phải thu hồi phiên; bảo vệ ADMIN hoạt động cuối và chặn tự khóa/tự đổi quyền. Đăng ký công khai luôn tạo CUSTOMER. Không trả hash/token/chứng từ nội bộ trong API khách.
+Mọi route, API và service phải kiểm quyền độc lập, mặc định từ chối; không tin actor/role/userId do client cung cấp. CUSTOMER bị giới hạn quyền sở hữu. Phiên HttpOnly được kiểm token hash, hạn dùng, active và permissionVersion với DB hiện tại. Tạo phiên phải khớp hash/version đã xác minh mật khẩu để chặn tranh chấp reset/đổi quyền. Đổi quyền/trạng thái phải thu hồi phiên; đổi/reset mật khẩu vô hiệu mọi token khôi phục còn lại. Bảo vệ ADMIN hoạt động cuối và chặn tự khóa/tự đổi quyền. Đăng ký công khai luôn tạo CUSTOMER. Không trả hash/token/chứng từ nội bộ trong API khách.
+
+Actor mutation phải giữ `permissionVersion` của phiên đã xác thực và đối chiếu lại trong transaction sau các bước bất đồng bộ; đọc role/version mới rồi gán lại actor không được làm sống lại yêu cầu từ phiên đã thu hồi. Đơn gắn tài khoản luôn cần phiên chủ sở hữu hoặc nhân viên có quyền: cookie `hn_order`/accessToken còn lại không thay thế phiên. Capability token chỉ áp dụng đơn guest cũ có `userId = null`.
 
 ## Nhận diện, giao diện và điều hướng
 
@@ -33,7 +37,7 @@ Nhóm hàng hiện hành gồm Trang phục, Giày, Túi xách và Phụ kiện.
 
 Ảnh chọn đúng màu; thiếu ảnh không mượn màu khác. Giá/ảnh snapshot đơn cũ bất biến. Gợi ý phối phải liên kết sản phẩm/màu hoạt động, có ảnh và còn hàng; món bổ sung bán riêng. Không coi ảnh minh họa hoặc nội dung mẫu là chứng minh hàng thật. Tư vấn size xác định bằng bảng/ma trận, không AI hay suy diễn BMI; không cam kết vừa tuyệt đối. Số đo chỉ trong state trình duyệt, xóa khi đóng, không lưu tài khoản/storage/URL/analytics. Chi tiết tại [danh mục và size](CATALOG_AND_SIZING.md), [chất lượng dữ liệu](docs/product-data-quality.md), [ảnh](docs/product-image-management.md).
 
-Ưu tiên nháp, ẩn/xóa mềm và reference guard; không hard delete làm mất đơn/ledger. Upload local phải kiểm quyền trước đọc, kiểm bytes/format/kích thước/pixel/realpath và chống traversal/symlink; không coi đuôi tệp/MIME là bằng chứng đủ. Không nâng READY hoặc đặt giá/tồn/giá vốn bằng suy đoán. Attribution và giới hạn giấy phép tại [THIRD_PARTY_IMAGES.md](THIRD_PARTY_IMAGES.md) phải được bảo toàn.
+Ưu tiên nháp, ẩn/xóa mềm và reference guard; không hard delete làm mất đơn/ledger. Upload local phải kiểm quyền trước đọc, kiểm lại phiên/quyền sau multipart và decode trước ghi; kiểm bytes/format/kích thước/pixel/realpath và chống traversal/symlink, không coi đuôi tệp/MIME là bằng chứng đủ. Nếu ghi file/audit thất bại, dọn chỉ artifact do request đó tạo, không xóa ảnh sẵn có. Không nâng READY hoặc đặt giá/tồn/giá vốn bằng suy đoán. Attribution và giới hạn giấy phép tại [THIRD_PARTY_IMAGES.md](THIRD_PARTY_IMAGES.md) phải được bảo toàn.
 
 ## Mua hàng, đơn và tồn kho
 
@@ -48,7 +52,7 @@ Chi tiết: [quy tắc đơn](docs/order-business-rules.md), [máy trạng thái
 
 ## Giao nhận, tiền và đổi trả
 
-Giao nhận thủ công có lịch sử thật trong DB, lý do thất bại/giao lại/chuyển hoàn và kiểm chuyển trạng thái. Giao thành công không tự đánh dấu đã trả tiền; hàng chuyển hoàn không tự hoàn tồn trước kiểm hàng. COD tách số kỳ vọng, thu khách, chuyển về và đối soát; sai lệch giữ DISPUTED, correction có chứng từ và liên kết bản gốc, không sửa/xóa ledger.
+Giao nhận thủ công có lịch sử thật trong DB, lý do thất bại/giao lại/chuyển hoàn và kiểm chuyển trạng thái. Giao thành công không tự đánh dấu đã trả tiền; hàng chuyển hoàn không tự hoàn tồn trước kiểm hàng. Trước RETURNED→CANCELLED của đơn UNPAID phải kiểm đủ từng dòng: lượng bán được + lượng hỏng bằng lượng dòng, không âm/trùng/thiếu. Chỉ hoàn tồn lượng bán được đúng một lần; hàng hỏng không cộng tồn bán, phân loại giữ trong audit/lịch sử vận hành. Đây không phải hồ sơ khách trả hàng sau giao. COD tách số kỳ vọng, thu khách, chuyển về và đối soát; sai lệch giữ DISPUTED, correction có chứng từ và liên kết bản gốc, không sửa/xóa ledger.
 
 Chỉ tiếp nhận **hàng lỗi trong đủ 72 giờ từ thời điểm nhận hàng**, gồm đúng hạn cuối; không dùng hết ngày lịch. Snapshot mốc giao đầu tiên, không bịa mốc thiếu. CUSTOMER sở hữu đơn gửi từng dòng/lượng/lý do; ảnh lỗi không bắt buộc và phải riêng tư. ADMIN xác minh lỗi trước duyệt, nhận/kiểm hàng; chỉ SELLABLE hoàn tồn đúng một lần, DAMAGED cách ly. Không mở chính sách đổi size/màu/mẫu vì sở thích.
 
@@ -62,7 +66,7 @@ Chỉ tiếp nhận **hàng lỗi trong đủ 72 giờ từ thời điểm nhậ
 
 ADMIN quản lý ba loại tài khoản, khóa/mở, cấu hình, voucher, banner, danh mục/bộ sưu tập và nhật ký. Tài khoản, vai trò, mật khẩu, phiên và dữ liệu kinh doanh phải được bảo toàn ngoài thay đổi phân quyền đã phê duyệt. Không reset/seed database chính.
 
-Liên hệ chính thức: `hanhifashion@gmail.com`, `0961982102`, [Facebook](https://www.facebook.com/share/19MKdV11Hu/?mibextid=wwXIfr), [Instagram](https://www.instagram.com/ha_nhi.05?mdxt=MWh4MHhzOHkxNjhrOA==). Hiển thị footer, `/lien-he`, hỗ trợ đơn; dùng mailto/tel và mở social an toàn. Không bịa địa chỉ, đăng ký kinh doanh hoặc giờ mở cửa. Thông tin có thể chỉnh trong cấu hình ADMIN.
+Thông tin liên hệ lấy từ cấu hình `StoreSetting` do ADMIN quản lý và hiển thị nhất quán tại footer, `/lien-he`, hỗ trợ đơn; email/điện thoại dùng mailto/tel, social mở an toàn. Tài liệu portfolio không nhúng địa chỉ liên hệ hoặc tài khoản cá nhân; không thay dữ liệu cấu hình hiện hữu khi biên tập tài liệu. Không bịa địa chỉ cửa hàng, đăng ký kinh doanh hoặc giờ mở cửa.
 
 ## Báo cáo, an toàn và vận hành
 
@@ -72,6 +76,6 @@ Ghi nghiệp vụ và audit atomic; không có API sửa/xóa audit. Log kỹ th
 
 ## Nghiệm thu và giới hạn
 
-[Tiêu chuẩn nghiệp vụ](docs/business-acceptance-standards.md) và [31 use case](docs/business-acceptance-31.md) là yêu cầu, không tự chứng minh PASS. [Báo cáo hợp nhất](docs/business-acceptance-report.md) tách bằng chứng lịch sử khỏi kiểm tra phiên bản ba vai trò chưa chạy. Chỉ ghi kết quả đã thực thi; dùng DB thử riêng, không sửa dữ liệu chính để làm đẹp kết quả.
+[Tiêu chuẩn nghiệp vụ](docs/business-acceptance-standards.md) và [31 nghiệp vụ chi tiết](docs/business-acceptance-31.md) là yêu cầu, không tự chứng minh PASS. [Thiết kế kiểm thử và truy vết](docs/test-scenarios.md) liên kết yêu cầu/rule/use case với expected results và source test ổn định. [Báo cáo hợp nhất hiện hữu](docs/business-acceptance-report.md) ghi kết quả của lần thực thi được mô tả, không tự chứng minh các thay đổi sau đó đã đạt. Chỉ ghi kết quả đã thực thi; dùng DB thử riêng, không sửa dữ liệu chính để làm đẹp kết quả.
 
 Dữ liệu tổng hợp phải giữ provenance, ảnh tham khảo phải giữ attribution. Chưa xác minh hàng thật, tồn, bản quyền ảnh, giá vốn, WCAG đầy đủ, tải nhiều instance hoặc bảo mật production; không tuyên bố sẵn sàng bán thật.

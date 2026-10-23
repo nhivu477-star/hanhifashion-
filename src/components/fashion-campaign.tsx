@@ -4,30 +4,25 @@ import { LocalizedContent } from "@/components/localization";
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
+import { SafeImage } from "./store";
 const slides = [
   {
     name: "AWAK",
     type: "ÁO KHOÁC",
-    image: "/images/lsoul/banner-awak-1.webp",
     href: "/san-pham/ls-awak-jacket",
-    alt: "Người mẫu trong bộ ảnh Awak Jacket của LSOUL",
   },
   {
     name: "CHARLI",
     type: "PHỐI ĐỒ",
-    image: "/images/lsoul/banner-ers-3.webp",
     href: "/san-pham/ls-charli-set",
-    alt: "Bộ Charli của LSOUL",
   },
   {
     name: "ERROS",
     type: "ÁO KIỂU",
-    image: "/images/lsoul/products/ao-erros-top-nguyen-ban-1.webp",
     href: "/san-pham/ls-erros-top",
-    alt: "Áo Erros — ảnh trọn trang phục",
   },
 ];
-export function FashionCampaign() {
+export function FashionCampaign({ hasPhotography }: { hasPhotography: boolean }) {
   const rail = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
   const go = (i: number) =>
@@ -37,6 +32,22 @@ export function FashionCampaign() {
         ? "instant"
         : "smooth",
     });
+  if (!hasPhotography)
+    return (
+      <LocalizedContent>
+        <section className="fashion-campaign-placeholder">
+          <p>HÀ NHI FASHION</p>
+          <h1>Thiết kế dành cho nàng</h1>
+          <p>
+            Khám phá trang phục, giày, túi xách và phụ kiện.
+            Hình ảnh sản phẩm đang được cập nhật.
+          </p>
+          <Link className="button outline" href="/hang-moi">
+            Khám phá thiết kế <ArrowRight size={17} />
+          </Link>
+        </section>
+      </LocalizedContent>
+    );
   return (
     <LocalizedContent>
       {
@@ -119,10 +130,11 @@ export function FashionCampaign() {
                       href={model.href}
                       aria-label={model.name}
                     >
-                      <img
+                      <SafeImage
                         src={model.image}
                         alt={model.alt}
                         fetchPriority={i === 0 ? "high" : "auto"}
+                        sizes="(max-width: 767px) 22vw, 20vw"
                       />
                     </Link>
                   ))}

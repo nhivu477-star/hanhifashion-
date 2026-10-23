@@ -16,7 +16,7 @@ flowchart LR
   n2_0["Đặt & xử lý đơn"]
   n2_1["Checkout / Admin đơn hàng"]
   n2_0 --> n2_1
-  n2_2["order lifecycle / atomic reserve"]
+  n2_2["order lifecycle / atomic stock decrement"]
   n2_1 --> n2_2
   n2_3["Order · OrderItem · InventoryMovement"]
   n2_2 --> n2_3

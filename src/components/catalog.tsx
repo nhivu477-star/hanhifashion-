@@ -5,7 +5,6 @@ import { useState, useRef, useEffect } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { SlidersHorizontal, X } from "lucide-react";
 import {
-  categories,
   sizes,
   colors,
   materials,
@@ -59,7 +58,7 @@ export function CatalogFilters({
       key === "category" && routeCategory
         ? value
           ? "/" + value
-          : "/thoi-trang-cong-so"
+          : "/tat-ca"
         : key === "subcategory" && currentCategory?.parentId && routeCategory
           ? "/" + routeCategory.slug
           : pathname;
@@ -196,6 +195,7 @@ export function CatalogFilters({
             <button
               key={s}
               className={p.get("size") === s ? "chosen" : ""}
+              aria-pressed={p.get("size") === s}
               onClick={() => change("size", p.get("size") === s ? "" : s)}
             >
               {s}
@@ -253,7 +253,10 @@ export function CatalogFilters({
       ))}
       <button
         className="text-link reset-filter"
-        onClick={() => router.push(pathname)}
+        onClick={() => {
+          const query = p.get("q");
+          router.push(pathname + (query ? "?q=" + encodeURIComponent(query) : ""));
+        }}
       >
         Xóa tất cả bộ lọc
       </button>
@@ -266,6 +269,8 @@ export function CatalogFilters({
           <div className="catalog-toolbar">
             <button
               className="mobile-filter text-link"
+              aria-expanded={open}
+              aria-controls="catalog-filter-dialog"
               onClick={() => setOpen(!open)}
             >
               <SlidersHorizontal size={17} /> Bộ lọc
@@ -295,10 +300,12 @@ export function CatalogFilters({
           <aside className="filter-sidebar">{filters}</aside>
           {open && (
             <dialog
+              id="catalog-filter-dialog"
               aria-label="Bộ lọc sản phẩm"
               ref={dialog}
               className="filter-dialog"
               onCancel={() => setOpen(false)}
+              onClose={() => setOpen(false)}
             >
               <aside>{filters}</aside>
             </dialog>

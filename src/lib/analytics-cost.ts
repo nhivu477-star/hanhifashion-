@@ -3,7 +3,7 @@ import { orderTransaction } from "./order-lifecycle";
 import { requireActorPermission, operationalAudit } from "./authorization";
 export async function saveAnalyticsCost(
   input: unknown,
-  actor: { id: string; role: string },
+  actor: { id: string; role: string; permissionVersion: number },
 ) {
   const d = z
     .object({

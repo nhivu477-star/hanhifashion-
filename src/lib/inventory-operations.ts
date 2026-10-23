@@ -26,7 +26,7 @@ const schema = z
         message: "Ngày không được ở tương lai",
       });
   });
-export async function moveStock(input: unknown, actor: { id: string }) {
+export async function moveStock(input: unknown, actor: { id: string; permissionVersion: number }) {
   const d = schema.parse(input);
   return orderTransaction(async (tx) => {
     await requireActorPermission(tx, actor, "inventory.adjust");

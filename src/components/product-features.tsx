@@ -22,7 +22,9 @@ type OutfitPriceItem = {
 };
 export function ColorGallery({ product: p }: { product: any }) {
   const { color } = useProductSelection();
-  const images = p.colors?.find((c: any) => c.name === color)?.images;
+  const images = p.colors?.length
+    ? p.colors.find((c: { name: string }) => c.name === color)?.images
+    : p.images;
   return (
     <LocalizedContent>
       {
@@ -60,20 +62,16 @@ export function OutfitSuggestions({ product: p }: { product: any }) {
             i.color.variants.some((v: any) => v.stock > 0),
         ),
     ) ?? [];
+  if (!outfits.length) return null;
   return (
     <LocalizedContent>
       {
         <section className="outfit-suggestions">
           <h2>GỢI Ý PHỐI ĐỒ CÙNG NÀNG</h2>
-          <p className="muted">
-            Khám phá những cách kết hợp nhẹ nhàng để hoàn thiện phong cách của
-            riêng nàng.
-          </p>
           <p className="small">
             Dành cho màu {color}. Các thiết kế bên dưới được bán riêng, không đi
             kèm sản phẩm đang xem.
           </p>
-          {outfits.length ? (
             <div className="outfit-grid">
               {outfits.map((outfit: any) => (
                 <article key={outfit.id}>
@@ -106,11 +104,6 @@ export function OutfitSuggestions({ product: p }: { product: any }) {
                 </article>
               ))}
             </div>
-          ) : (
-            <p>
-              Gợi ý cho màu này đang được cập nhật theo những thiết kế còn sẵn.
-            </p>
-          )}
         </section>
       }
     </LocalizedContent>
@@ -119,15 +112,26 @@ export function OutfitSuggestions({ product: p }: { product: any }) {
 
 export function VariantPrice({ product: p }: { product: any }) {
   const { color, size } = useProductSelection();
-  const variant = p.variants.find(
-    (v: any) => v.color === color && (!size || v.size === size),
+  const variants = p.variants.filter(
+    (v: { color: string; size: string }) =>
+      v.color === color && (!size || v.size === size),
+  );
+  const available = variants.filter((v: { stock: number }) => v.stock > 0);
+  const prices = (available.length ? available : variants).map(
+    (v: { priceOverride: number | null }) => effectivePrice(p, v),
+  );
+  const price = prices.length ? Math.min(...prices) : effectivePrice(p);
+  const hasRange = prices.some((value: number) => value !== price);
+  const discounted = p.salePrice && !variants.some(
+    (v: { priceOverride: number | null }) => v.priceOverride != null,
   );
   return (
     <LocalizedContent>
       {
         <div className="detail-price">
-          {p.price > 0 ? money(effectivePrice(p, variant)) : "Liên hệ"}{" "}
-          {!variant?.priceOverride && p.salePrice && (
+          {hasRange ? "Từ " : ""}
+          {price > 0 ? money(price) : "Liên hệ"}{" "}
+          {discounted && (
             <del>{money(p.price)}</del>
           )}
         </div>

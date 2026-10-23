@@ -32,7 +32,7 @@ export function CartPage({
 }) {
   const defaultAddress = addresses.find((a) => a.isDefault);
   const router = useRouter();
-  const { preference, save: savePreference } = usePreferences();
+  const { preference } = usePreferences();
   const addressFormat = regions[preference.region];
   const [cart, setCart] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -65,6 +65,7 @@ export function CartPage({
   useEffect(() => {
     setValue("countryCode", preference.region);
     setQuote(null);
+    setApplied("");
   }, [preference.region, setValue]);
   async function load() {
     try {
@@ -77,9 +78,13 @@ export function CartPage({
   }
   useEffect(() => {
     load();
-    key.current =
-      sessionStorage.getItem("hn_checkout_key") || crypto.randomUUID();
-    sessionStorage.setItem("hn_checkout_key", key.current);
+    try {
+      key.current =
+        sessionStorage.getItem("hn_checkout_key") || crypto.randomUUID();
+      sessionStorage.setItem("hn_checkout_key", key.current);
+    } catch {
+      key.current = crypto.randomUUID();
+    }
   }, []);
   async function update(variantId: string, quantity: number) {
     setBusy(true);
@@ -105,6 +110,24 @@ export function CartPage({
   const total = quote ?? calculateTotals(subtotal);
   if (loading)
     return <LocalizedContent>{<p>Đang mở túi mua sắm...</p>}</LocalizedContent>;
+  if (!cart && error)
+    return (
+      <LocalizedContent>
+        <div className="empty">
+          <p role="alert" className="error">{error}</p>
+          <button
+            className="button outline"
+            onClick={() => {
+              setError("");
+              setLoading(true);
+              void load();
+            }}
+          >
+            Thử tải lại giỏ hàng
+          </button>
+        </div>
+      </LocalizedContent>
+    );
   if (!cart?.items?.length)
     return (
       <LocalizedContent>
@@ -170,6 +193,7 @@ export function CartPage({
                             "ward",
                             "street",
                             "details",
+                            "postalCode",
                           ] as const)
                             setValue(k, a[k]);
                       }}
@@ -196,7 +220,11 @@ export function CartPage({
                         coupon: applied,
                         idempotencyKey: key.current,
                       });
-                      sessionStorage.removeItem("hn_checkout_key");
+                      try {
+                        sessionStorage.removeItem("hn_checkout_key");
+                      } catch {
+                        /* A committed order must still navigate when storage is unavailable. */
+                      }
                       window.dispatchEvent(new Event("cart-change"));
                       router.push(r.redirect);
                       router.refresh();
@@ -222,10 +250,17 @@ export function CartPage({
                       <span>{label}</span>
                       <input
                         type={type}
+                        id={"checkout-" + name}
+                        aria-invalid={!!errors[name as keyof typeof errors]}
+                        aria-describedby={
+                          errors[name as keyof typeof errors]
+                            ? "checkout-" + name + "-error"
+                            : undefined
+                        }
                         {...register(name as keyof z.infer<typeof schema>)}
                       />
                       {errors[name as keyof typeof errors] && (
-                        <span className="error">
+                        <span className="error" id={"checkout-" + name + "-error"} role="alert">
                           {errors[name as keyof typeof errors]?.message}
                         </span>
                       )}
@@ -251,8 +286,9 @@ export function CartPage({
                     <Link href={"/san-pham/" + i.variant.product.slug}>
                       <SafeImage
                         src={
-                          i.variant.colorRecord?.images[0]?.url ??
-                          i.variant.product.images[0]?.url
+                          i.variant.colorRecord
+                            ? i.variant.colorRecord.images[0]?.url
+                            : i.variant.product.images[0]?.url
                         }
                         alt={i.variant.product.name}
                       />
@@ -329,8 +365,9 @@ export function CartPage({
                 <div className="summary-product" key={i.id}>
                   <SafeImage
                     src={
-                      i.variant.colorRecord?.images[0]?.url ??
-                      i.variant.product.images[0]?.url
+                      i.variant.colorRecord
+                        ? i.variant.colorRecord.images[0]?.url
+                        : i.variant.product.images[0]?.url
                     }
                     alt={i.variant.product.name}
                   />
@@ -410,7 +447,7 @@ export function CartPage({
               <button
                 className="button full"
                 form="checkout-form"
-                disabled={busy || !addressFormat.shipping}
+                disabled={busy || !profile || !addressFormat.shipping}
               >
                 {busy ? "Đang tạo đơn..." : "ĐẶT HÀNG COD"}
                 <ArrowRight size={18} />

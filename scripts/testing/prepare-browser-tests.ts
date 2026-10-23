@@ -1,34 +1,21 @@
 import { execFileSync } from "node:child_process";
-import { writeFileSync } from "node:fs";
+import { rename } from "node:fs/promises";
 import { randomBytes } from "node:crypto";
 import { PrismaClient } from "@prisma/client";
 import { hash } from "bcryptjs";
-const url = `file:./test-${randomBytes(8).toString("hex")}.db`;
-const env = { ...process.env, DATABASE_URL: url };
-writeFileSync(`prisma/${url.slice("file:./".length)}`, "", {
-  flag: "wx",
-  mode: 0o600,
-});
-execFileSync("npx", ["prisma", "migrate", "deploy"], {
+import path from "node:path";
+import { reserveDemo, writePrivate } from "../demo-workspace";
+const name = `browser-${randomBytes(8).toString("hex")}`;
+const { database } = await reserveDemo(name);
+const url = `file:${database}`;
+const env = { ...process.env, DATABASE_URL: url, DEMO_SEED_NAME: name, STORE_MODE: "preview" };
+execFileSync(process.execPath, [path.resolve("node_modules/prisma/build/index.js"), "migrate", "deploy"], {
   env,
   stdio: "inherit",
 });
-execFileSync("npx", ["prisma", "db", "seed"], { env, stdio: "inherit" });
+execFileSync(process.execPath, [path.resolve("node_modules/tsx/dist/cli.mjs"), "prisma/seed.ts"], { env, stdio: "inherit" });
 const db = new PrismaClient({ datasources: { db: { url } } });
-// Dedicated test database only. Keep the user's local development database intact.
-await db.couponRedemption.deleteMany();
-await db.orderStatusHistory.deleteMany();
-await db.payment.deleteMany();
-await db.orderItem.deleteMany();
-await db.order.deleteMany();
-await db.inventoryMovement.deleteMany();
-await db.cartItem.deleteMany();
-await db.cart.deleteMany();
-await db.wishlistItem.deleteMany();
-await db.wishlist.deleteMany();
-await db.address.deleteMany();
-await db.session.deleteMany();
-await db.user.deleteMany();
+// Exclusively reserved, newly migrated and seeded database. Never reset or delete existing data.
 const password = randomBytes(18).toString("hex");
 const email = "qa-admin@hanhi.test";
 await db.user.create({
@@ -40,9 +27,8 @@ await db.user.create({
     role: "ADMIN",
   },
 });
-writeFileSync(
-  ".test-credentials.json",
-  JSON.stringify({ email, password, database: url }),
-  { mode: 0o600 },
-);
+const credentialFile = path.join(path.dirname(database), "browser-credentials.json");
+await writePrivate(credentialFile, { email, password, database: url });
+// Rename replaces a previous pointer/symlink itself; it never opens its target.
+await rename(credentialFile, path.resolve(".test-credentials.json"));
 await db.$disconnect();

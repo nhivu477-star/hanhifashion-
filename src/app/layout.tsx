@@ -32,23 +32,8 @@ const editorial = localFont({
 const functional = localFont({
   src: [
     {
-      path: "../../public/fonts/lsoul-roboto-regular.woff2",
-      weight: "400",
-      style: "normal",
-    },
-    {
-      path: "../../public/fonts/lsoul-roboto-500.woff2",
-      weight: "500",
-      style: "normal",
-    },
-    {
-      path: "../../public/fonts/lsoul-roboto-600.woff2",
-      weight: "600",
-      style: "normal",
-    },
-    {
-      path: "../../public/fonts/lsoul-roboto-700.woff2",
-      weight: "700",
+      path: "../../public/fonts/roboto-variable.ttf",
+      weight: "100 900",
       style: "normal",
     },
   ],
@@ -71,20 +56,28 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const settings = Object.fromEntries(
-    (await db.storeSetting.findMany()).map((s) => [s.key, s.value]),
-  );
-  const navigation = await db.category.findMany({
-    where: { parentId: null, active: true },
-    orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
-    include: {
-      children: {
-        where: { active: true },
-        orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+  const [storedSettings, navigation, collections, viewer] = await Promise.all([
+    db.storeSetting.findMany({
+      where: { key: { in: ["announcement", "contactPhone", "footerAddress"] } },
+      select: { key: true, value: true },
+    }),
+    db.category.findMany({
+      where: { parentId: null, active: true },
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+      include: {
+        children: {
+          where: { active: true },
+          orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+        },
       },
-    },
-  });
-  const viewer = await currentUser();
+    }),
+    db.collection.findMany({
+      select: { slug: true, name: true },
+      orderBy: { createdAt: "asc" },
+    }),
+    currentUser(),
+  ]);
+  const settings = Object.fromEntries(storedSettings.map((s) => [s.key, s.value]));
   const [preference, currencyConfig] = await Promise.all([
     readPreferences(viewer?.id),
     currencyConfiguration(),
@@ -114,6 +107,7 @@ export default async function RootLayout({
                   : undefined
               }
               navigation={navigation}
+              collections={collections}
               contactPhone={settings.contactPhone}
               announcement={
                 settings.announcement ?? "THANH LỊCH MỖI NGÀY CÙNG HÀ NHI"
@@ -136,11 +130,6 @@ export default async function RootLayout({
                     !settings.footerAddress.includes("demo") && (
                       <p className="small">{settings.footerAddress}</p>
                     )}
-                  <img
-                    className="brand-seal"
-                    src="/images/brand-original.png"
-                    alt="Logo gốc HÀ NHI FASHION"
-                  />
                 </div>
                 <div>
                   <h3>SẢN PHẨM</h3>

@@ -1,18 +1,31 @@
 import { Prisma, PrismaClient } from "@prisma/client";
 import { db } from "./db";
-import { assertRolePermission, Permission, AuthorizationError } from "./rbac";
+import { assertRolePermission, isAccountRole, Permission, AuthorizationError } from "./rbac";
 export async function requireActorPermission(
   client: Prisma.TransactionClient | PrismaClient,
-  actor: { id: string },
+  actor: { id: string; permissionVersion: number },
   p: Permission,
 ) {
-  const user = await client.user.findUnique({ where: { id: actor.id } });
-  if (!user?.active) throw new AuthorizationError(p);
+  const user = await requireCurrentAccount(client, actor);
   assertRolePermission(user.role, p);
   return user;
 }
-export async function actorPermission(actor: { id: string }, p: Permission) {
+export async function actorPermission(actor: { id: string; permissionVersion: number }, p: Permission) {
   return requireActorPermission(db, actor, p);
+}
+export async function requireCurrentAccount(
+  client: Prisma.TransactionClient | PrismaClient,
+  actor: { id: string; permissionVersion: number },
+) {
+  const user = await client.user.findUnique({ where: { id: actor.id } });
+  if (
+    !Number.isSafeInteger(actor.permissionVersion) ||
+    !user?.active ||
+    !isAccountRole(user.role) ||
+    user.permissionVersion !== actor.permissionVersion
+  )
+    throw new AuthorizationError("account.session");
+  return user;
 }
 export function safeAuditValue(value: unknown): unknown {
   if (value instanceof Date) return value.toISOString();

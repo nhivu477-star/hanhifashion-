@@ -6,18 +6,19 @@ import {
   normalize,
   fits,
   occasions,
+  sizeGuide,
 } from "../src/lib/catalog";
-const db = new PrismaClient();
-const demoImages: Record<string, string> = {
-  "ao-so-mi": "blouse",
-  "ao-kieu": "blouse",
-  "ao-vest-blazer": "blazer",
-  "quan-tay": "blazer",
-  "chan-vay": "skirt",
-  "dam-cong-so": "dress",
-  "set-cong-so": "blazer",
-};
-async function main() {
+import { assertSeedTarget } from "../scripts/demo-workspace";
+import { applyTaxonomy } from "../scripts/apply-taxonomy";
+import { enrichCatalog } from "../scripts/enrich-catalog";
+import { supplementColors } from "../scripts/supplement-colors";
+import { refreshSearch } from "../src/lib/search";
+export async function seedCatalog() {
+  await assertSeedTarget();
+  const db = new PrismaClient();
+  try {
+  if (await db.user.count() || await db.product.count() || await db.order.count() || await db.category.count() || await db.storeSetting.count())
+    throw Error("Seed requires an empty database; existing data and accounts were not changed.");
   const adjectives = [
     "Thanh Lịch",
     "Dáng Suông",
@@ -47,7 +48,7 @@ async function main() {
         slug,
         name,
         description: `Những thiết kế ${name.toLowerCase()} với đường cắt tinh tế, dễ phối cho một tuần làm việc tự tin.`,
-        image: `/images/${demoImages[slug]}.png`,
+        image: "",
       },
     });
     for (let i = 0; i < total; i++) {
@@ -80,20 +81,6 @@ async function main() {
           searchText: normalize(
             `${title} ${sku} ${name} ${material} ${fits[i % fits.length]}`,
           ),
-          images: {
-            create: [
-              {
-                url: `/images/${demoImages[slug]}.png`,
-                alt: `Minh họa ${title}`,
-                position: 0,
-              },
-              {
-                url: `/images/${slug}-detail.svg`,
-                alt: `Chi tiết minh họa ${title}`,
-                position: 1,
-              },
-            ],
-          },
           variants: {
             create: [
               color,
@@ -133,7 +120,7 @@ async function main() {
         name,
         description:
           "Những kết hợp thanh lịch, từ cuộc hẹn đầu ngày đến khoảnh khắc sau giờ làm.",
-        image: "/images/hero.png",
+        image: "/images/awaiting-photo.svg",
       },
     });
     const products = await db.product.findMany({ skip: i * 8, take: 20 });
@@ -155,10 +142,13 @@ async function main() {
       "HÀ NHI FASHION mang đến những thiết kế thời trang công sở thanh lịch, hiện đại và tinh tế, giúp người phụ nữ tự tin thể hiện phong cách riêng.",
     newsletter:
       "Một chút cảm hứng cho tủ đồ của nàng. Nhận tin về thiết kế và bộ sưu tập mới.",
-    contactEmail: "hello@hanhi.local",
-    contactPhone: "Chưa thiết lập",
+    contactEmail: "",
+    contactPhone: "",
+    facebookUrl: "",
+    instagramUrl: "",
+    instagramMessageUrl: "",
     footerAddress: "Cửa hàng demo trên máy tính · Chưa mở bán",
-    sizeGuide: JSON.stringify((await import("../src/lib/catalog")).sizeGuide),
+    sizeGuide: JSON.stringify(sizeGuide),
   };
   for (const [key, value] of Object.entries(settings))
     await db.storeSetting.upsert({
@@ -171,7 +161,7 @@ async function main() {
       data: {
         title: "Nghệ thuật của sự thanh lịch",
         subtitle: "Thanh lịch từ công sở đến mọi khoảnh khắc.",
-        image: "/images/hero.png",
+        image: "/images/awaiting-photo.svg",
         href: "/bo-suu-tap/modern-office",
       },
     });
@@ -188,7 +178,7 @@ async function main() {
       usageLimit: 100,
     },
   });
-  await (await import("../scripts/apply-taxonomy")).applyTaxonomy();
+  await applyTaxonomy(db, false);
   const indexed = await db.product.findMany({
     include: { category: true, collections: { include: { collection: true } } },
   });
@@ -211,10 +201,17 @@ async function main() {
         ),
       },
     });
-  await (await import("../scripts/upgrade-catalog")).upgradeCatalog(db);
-  await (await import("../src/lib/search")).refreshSearch();
+  // Enrich sample sizes, colors and outfits without importing reference photos or real contacts.
+  await enrichCatalog(db);
+  await supplementColors(db);
+  await enrichCatalog(db);
+  await refreshSearch();
   console.log(
     `Seed complete: ${await db.product.count()} local designs, ${await db.category.count({ where: { parentId: null } })} categories, ${await db.collection.count()} collections. No fake orders or customers.`,
   );
+  } finally {
+    await db.$disconnect();
+  }
 }
-main().finally(() => db.$disconnect());
+if (process.argv[1]?.endsWith("/seed.ts"))
+  await seedCatalog();

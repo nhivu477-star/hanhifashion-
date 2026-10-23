@@ -46,9 +46,12 @@ try {
   );
   let ready = false;
   for (let i = 0; i < 90; i++) {
-    if (server.exitCode !== null) throw Error("Test server exited");
+    if (server.exitCode !== null || server.signalCode !== null)
+      throw Error("Test server exited");
     try {
-      const r = await fetch("http://127.0.0.1:3101/api/session");
+      const r = await fetch("http://127.0.0.1:3101/api/session", {
+        signal: AbortSignal.timeout(2000),
+      });
       if (r.ok) {
         ready = true;
         break;
@@ -69,20 +72,29 @@ try {
     ["--catalog", "scripts/testing/test-catalog-operations.ts"],
     ["--analytics", "scripts/testing/test-analytics.ts"],
   ] as const;
-  const lastSuite = suites.reduce(
-    (last, [flag], index) => (process.argv.includes(flag) ? index : last),
-    -1,
-  );
+  const lastSuite = process.argv.includes("--acceptance")
+    ? suites.length - 1
+    : suites.reduce(
+        (last, [flag], index) => (process.argv.includes(flag) ? index : last),
+        -1,
+      );
   for (let index = 0; index <= lastSuite; index++)
     cmd(["tsx", suites[index][1]]);
   if (process.argv.includes("--acceptance"))
     cmd(["tsx", "scripts/testing/test-business-acceptance.ts"]);
 } finally {
   if (server) {
-    server.kill("SIGTERM");
     await new Promise<void>((resolve) => {
-      if (server!.exitCode !== null) resolve();
-      else server!.once("exit", () => resolve());
+      if (server!.exitCode !== null || server!.signalCode !== null) {
+        resolve();
+        return;
+      }
+      const forceStop = setTimeout(() => server!.kill("SIGKILL"), 10000);
+      server!.once("exit", () => {
+        clearTimeout(forceStop);
+        resolve();
+      });
+      server!.kill("SIGTERM");
     });
   }
   await writeFile("next-env.d.ts", original);

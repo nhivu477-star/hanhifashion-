@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { orderTransaction } from "./order-lifecycle";
-import { requireActorPermission, operationalAudit } from "./authorization";
+import { requireActorPermission, requireCurrentAccount, operationalAudit } from "./authorization";
 import { mutationReceipt } from "./mutation-receipt";
-export async function createReview(input: unknown, actor: { id: string }) {
+export async function createReview(input: unknown, actor: { id: string; permissionVersion: number }) {
   const d = z
     .object({
       orderId: z.string(),
@@ -14,8 +14,8 @@ export async function createReview(input: unknown, actor: { id: string }) {
     .strict()
     .parse(input);
   return orderTransaction(async (tx) => {
-    const user = await tx.user.findUniqueOrThrow({ where: { id: actor.id } });
-    if (!user.active || user.role !== "CUSTOMER")
+    const user = await requireCurrentAccount(tx, actor);
+    if (user.role !== "CUSTOMER")
       throw Error("Chỉ khách mua hàng được gửi đánh giá.");
     const order = await tx.order.findUniqueOrThrow({
       where: { id: d.orderId },
@@ -71,7 +71,7 @@ export async function createReview(input: unknown, actor: { id: string }) {
 export async function replyFeedback(
   kind: "review" | "inquiry",
   input: unknown,
-  actor: { id: string },
+  actor: { id: string; permissionVersion: number },
 ) {
   const d = z
     .object({
@@ -82,8 +82,7 @@ export async function replyFeedback(
     .strict()
     .parse(input);
   return orderTransaction(async (tx) => {
-    const user = await tx.user.findUniqueOrThrow({ where: { id: actor.id } });
-    if (!user.active) throw Error("Tài khoản không hoạt động.");
+    const user = await requireCurrentAccount(tx, actor);
     if (kind === "review")
       await requireActorPermission(tx, actor, "inquiries.manage");
     else {
@@ -138,7 +137,7 @@ export async function replyFeedback(
     return { id: d.id };
   });
 }
-export async function moderateReview(input: unknown, actor: { id: string }) {
+export async function moderateReview(input: unknown, actor: { id: string; permissionVersion: number }) {
   const d = z
     .object({
       id: z.string(),

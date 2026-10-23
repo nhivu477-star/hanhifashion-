@@ -72,12 +72,6 @@ const shipping: Permission[] = [
   "shipping.update",
   "shipping.failures.manage",
 ];
-const returns: Permission[] = [
-  "returns.read",
-  "returns.review",
-  "returns.inspect",
-  "returns.exchange",
-];
 export const accountRoles = ["CUSTOMER", "SELLER", "ADMIN"] as const;
 export type AccountRole = (typeof accountRoles)[number];
 export const isAccountRole = (role: string): role is AccountRole =>
@@ -91,7 +85,7 @@ export const rolePermissions: Record<string, readonly Permission[]> = {
     ...inventory,
     ...orders,
     ...shipping,
-    ...returns,
+    "returns.read",
     "analytics.read",
     "analytics.products.read",
     "analytics.inventory.read",

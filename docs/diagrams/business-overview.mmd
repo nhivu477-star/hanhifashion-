@@ -1,0 +1,32 @@
+erDiagram
+  %% Logical subset of prisma/schema.prisma; full datamodel in sql-relationships.mmd.
+  User |o..o{ Order : "userId optional - guest order allowed"
+  User ||..o{ Address : owns
+  Category ||..o{ Product : primaryCategory
+  Product ||..o{ ProductColor : colors
+  Product ||..o{ ProductVariant : variants
+  ProductColor |o..o{ ProductVariant : "colorId optional"
+  ProductColor ||..o{ ColorImage : gallery
+  Cart ||..o{ CartItem : contains
+  ProductVariant ||..o{ CartItem : selected
+  Order ||..o{ OrderItem : snapshots
+  ProductVariant ||..o{ OrderItem : historicalVariant
+  Order ||..o{ Payment : obligations
+  Order ||..o| Shipment : originalParcel
+  Payment ||..o| Shipment : codObligation
+  Shipment ||..o{ ShipmentEvent : timeline
+  Shipment ||..o{ CODCollection : customerCollections
+  Shipment ||..o{ CODRemittance : shopRemittances
+  Shipment ||..o{ CODReconciliation : decisions
+  Order ||..o{ ReturnRequest : afterSales
+  User ||..o{ ReturnRequest : requester
+  ReturnRequest ||..o{ ReturnItem : claims
+  OrderItem ||..o{ ReturnItem : claimedLine
+  ReturnItem ||..o{ ReturnInspection : inspections
+  ReturnItem ||..o| ExchangeItem : replacement
+  ProductVariant ||..o{ ExchangeItem : replacementVariant
+  ReturnRequest ||..o| MockRefund : simulatedRefund
+  Payment ||..o{ MockRefund : refundCeiling
+  ProductVariant ||..o{ InventoryMovement : stockLedger
+  Stocktake ||..o{ StocktakeLine : countLines
+  ProductVariant ||..o{ StocktakeLine : countedVariant

@@ -1,4 +1,3 @@
-import { can } from "@/lib/rbac";
 import { currentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { NextResponse } from "next/server";
@@ -11,7 +10,7 @@ export async function GET(
   const image = await db.returnEvidence.findFirst({
     where: {
       id: (await params).id,
-      ...(can(user.role, "returns.read")
+      ...(user.role === "ADMIN"
         ? {}
         : { request: { userId: user.id } }),
     },

@@ -9,6 +9,7 @@ import { analyticsReport, analyticsRows } from "@/lib/analytics-report";
 import { visitorSession, recordPublicEvent } from "@/lib/analytics-tracking";
 import { saveAnalyticsCost } from "@/lib/analytics-cost";
 import { db } from "@/lib/db";
+import { requireActorPermission } from "@/lib/authorization";
 const json = (data: unknown, status = 200) =>
   NextResponse.json(data, {
     status,
@@ -34,15 +35,19 @@ export async function GET(
     const format = z
       .enum(["csv", "xlsx"])
       .parse(req.nextUrl.searchParams.get("format") ?? "csv");
-    await db.auditLog.create({
-      data: {
-        actorId: user.id,
-        action: "ANALYTICS_EXPORT",
-        resourceType: "REPORT",
-        targetId: f.section,
-        result: "SUCCESS",
-        detail: JSON.stringify({ format, from: f.fromDay, to: f.toDay }),
-      },
+    await db.$transaction(async (tx) => {
+      await requireActorPermission(tx, user, analyticsPermission[f.section]);
+      await requireActorPermission(tx, user, "analytics.export");
+      await tx.auditLog.create({
+        data: {
+          actorId: user.id,
+          action: "ANALYTICS_EXPORT",
+          resourceType: "REPORT",
+          targetId: f.section,
+          result: "SUCCESS",
+          detail: JSON.stringify({ format, from: f.fromDay, to: f.toDay }),
+        },
+      });
     });
     if (format === "xlsx")
       return new Response(

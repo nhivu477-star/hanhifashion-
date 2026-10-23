@@ -75,6 +75,7 @@ export function DashboardCharts({
   const ticks = chartTicks(
     data.map(([day]) => day),
     monthly,
+    plotSpan,
   );
   const slices = groups.map((g) => ({
     ...g,

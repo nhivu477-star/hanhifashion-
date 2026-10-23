@@ -82,7 +82,7 @@ export async function catalogQuery(
   if (params.size || params.color || params.stock)
     where.variants = {
       some: {
-        colorRecord: { active: true },
+        OR: [{ colorId: null }, { colorRecord: { active: true } }],
         ...(params.size ? { size: scalar(params.size) } : {}),
         ...(params.color ? { color: scalar(params.color) } : {}),
         ...(params.stock ? { stock: { gt: 0 } } : {}),
@@ -124,7 +124,10 @@ export async function catalogQuery(
   } else
     products = await db.product.findMany({
       where,
-      orderBy: sort === "name" ? { name: "asc" } : { createdAt: "desc" },
+      orderBy:
+        sort === "name"
+          ? [{ name: "asc" }, { id: "asc" }]
+          : [{ createdAt: "desc" }, { id: "asc" }],
       skip: (page - 1) * pageSize,
       take: pageSize,
       select: cardSelect,

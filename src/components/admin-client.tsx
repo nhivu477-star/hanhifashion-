@@ -14,7 +14,7 @@ export function ProductEditor({
   collections: any[];
 }) {
   const [image, setImage] = useState(
-    product?.images?.[0]?.url ?? "/images/ao-so-mi.svg",
+    product?.images?.[0]?.url ?? "",
   );
   const fields: Field[] = [
     { name: "name", label: "Tên sản phẩm" },
@@ -224,7 +224,7 @@ export function CollectionEditor({
               {
                 name: "image",
                 label: "Đường dẫn ảnh trong máy",
-                value: collection?.image ?? "/images/hero.png",
+                value: collection?.image ?? "",
               },
             ]}
           />

@@ -1,10 +1,9 @@
-import { test, expect, type Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
+import { test, registerCustomer, browserDatabase, credentials } from "./fixtures";
 import { PrismaClient } from "@prisma/client";
 import sharp from "sharp";
 import { mkdir, writeFile } from "node:fs/promises";
-import { readFileSync } from "node:fs";
-const { database } = JSON.parse(readFileSync(".test-credentials.json", "utf8"));
-const db = new PrismaClient({ datasources: { db: { url: database } } });
+const db = new PrismaClient({ datasources: { db: { url: browserDatabase } } });
 test.afterAll(() => db.$disconnect());
 async function ready(page: Page) {
   await page.evaluate(() => document.fonts.ready);
@@ -77,7 +76,7 @@ async function compareHeader(page: Page, baseline: Buffer) {
 }
 for (const width of [375, 390, 768, 1024, 1280, 1440, 1920]) {
   test(`search and navigation remain stable at ${width}px`, async ({
-    page,
+    page, gallery,
   }) => {
     test.setTimeout(120000);
     const browserErrors: string[] = [];
@@ -86,6 +85,19 @@ for (const width of [375, 390, 768, 1024, 1280, 1440, 1920]) {
       if (m.type() === "error" && /hydrat|didn.t match/.test(m.text()))
         browserErrors.push(m.text());
     });
+    const searchResponse = await page.request.get("/api/search", {
+      params: { q: "ao so mi" },
+    });
+    expect(searchResponse.ok()).toBeTruthy();
+    const { products } = (await searchResponse.json()) as {
+      products: { id: string; slug: string }[];
+    };
+    expect(products.length).toBeGreaterThan(0);
+    const selected = products[0];
+    // Prepare gallery files before browsing: dev-server refreshes from fixture
+    // writes must not compete with the user navigation being exercised.
+    await gallery([selected.id]);
+    await registerCustomer(page.request);
     await page.setViewportSize({ width, height: 900 });
     await page.goto("/");
     await ready(page);
@@ -97,11 +109,8 @@ for (const width of [375, 390, 768, 1024, 1280, 1440, 1920]) {
       style: "header :focus-visible {outline:none!important}",
     });
     await page.getByRole("button", { name: "Mở menu", exact: true }).click();
-    await page.getByText("Thời trang công sở", { exact: true }).click();
-    await page
-      .locator(".drawer-links")
-      .getByText("Áo sơ mi", { exact: true })
-      .click();
+    await page.locator(".drawer summary").filter({ hasText: "Thời trang nữ" }).click();
+    await page.locator(".drawer-category summary").filter({ hasText: "Áo sơ mi" }).click();
     await page
       .locator(".drawer-links")
       .getByRole("link", { name: "Tất cả áo sơ mi", exact: true })
@@ -129,6 +138,7 @@ for (const width of [375, 390, 768, 1024, 1280, 1440, 1920]) {
     await capture(page, `${width}-search-navigation`);
     const productLink = page.locator(".catalog-grid .product-name").first();
     const href = await productLink.getAttribute("href");
+    expect(href).toBe("/san-pham/" + selected.slug);
     await productLink.click();
     await expect(page).toHaveURL(new RegExp(href!));
     await ready(page);
@@ -177,6 +187,7 @@ for (const width of [375, 390, 768, 1024, 1280, 1440, 1920]) {
     await ready(page);
     await capture(page, `${width}-checkout`);
     expect(await metrics(page)).toEqual(initial);
+    await page.request.post("/api/logout", { data: {} });
     await page.goto("/dang-nhap");
     await ready(page);
     await expect(page).toHaveTitle("Đăng nhập | HÀ NHI FASHION");
@@ -258,8 +269,14 @@ test("commercial readiness blocks unverified product assets and keeps media priv
         },
       })
     ).status(),
-  ).toBe(400);
-  const creds = JSON.parse(readFileSync(".test-credentials.json", "utf8"));
+  ).toBe(403);
+  await page.goto("/admin/thu-vien-anh?product=" + p.id);
+  await expect(page).toHaveURL((url) =>
+    url.pathname === "/dang-nhap" &&
+    url.searchParams.get("returnTo") === "/admin/thu-vien-anh?product=" + p.id,
+  );
+  await expect(page.getByLabel("Sản phẩm quản lý ảnh")).toHaveCount(0);
+  const creds = credentials;
   await page.goto("/dang-nhap");
   await page.locator('input[name="email"]').fill(creds.email);
   await page.getByLabel("Mật khẩu", { exact: true }).fill(creds.password);
@@ -281,9 +298,16 @@ test("commercial readiness blocks unverified product assets and keeps media priv
     await page.setViewportSize({ width, height: 900 });
     await capture(page, `${width}-admin-media`);
   }
+  await page.getByRole("button", { name: "Mở menu quản trị", exact: true }).click();
   await page.getByRole("link", { name: "Sản phẩm", exact: true }).click();
   await expect(page).toHaveURL(/admin\/san-pham$/);
-  await expect(page.getByText("Ảnh & duyệt mở bán").first()).toBeVisible();
+  const mediaLink = page.locator('a[href^="/admin/thu-vien-anh?product="]').first();
+  const mediaHref = await mediaLink.getAttribute("href");
+  await mediaLink.click();
+  await expect(page).toHaveURL(new URL(mediaHref!, page.url()).href);
+  await expect(page.getByLabel("Sản phẩm quản lý ảnh")).toHaveValue(
+    new URL(mediaHref!, page.url()).searchParams.get("product")!,
+  );
 });
 
 test("older suggestion responses cannot replace a newer query", async ({
@@ -331,35 +355,50 @@ test("older suggestion responses cannot replace a newer query", async ({
   );
 });
 test("color-filter links use the corresponding gallery and broken images have a stable fallback", async ({
-  page,
+  page, gallery,
 }) => {
+  const searchResponse = await page.request.get("/api/search", {
+    params: { color: "Be cát" },
+  });
+  expect(searchResponse.ok()).toBeTruthy();
+  const { products } = (await searchResponse.json()) as {
+    products: { id: string; slug: string }[];
+  };
+  expect(products.length).toBeGreaterThan(0);
+  const selected = products[0];
+  await gallery([selected.id]);
   await page.goto("/thoi-trang-cong-so?color=" + encodeURIComponent("Be cát"));
   await ready(page);
   const link = page.locator(".catalog-grid .product-name").first();
   const href = await link.getAttribute("href");
   expect(href).toContain("?mau=");
+  expect(new URL(href!, page.url()).pathname).toBe("/san-pham/" + selected.slug);
   const colorId = new URL(href!, "http://localhost").searchParams.get("mau")!;
   const color = await db.productColor.findUniqueOrThrow({
     where: { id: colorId },
     include: { images: { orderBy: { position: "asc" } } },
+  });
+  const image = await db.colorImage.findFirstOrThrow({
+    where: { colorId: color.id }, orderBy: { position: "asc" },
   });
   await link.click();
   await expect(page.locator(".color-options .chosen")).toHaveAttribute(
     "aria-label",
     color.name,
   );
-  await expect
-    .poll(
-      async () =>
-        new URL(
-          (await page.locator(".gallery-main img").getAttribute("src"))!,
-          page.url(),
-        ).pathname,
-    )
-    .toBe(color.images[0].url);
-  await page.route("**" + color.images[0].url, (r) =>
-    r.fulfill({ status: 404, body: "" }),
-  );
+  await expect.poll(async () => {
+    const src = new URL((await page.locator(".gallery-main img").getAttribute("src"))!, page.url());
+    return src.pathname === "/_next/image" ? src.searchParams.get("url") : src.pathname;
+  }).toBe(image.url);
+  await expect.poll(() =>
+    page.locator(".gallery-main img").evaluate((img: HTMLImageElement) => img.naturalWidth),
+  ).toBeGreaterThan(0);
+  const before = await page.locator(".gallery-main").boundingBox();
+  expect(before).not.toBeNull();
+  await page.route("**/_next/image?*", (r) => {
+    const src = new URL(r.request().url()).searchParams.get("url");
+    return src === image.url ? r.fulfill({ status: 404, body: "" }) : r.continue();
+  });
   await page.reload();
   await ready(page);
   await expect(page.locator(".gallery-main img")).toHaveAttribute(
@@ -373,31 +412,59 @@ test("color-filter links use the corresponding gallery and broken images have a 
         .evaluate((img: HTMLImageElement) => img.naturalWidth),
     )
     .toBeGreaterThan(0);
-  const box = await page.locator(".gallery-main").boundingBox();
-  expect(box!.width / box!.height).toBeCloseTo(0.75, 2);
+  const after = await page.locator(".gallery-main").boundingBox();
+  expect(after).not.toBeNull();
+  expect(after!.width).toBeCloseTo(before!.width, 1);
+  expect(after!.height).toBeCloseTo(before!.height, 1);
+  expect(after!.width).toBeGreaterThan(0);
+  expect(after!.height).toBeGreaterThan(0);
 });
 test("category route and subcategory filters remain aligned", async ({
   page,
 }) => {
-  await page.goto("/dam-cong-so");
-  await ready(page);
-  await expect(
-    page.locator(".filter-sidebar").getByLabel("Danh mục", { exact: true }),
-  ).toHaveValue("dam-cong-so");
-  const options = await page
-    .locator(".filter-sidebar")
-    .getByLabel("Danh mục con", { exact: true })
-    .locator("option")
-    .allTextContents();
-  expect(options.some((o) => o.includes("Sơ mi trắng"))).toBe(false);
-  await page
-    .locator(".filter-sidebar")
-    .getByLabel("Danh mục", { exact: true })
-    .selectOption("quan-tay");
-  await expect(page).toHaveURL(/quan-tay/);
-  await expect(
-    page.getByRole("heading", { name: "Quần tây", exact: true }),
-  ).toBeVisible();
+  const categories = await db.category.findMany({
+    where: { active: true },
+    select: { id: true, parentId: true, slug: true },
+  });
+  const dress = categories.find((c) => c.slug === "dam-cong-so")!;
+  const trousers = categories.find((c) => c.slug === "quan-tay")!;
+  const children = (id: string) =>
+    categories.filter((c) => c.parentId === id).map((c) => c.slug).sort();
+  for (const width of [375, 1280]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/dam-cong-so");
+    await ready(page);
+    await page.getByRole("button", { name: "Bộ lọc", exact: true }).click();
+    const filters = page.getByRole("dialog", { name: "Bộ lọc sản phẩm" });
+    const category = filters.getByLabel("Danh mục", { exact: true });
+    const subcategory = filters.getByLabel("Danh mục con", { exact: true });
+    await expect(category).toHaveValue(dress.slug);
+    expect(
+      await subcategory.locator('option[value]:not([value=""])').evaluateAll(
+        (options) => options.map((o) => (o as HTMLOptionElement).value).sort(),
+      ),
+    ).toEqual(children(dress.id));
+    expect(children(dress.id).length).toBeGreaterThan(0);
+    await subcategory.selectOption(children(dress.id)[0]);
+    await expect(page).toHaveURL((url) =>
+      url.pathname === "/dam-cong-so" &&
+      url.searchParams.get("subcategory") === children(dress.id)[0],
+    );
+    await category.selectOption(trousers.slug);
+    await expect(page).toHaveURL((url) =>
+      url.pathname === "/quan-tay" && !url.searchParams.has("subcategory"),
+    );
+    await expect(filters).not.toBeVisible();
+    await expect(page.locator("h1")).toHaveText("Quần tây");
+    await page.getByRole("button", { name: "Bộ lọc", exact: true }).click();
+    await expect(category).toHaveValue(trousers.slug);
+    await expect(subcategory).toHaveValue("");
+    expect(
+      await subcategory.locator('option[value]:not([value=""])').evaluateAll(
+        (options) => options.map((o) => (o as HTMLOptionElement).value).sort(),
+      ),
+    ).toEqual(children(trousers.id));
+  }
 });
 test("variant-specific prices are consistent between product, cart and quote", async ({
   page,
@@ -412,6 +479,7 @@ test("variant-specific prices are consistent between product, cart and quote", a
     data: { priceOverride: 1150000 },
   });
   try {
+    await registerCustomer(page.request);
     await page.goto("/thoi-trang-cong-so?q=" + p.sku);
     await expect(page.locator(".product-card .price")).toContainText("Từ ");
     await page.goto("/san-pham/" + p.slug + "?mau=" + v.colorId);
@@ -442,6 +510,7 @@ test("selected color survives cart back navigation and refresh", async ({
   page,
 }) => {
   const p = await db.product.findUniqueOrThrow({ where: { sku: "HN002" } });
+  await registerCustomer(page.request);
   await page.goto("/san-pham/" + p.slug);
   await ready(page);
   const swatch = page.locator(".color-options button").nth(1);

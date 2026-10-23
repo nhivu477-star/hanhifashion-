@@ -6,16 +6,23 @@ export function chartDate(value: string, monthly = false) {
 }
 export const chartMoney = (value: number) =>
   `${new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 }).format(value)} ₫`;
-export function chartTicks(days: string[], monthly = false) {
-  return days
-    .map((day, index) => ({ day, index }))
-    .filter(
-      ({ day, index }) =>
-        monthly ||
-        index === 0 ||
-        index === days.length - 1 ||
-        Number(day.slice(8)) % 5 === 0,
-    );
+export function chartTicks(days: string[], monthly = false, plotSpan = 650) {
+  const ticks: { day: string; index: number }[] = [];
+  const minimumStep = Math.ceil(((monthly ? 72 : 90) * Math.max(1, days.length - 1)) / plotSpan);
+  let previous = -minimumStep;
+  for (let index = 0; index < days.length; index++) {
+    const endpoint = index === 0 || index === days.length - 1;
+    if (
+      endpoint ||
+      ((monthly || Number(days[index].slice(8)) % 5 === 0) &&
+        index - previous >= minimumStep &&
+        days.length - 1 - index >= minimumStep)
+    ) {
+      ticks.push({ day: days[index], index });
+      previous = index;
+    }
+  }
+  return ticks;
 }
 export function chartAxis(values: number[]) {
   const low = Math.min(0, ...values),

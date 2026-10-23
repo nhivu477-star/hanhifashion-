@@ -1,6 +1,7 @@
-import { test, expect, Page } from "@playwright/test";
+import { test as base, expect, Page } from "@playwright/test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { PrismaClient } from "@prisma/client";
+import { randomUUID } from "node:crypto";
 const fixture = JSON.parse(
   readFileSync("verification/final-uat/fixtures.json", "utf8"),
 );
@@ -8,6 +9,75 @@ if (fixture.database !== process.env.DATABASE_URL)
   throw Error("Isolated database required");
 const db = new PrismaClient();
 const origin = "http://127.0.0.1:3102";
+const test = base.extend<{ isolation: void }>({
+  isolation: [async ({}, use) => {
+    const userIds = [
+      fixture.accounts.CUSTOMER.id,
+      fixture.accounts.SELLER.id,
+      fixture.accounts.ADMIN.id,
+    ];
+    const preferences = await db.shopperPreference.findMany({
+      where: { userId: { in: userIds } },
+    });
+    const currency = await db.storeSetting.findUnique({
+      where: { key: "localization.currencies" },
+    });
+    const cart = await db.cart.findUnique({
+      where: { userId: fixture.accounts.CUSTOMER.id },
+      include: { items: true },
+    });
+    const wishlist = await db.wishlist.findUnique({
+      where: { userId: fixture.accounts.CUSTOMER.id },
+      include: { items: true },
+    });
+    const addresses = await db.address.findMany({
+      where: { userId: fixture.accounts.CUSTOMER.id },
+    });
+    const product = await db.product.findUniqueOrThrow({
+      where: { id: fixture.product.id },
+    });
+    if (cart) await db.cartItem.deleteMany({ where: { cartId: cart.id } });
+    try {
+      await use();
+    } finally {
+      await db.$transaction(async (tx) => {
+        await tx.shopperPreference.deleteMany({ where: { userId: { in: userIds } } });
+        if (preferences.length) await tx.shopperPreference.createMany({ data: preferences });
+        if (currency) {
+          await tx.storeSetting.upsert({
+            where: { key: currency.key }, create: currency, update: { value: currency.value },
+          });
+        } else {
+          await tx.storeSetting.deleteMany({ where: { key: "localization.currencies" } });
+        }
+        const currentCart = await tx.cart.findUnique({
+          where: { userId: fixture.accounts.CUSTOMER.id },
+        });
+        if (currentCart) await tx.cartItem.deleteMany({ where: { cartId: currentCart.id } });
+        if (cart?.items.length) await tx.cartItem.createMany({ data: cart.items });
+        const currentWishlist = await tx.wishlist.findUnique({
+          where: { userId: fixture.accounts.CUSTOMER.id },
+        });
+        if (currentWishlist) await tx.wishlistItem.deleteMany({
+          where: { wishlistId: currentWishlist.id },
+        });
+        if (wishlist?.items.length) await tx.wishlistItem.createMany({ data: wishlist.items });
+        await tx.address.deleteMany({
+          where: {
+            userId: fixture.accounts.CUSTOMER.id,
+            id: { notIn: addresses.map((a) => a.id) },
+          },
+        });
+        for (const address of addresses) await tx.address.update({
+          where: { id: address.id }, data: { isDefault: address.isDefault },
+        });
+        await tx.product.update({
+          where: { id: product.id }, data: { active: product.active },
+        });
+      });
+    }
+  }, { auto: true }],
+});
 async function setPreference(
   page: Page,
   language = "en",
@@ -37,17 +107,10 @@ async function login(page: Page, role: string) {
         : origin + "/admin",
   );
 }
-// Separate the extra synthetic customers from the existing suite's request quota.
-// The application rate limits remain unchanged; per-email limits still apply.
+// Distinct documented IPv6 addresses preserve the production rate limit.
 test.beforeEach(async ({ context }) => {
-  await context.setExtraHTTPHeaders({ "x-forwarded-for": "127.0.0.10" });
-});
-test.afterEach(async () => {
-  await db.shopperPreference.updateMany({
-    where: {
-      userId: { in: Object.values(fixture.accounts).map((u: any) => u.id) },
-    },
-    data: { language: "vi", region: "VN", currency: "VND" },
+  await context.setExtraHTTPHeaders({
+    "x-forwarded-for": `2001:db8:${randomUUID().replaceAll("-", "").match(/.{4}/g)!.slice(0, 6).join(":")}`,
   });
 });
 test.afterAll(() => db.$disconnect());
@@ -108,7 +171,9 @@ test("Localization: guest selector, SSR persistence, product/cart/checkout and V
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
   const fresh = await browser.newContext({
-    extraHTTPHeaders: { "x-forwarded-for": "127.0.0.10" },
+    extraHTTPHeaders: {
+      "x-forwarded-for": `2001:db8:${randomUUID().replaceAll("-", "").match(/.{4}/g)!.slice(0, 6).join(":")}`,
+    },
   });
   await fresh.addCookies(
     (await context.cookies()).filter((c) => c.name === "hn_session"),
@@ -132,7 +197,9 @@ test("Localization: guest selector, SSR persistence, product/cart/checkout and V
     update: { language: "en", region: "VN", currency: "USD" },
   });
   const savedAccountContext = await browser.newContext({
-    extraHTTPHeaders: { "x-forwarded-for": "127.0.0.10" },
+    extraHTTPHeaders: {
+      "x-forwarded-for": `2001:db8:${randomUUID().replaceAll("-", "").match(/.{4}/g)!.slice(0, 6).join(":")}`,
+    },
   });
   const savedAccountPage = await savedAccountContext.newPage();
   await login(savedAccountPage, "SELLER");
@@ -272,7 +339,7 @@ test("Localization: Admin/Seller English, configurable rates and financial RBAC"
         data: {
           ...config,
           rates: [
-            ...config.rates,
+            ...config.rates.filter((rate: { code: string }) => rate.code !== "GBP"),
             { code: "GBP", vndPerUnit: 34000, enabled: true },
           ],
         },

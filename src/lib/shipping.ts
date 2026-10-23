@@ -1,5 +1,5 @@
 import { formatAddress } from "./localization/config";
-import { actorPermission, requireActorPermission } from "./authorization";
+import { requireActorPermission } from "./authorization";
 import { Prisma } from "@prisma/client";
 import { randomUUID } from "node:crypto";
 import {
@@ -46,8 +46,8 @@ export async function createShipment(
   },
   actor: OrderActor,
 ) {
-  await actorPermission(actor, "shipping.create");
   return orderTransaction(async (tx) => {
+    await requireActorPermission(tx, actor, "shipping.create");
     if (input.provider !== "LOCAL_MANUAL")
       throw new Error("Chưa hỗ trợ hãng vận chuyển trực tuyến.");
     const order = await tx.order.findUniqueOrThrow({
@@ -230,11 +230,11 @@ export async function recordCOD(
   input: FinancialInput,
   actor: OrderActor,
 ) {
-  await actorPermission(
-    actor,
-    kind === "collection" ? "cod.collection.confirm" : "cod.remittance.record",
-  );
   return orderTransaction(async (tx) => {
+    await requireActorPermission(
+      tx, actor,
+      kind === "collection" ? "cod.collection.confirm" : "cod.remittance.record",
+    );
     const s = await tx.shipment.findUniqueOrThrow({
       where: { id: input.id },
       include: {
@@ -407,8 +407,8 @@ export async function reconcileCOD(
   },
   actor: OrderActor,
 ) {
-  await actorPermission(actor, "cod.reconcile");
   return orderTransaction(async (tx) => {
+    await requireActorPermission(tx, actor, "cod.reconcile");
     const s = await tx.shipment.findUniqueOrThrow({
       where: { id: input.id },
       include: { collections: true },

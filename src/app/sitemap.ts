@@ -1,5 +1,7 @@
 import { publicationFilter } from "@/lib/publication";
 import { db } from "@/lib/db";
+// Catalog changes belong in the live sitemap, not a build-time database snapshot.
+export const dynamic = "force-dynamic";
 export default async function sitemap() {
   const products = await db.product.findMany({
     where: { active: true, ...publicationFilter() },

@@ -548,6 +548,20 @@ await run(
         reason: "Không tự điều chỉnh giá",
       }),
     );
+    const product = await db.product.findUniqueOrThrow({ where: { id: x.v.productId } });
+    const category = await db.category.findUniqueOrThrow({ where: { id: product.categoryId } });
+    await db.productVariant.update({ where: { id: diff.id }, data: { priceOverride: x.o.items[0].unitPrice } });
+    await db.category.update({ where: { id: category.id }, data: { active: false } });
+    try {
+      await failed(admin.post("admin/returns/exchange", {
+        id: r.id, replacements: [{ itemId: i.id, variantId: diff.id }],
+        reason: "Không đổi sang SKU thuộc danh mục đã ẩn",
+      }));
+      assert.equal((await db.productVariant.findUniqueOrThrow({ where: { id: diff.id } })).stock, 1);
+      assert.equal(await db.exchangeItem.count({ where: { itemId: i.id } }), 0);
+    } finally {
+      await db.category.update({ where: { id: category.id }, data: { active: category.active } });
+    }
     assert.equal((await detail(r.id)).status, "INSPECTED");
   },
 );

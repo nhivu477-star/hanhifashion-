@@ -29,9 +29,9 @@ describe("Canonical account permission boundaries", () => {
   });
   it("seller operates sales, stock, shipping and support without identity or financial powers", () => {
     expect(isStaff("SELLER")).toBe(true);
-    for (const permission of ["products.create", "inventory.adjust", "orders.manage", "shipping.update", "returns.review", "returns.inspect", "returns.exchange", "inquiries.manage"] as const)
+    for (const permission of ["products.create", "inventory.adjust", "orders.manage", "shipping.update", "returns.read", "inquiries.manage"] as const)
       expect(can("SELLER", permission)).toBe(true);
-    for (const permission of ["accounts.manage", "staff.read", "staff.create", "staff.update", "staff.disable", "roles.assign", "customers.manage", "customers.read", "audit.read", "cod.read", "cod.collection.confirm", "cod.remittance.record", "cod.reconcile", "refunds.read", "refunds.approve", "refunds.execute", "analytics.profit.read", "analytics.finance.read", "analytics.costs.manage"] as const)
+    for (const permission of ["returns.review", "returns.inspect", "returns.exchange", "accounts.manage", "staff.read", "staff.create", "staff.update", "staff.disable", "roles.assign", "customers.manage", "customers.read", "audit.read", "cod.read", "cod.collection.confirm", "cod.remittance.record", "cod.reconcile", "refunds.read", "refunds.approve", "refunds.execute", "analytics.profit.read", "analytics.finance.read", "analytics.costs.manage"] as const)
       expect(can("SELLER", permission)).toBe(false);
   });
   it("all grants refer to known permissions", () => {
@@ -40,7 +40,7 @@ describe("Canonical account permission boundaries", () => {
     expect(() => assertRolePermission("SELLER", "roles.assign")).toThrow();
   });
   it("guards management API actions independently of supplied payload roles", async () => {
-    for (const action of ["admin/accounts/create", "admin/staff/role", "admin/customer", "admin/returns/refund", "admin/shipping/collection", "admin/settings"])
+    for (const action of ["admin/accounts/create", "admin/staff/role", "admin/customer", "admin/returns/status", "admin/returns/inspect", "admin/returns/exchange", "admin/returns/exchange-status", "admin/returns/refund", "admin/shipping/collection", "admin/settings"])
       await expect(authorizeAdminAction("SELLER", action, { role: "ADMIN" })).rejects.toThrow();
     for (const action of ["admin/product", "admin/stock", "admin/order/pack", "admin/shipping/create", "admin/inquiry"])
       await expect(authorizeAdminAction("SELLER", action, {})).resolves.toBeUndefined();

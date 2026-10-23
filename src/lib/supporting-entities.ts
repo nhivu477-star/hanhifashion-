@@ -7,7 +7,7 @@ import { Permission } from "./rbac";
 export async function saveSupportingEntity(
   target: string,
   b: Record<string, any>,
-  admin: { id: string },
+  admin: { id: string; permissionVersion: number },
 ) {
   const permission: Record<string, Permission> = {
     category: "products.update",

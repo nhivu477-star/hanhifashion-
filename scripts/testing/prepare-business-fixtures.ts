@@ -37,7 +37,7 @@ const cat = await db.category.create({
     name: "Trang phục",
     slug: "trang-phuc",
     description: "Dữ liệu kiểm thử đơn hàng",
-    image: "/images/lsoul/products/dam-ricci-dress-nguyen-ban-1.webp",
+    image: "/images/awaiting-photo.svg",
   },
 });
 const fixtures = [];

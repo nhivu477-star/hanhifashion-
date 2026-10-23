@@ -3,7 +3,6 @@ import { LocalizedContent } from "@/components/localization";
 
 import { useEffect, useRef, useState } from "react";
 import { adviseSize, bodyInput, type Chart } from "@/lib/sizing";
-import { officialContacts } from "@/lib/taxonomy";
 import { useProductSelection } from "./product-selection";
 export function SizeAdvisor({
   product: p,
@@ -217,9 +216,7 @@ export function SizeAdvisor({
                       {!result.sizes.length && (
                         <a
                           className="button outline size-contact-link"
-                          href={officialContacts.instagramMessageUrl}
-                          target="_blank"
-                          rel="noreferrer"
+                          href="/lien-he"
                         >
                           NHẮN TIN TƯ VẤN SIZE
                         </a>
@@ -279,9 +276,7 @@ export function SizeAdvisor({
                       </p>
                       <a
                         className="button outline size-contact-link"
-                        href={officialContacts.instagramMessageUrl}
-                        target="_blank"
-                        rel="noreferrer"
+                        href="/lien-he"
                       >
                         NHẮN TIN TƯ VẤN SIZE
                       </a>

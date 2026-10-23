@@ -20,7 +20,7 @@ const createInput = z
       .max(100),
   })
   .strict();
-export async function createStocktake(input: unknown, actor: { id: string }) {
+export async function createStocktake(input: unknown, actor: { id: string; permissionVersion: number }) {
   const d = createInput.parse(input);
   if (new Set(d.lines.map((i) => i.sku)).size !== d.lines.length)
     throw Error("Không được lặp SKU kiểm kê.");
@@ -73,7 +73,7 @@ export async function createStocktake(input: unknown, actor: { id: string }) {
     return { id: record.id };
   });
 }
-export async function changeStocktake(input: unknown, actor: { id: string }) {
+export async function changeStocktake(input: unknown, actor: { id: string; permissionVersion: number }) {
   const d = z
     .object({
       id: z.string(),

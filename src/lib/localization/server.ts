@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { randomUUID } from "node:crypto";
 import { db } from "../db";
+import { requireCurrentAccount } from "../authorization";
 import {
   currencyConfigSchema,
   defaultCurrencyConfig,
@@ -44,17 +45,20 @@ export async function readPreferences(userId?: string) {
     return defaultPreference;
   }
 }
-export async function savePreferences(value: unknown, userId?: string) {
+export async function savePreferences(value: unknown, actor?: { id: string; permissionVersion: number }) {
   const data = preferenceSchema.parse(value);
   const config = await currencyConfiguration();
   if (!config.rates.some((r) => r.code === data.currency && r.enabled))
     throw Error("Tiền tệ chưa được hỗ trợ.");
   const jar = await cookies();
-  if (userId)
-    await db.shopperPreference.upsert({
-      where: { userId },
-      create: { userId, ...data },
-      update: data,
+  if (actor)
+    await db.$transaction(async (tx) => {
+      await requireCurrentAccount(tx, actor);
+      await tx.shopperPreference.upsert({
+        where: { userId: actor.id },
+        create: { userId: actor.id, ...data },
+        update: data,
+      });
     });
   else {
     const old = jar.get("hn_preference_id")?.value;
@@ -80,11 +84,12 @@ export async function savePreferences(value: unknown, userId?: string) {
   return data;
 }
 /** Explicit browser choices survive sign-in; absent choices preserve the account's saved preference. */
-export async function adoptPreferences(userId: string) {
+export async function adoptPreferences(actor: { id: string; permissionVersion: number }) {
+  await requireCurrentAccount(db, actor);
   const jar = await cookies();
   const raw = jar.get("hn_preferences")?.value;
   if (!raw) {
-    const saved = await db.shopperPreference.findUnique({ where: { userId } });
+    const saved = await db.shopperPreference.findUnique({ where: { userId: actor.id } });
     if (saved) {
       const preference = normalizePreference(
         {
@@ -113,7 +118,7 @@ export async function adoptPreferences(userId: string) {
   if (parsed.success)
     await savePreferences(
       normalizePreference(parsed.data, await currencyConfiguration()),
-      userId,
+      actor,
     );
 }
 export async function preferredLanguage(): Promise<Preference["language"]> {

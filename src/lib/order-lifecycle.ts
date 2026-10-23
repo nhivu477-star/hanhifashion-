@@ -1,4 +1,4 @@
-import { requireActorPermission } from "./authorization";
+import { requireActorPermission, requireCurrentAccount } from "./authorization";
 import { isStaff } from "./rbac";
 import { Prisma } from "@prisma/client";
 import { db } from "./db";
@@ -8,6 +8,13 @@ export type OrderActor = {
   id: string;
   label: string;
   role: string;
+  permissionVersion: number;
+  accessToken?: string;
+};
+export type GuestOrderActor = {
+  id: "guest";
+  label: string;
+  role: "GUEST";
   accessToken?: string;
 };
 export function validateOrderTransition(
@@ -58,26 +65,60 @@ export async function orderTransaction<T>(
     }
   }
 }
+export type ReturnedItemInspection = {
+  orderItemId: string;
+  sellableQuantity: number;
+  damagedQuantity: number;
+};
+export function returnedStockQuantities(
+  items: { id: string; quantity: number }[],
+  inspections?: ReturnedItemInspection[],
+) {
+  if (
+    !Array.isArray(inspections) ||
+    inspections.length !== items.length ||
+    new Set(inspections.map((line) => line.orderItemId)).size !== items.length
+  )
+    throw Error("Cần kiểm hàng chuyển hoàn đầy đủ, mỗi dòng đơn đúng một lần.");
+  const quantities = new Map<string, number>();
+  for (const inspection of inspections) {
+    const item = items.find((line) => line.id === inspection.orderItemId);
+    if (
+      !item ||
+      !Number.isSafeInteger(inspection.sellableQuantity) ||
+      !Number.isSafeInteger(inspection.damagedQuantity) ||
+      inspection.sellableQuantity < 0 ||
+      inspection.damagedQuantity < 0 ||
+      inspection.sellableQuantity + inspection.damagedQuantity !== item.quantity
+    )
+      throw Error("Số lượng bán lại và hàng hỏng phải khớp từng dòng chuyển hoàn.");
+    quantities.set(item.id, inspection.sellableQuantity);
+  }
+  return quantities;
+}
 export type OrderChange = {
   id: string;
   status?: string;
   paid?: boolean;
   reason?: string;
   reference?: string;
+  returnedItems?: ReturnedItemInspection[];
 };
 export async function changeOrderInTransaction(
   tx: Prisma.TransactionClient,
   input: OrderChange,
-  actor: OrderActor,
+  actor: OrderActor | GuestOrderActor,
   fromShipment = false,
 ) {
   const order = await tx.order.findUniqueOrThrow({
     where: { id: input.id },
     include: { items: true, payments: true },
   });
-  const trusted = await tx.user.findUnique({ where: { id: actor.id } });
-  const admin = !!trusted?.active && isStaff(trusted.role);
-  if (admin && !fromShipment) {
+  const trusted = "permissionVersion" in actor
+    ? await requireCurrentAccount(tx, actor)
+    : null;
+  const admin = !!trusted && isStaff(trusted.role);
+  if (admin && !fromShipment && "permissionVersion" in actor) {
     if (input.paid)
       await requireActorPermission(tx, actor, "cod.collection.confirm");
     if (input.status && !input.paid)
@@ -88,10 +129,8 @@ export async function changeOrderInTransaction(
       );
   }
   const owner =
-    (trusted?.active &&
-      trusted.role === "CUSTOMER" &&
-      actor.id === order.userId) ||
-    (!!actor.accessToken && actor.accessToken === order.accessToken);
+    (trusted?.role === "CUSTOMER" && actor.id === order.userId) ||
+    (order.userId === null && !!actor.accessToken && actor.accessToken === order.accessToken);
   if (!admin && !owner)
     throw new Error("Bạn không có quyền truy cập đơn hàng này.");
   // A completed cancellation is a no-op even if its shipment has since synced
@@ -231,6 +270,12 @@ export async function changeOrderInTransaction(
     reason.length < 3
   )
     throw new Error("Cần nhập lý do hoặc ghi nhận giao nhận thủ công.");
+  const returnedInspection =
+    status === "CANCELLED" && order.status === "RETURNED"
+      ? returnedStockQuantities(order.items, input.returnedItems)
+      : null;
+  if (input.returnedItems && !returnedInspection)
+    throw Error("Chỉ ghi kiểm hàng chuyển hoàn khi hủy đơn đã quay về.");
   const changed = await tx.order.updateMany({
     where: {
       id: order.id,
@@ -255,20 +300,22 @@ export async function changeOrderInTransaction(
       actorId: actor.id,
       actorLabel: admin ? "Quản trị cửa hàng" : actor.label,
       event: "STATUS_CHANGE",
-      note: `${shippingFor[status] ? "Ghi nhận giao nhận thủ công. " : ""}${reason || "Cập nhật trạng thái đơn hàng"}${reference ? ` · Tham chiếu: ${reference}` : ""}`,
+      note: `${shippingFor[status] ? "Ghi nhận giao nhận thủ công. " : ""}${reason || "Cập nhật trạng thái đơn hàng"}${reference ? ` · Tham chiếu: ${reference}` : ""}${returnedInspection ? ` · Kiểm hàng chuyển hoàn: ${JSON.stringify(input.returnedItems)}` : ""}`,
     },
   });
   if (status === "CANCELLED") {
     for (const item of order.items) {
+      const quantity = returnedInspection?.get(item.id) ?? item.quantity;
+      if (!quantity) continue;
       await tx.productVariant.update({
         where: { id: item.variantId },
-        data: { stock: { increment: item.quantity } },
+        data: { stock: { increment: quantity } },
       });
       await tx.inventoryMovement.create({
         data: {
           variantId: item.variantId,
-          delta: item.quantity,
-          reason: `Hủy đơn ${order.code}: ${reason}`,
+          delta: quantity,
+          reason: `${returnedInspection ? "Kiểm hàng chuyển hoàn bán lại" : "Hủy đơn"} ${order.code}: ${reason}`,
           orderId: order.id,
           actorId: actor.id,
         },
@@ -290,7 +337,7 @@ export async function changeOrderInTransaction(
       resourceType: "ORDER",
       result: "SUCCESS",
       beforeJson: JSON.stringify({ status: order.status }),
-      afterJson: JSON.stringify({ status }),
+      afterJson: JSON.stringify({ status, ...(returnedInspection ? { returnedItems: input.returnedItems } : {}) }),
       reason,
       targetId: order.id,
       detail: JSON.stringify({
@@ -299,11 +346,12 @@ export async function changeOrderInTransaction(
         reason,
         reference,
         manual: !!shippingFor[status],
+        ...(returnedInspection ? { returnedItems: input.returnedItems } : {}),
       }),
     },
   });
   return { id: order.id };
 }
-export async function changeOrder(input: OrderChange, actor: OrderActor) {
+export async function changeOrder(input: OrderChange, actor: OrderActor | GuestOrderActor) {
   return orderTransaction((tx) => changeOrderInTransaction(tx, input, actor));
 }

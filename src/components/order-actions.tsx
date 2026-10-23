@@ -11,6 +11,7 @@ export function OrderActions({
   admin = false,
   hasShipment = false,
   grants = [],
+  items = [],
 }: {
   id: string;
   code?: string;
@@ -19,11 +20,21 @@ export function OrderActions({
   admin?: boolean;
   hasShipment?: boolean;
   grants?: readonly string[];
+  items?: {
+    id: string;
+    name: string;
+    color: string;
+    size: string;
+    quantity: number;
+  }[];
 }) {
   const [reason, setReason] = useState("");
   const [reference, setReference] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  const [inspection, setInspection] = useState<
+    Partial<Record<string, { sellableQuantity: number | ""; damagedQuantity: number | "" }>>
+  >({});
   const choices = admin
     ? (transitions[status] ?? []).filter(
         (next) =>
@@ -46,8 +57,44 @@ export function OrderActions({
     paymentStatus === "UNPAID";
   if (!choices.length && !canCollect) return null;
   async function submit(next: string, paid = false) {
-    setBusy(true);
     setMessage("");
+    const returnedItems: {
+      orderItemId: string;
+      sellableQuantity: number;
+      damagedQuantity: number;
+    }[] = [];
+    if (status === "RETURNED" && next === "CANCELLED") {
+      if (!reason.trim()) {
+        setMessage("Vui lòng nhập lý do hủy và kết quả kiểm hàng hoàn về.");
+        return;
+      }
+      if (!items.length) {
+        setMessage("Không có dòng hàng để kiểm nhận. Vui lòng tải lại đơn.");
+        return;
+      }
+      for (const item of items) {
+        const row = inspection[item.id];
+        if (
+          !row ||
+          row.sellableQuantity === "" ||
+          row.damagedQuantity === "" ||
+          !Number.isInteger(row.sellableQuantity) ||
+          !Number.isInteger(row.damagedQuantity) ||
+          row.sellableQuantity < 0 ||
+          row.damagedQuantity < 0 ||
+          row.sellableQuantity + row.damagedQuantity !== item.quantity
+        ) {
+          setMessage(`Phân loại đủ ${item.quantity} sản phẩm của ${item.name} thành hàng có thể bán và hàng hư hỏng.`);
+          return;
+        }
+        returnedItems.push({
+          orderItemId: item.id,
+          sellableQuantity: row.sellableQuantity,
+          damagedQuantity: row.damagedQuantity,
+        });
+      }
+    }
+    setBusy(true);
     try {
       const r = await fetch(admin ? "/api/admin/order" : "/api/order/cancel", {
         method: "POST",
@@ -59,6 +106,7 @@ export function OrderActions({
           paid,
           reason,
           reference,
+          ...(status === "RETURNED" && next === "CANCELLED" ? { returnedItems } : {}),
         }),
       });
       const data = await r.json();
@@ -102,6 +150,50 @@ export function OrderActions({
               </label>
             </>
           )}
+          {admin && status === "RETURNED" && choices.includes("CANCELLED") && (
+            <fieldset className="returned-inspection">
+              <legend>Kiểm nhận hàng hoàn về trước khi hủy</legend>
+              <p className="small muted">
+                Phân loại toàn bộ số lượng của từng dòng hàng. Chỉ hàng có thể bán
+                được nhập lại tồn khả dụng; hàng hư hỏng được ghi nhận, không mở bán.
+              </p>
+              {items.map((item) => (
+                <div className="returned-inspection-line" key={item.id}>
+                  <strong>
+                    {item.name} · {item.color} / {item.size} · {item.quantity} sản phẩm
+                  </strong>
+                  {([
+                    ["sellableQuantity", "Có thể bán"],
+                    ["damagedQuantity", "Hư hỏng"],
+                  ] as const).map(([field, label]) => (
+                    <label key={field}>
+                      {label}
+                      <input
+                        type="number"
+                        min={0}
+                        max={item.quantity}
+                        step={1}
+                        required
+                        disabled={busy}
+                        aria-label={`${label} — ${item.name} — ${item.color} / ${item.size}`}
+                        value={inspection[item.id]?.[field] ?? ""}
+                        onChange={(e) => {
+                          const value = e.target.value === "" ? "" : Number(e.target.value);
+                          setInspection((current) => ({
+                            ...current,
+                            [item.id]: {
+                              ...(current[item.id] ?? { sellableQuantity: "", damagedQuantity: "" }),
+                              [field]: value,
+                            },
+                          }));
+                        }}
+                      />
+                    </label>
+                  ))}
+                </div>
+              ))}
+            </fieldset>
+          )}
           <div className="admin-actions">
             {choices.map((next) => (
               <button
@@ -129,7 +221,7 @@ export function OrderActions({
               đủ điều kiện.
             </p>
           )}
-          {message && <p role="status">{message}</p>}
+          {message && <p role="alert">{message}</p>}
         </div>
       }
     </LocalizedContent>

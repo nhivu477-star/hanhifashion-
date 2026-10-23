@@ -12,19 +12,17 @@ describe("dashboard chart presentation", () => {
     expect(chartDate("2026-10", true)).toBe("10/2026");
     expect(chartMoney(10690000)).toBe("10.690.000 ₫");
   });
-  it("uses five-day calendar ticks and selected endpoints across months", () => {
+  it.each([220, 650])("keeps daily labels separated within a %ipx plot without losing date boundaries", (plotSpan) => {
     const days = Array.from({ length: 30 }, (_, i) =>
-      new Date(Date.UTC(2026, 8, 20 + i)).toISOString().slice(0, 10),
+      new Date(Date.UTC(2026, 8, 24 + i)).toISOString().slice(0, 10),
     );
-    expect(chartTicks(days).map((t) => t.day)).toEqual([
-      "2026-09-20",
-      "2026-09-25",
-      "2026-09-30",
-      "2026-10-05",
-      "2026-10-10",
-      "2026-10-15",
-      "2026-10-19",
-    ]);
+    const ticks = chartTicks(days, false, plotSpan);
+    expect(ticks[0].index).toBe(0);
+    expect(ticks.at(-1)?.index).toBe(days.length - 1);
+    for (let i = 1; i < ticks.length; i++) {
+      const gap = ((ticks[i].index - ticks[i - 1].index) * plotSpan) / (days.length - 1);
+      expect(gap).toBeGreaterThanOrEqual(90);
+    }
   });
   it("rounds the monetary axis to legible equal steps and handles zero or negative revenue", () => {
     expect(chartAxis([34100000]).ticks).toEqual([

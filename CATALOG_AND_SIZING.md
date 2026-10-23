@@ -28,4 +28,4 @@ Size tốt nhất hết hàng vẫn được giải thích là hết hàng, khô
 
 ## Nghiệm thu
 
-Kiểm màu/gallery, URL màu đích, fallback không mượn màu khác, giá snapshot, quản trị và thuật toán size/quyền riêng tư trên DB thử riêng. Các lệnh `npm test`, `npm run test:catalog`, `npm run test:e2e` và `npm run build` không phải kết quả đã chạy. Xem [báo cáo nghiệm thu](docs/business-acceptance-report.md) để phân biệt bằng chứng lịch sử với kiểm tra hiện hành chưa chạy.
+Kiểm màu/gallery, URL màu đích, fallback không mượn màu khác, giá/ảnh snapshot, quản trị và thuật toán size/quyền riêng tư trên DB thử riêng. [BRD](docs/business-requirements.md) định danh FR-003/004/014/015; [business rules](docs/business-rules.md) BR-007–010; [use cases](docs/use-cases.md) UC04–08/21–22; [test scenarios](docs/test-scenarios.md) TS-004–008/021–022/034/037 là truy vết chính. Các lệnh test/build trong README là cách thực thi, không phải kết quả. [Báo cáo nghiệm thu hiện hữu](docs/business-acceptance-report.md) chỉ là bằng chứng của lần chạy được mô tả, không chứng minh thay đổi sau đó đã đạt.

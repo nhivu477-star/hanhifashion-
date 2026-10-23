@@ -45,6 +45,7 @@ test("Anonymous cannot access staff reports or mutate management data", async ({
 });
 test("ADMIN account management: create three types, audit and strict role assignment", async ({
   page,
+  browser,
 }) => {
   await login(page, "ADMIN", "/admin/tai-khoan");
   await expect(
@@ -52,6 +53,7 @@ test("ADMIN account management: create three types, audit and strict role assign
   ).toBeVisible();
   for (const accountType of ["ADMIN", "SELLER", "CUSTOMER"] as const) {
     const email = `ui-${accountType.toLowerCase()}-${randomUUID()}@uat.local`;
+    const password = "Uat-Account-" + randomUUID();
     const form = page.locator("form").filter({
       has: page.getByRole("heading", {
         name: "Tạo tài khoản local",
@@ -64,7 +66,7 @@ test("ADMIN account management: create three types, audit and strict role assign
     await form.getByLabel("Email tài khoản", { exact: true }).fill(email);
     await form
       .getByLabel("Mật khẩu khởi tạo", { exact: true })
-      .fill("Uat-Account-" + randomUUID());
+      .fill(password);
     await form.getByLabel("Loại tài khoản được cấp").selectOption(accountType);
     await form
       .getByLabel("Lý do thao tác")
@@ -78,7 +80,18 @@ test("ADMIN account management: create three types, audit and strict role assign
     expect((await response).status()).toBe(200);
     const user = await db.user.findUniqueOrThrow({ where: { email } });
     expect(user.role).toBe(accountRole[accountType]);
-    expect(user.passwordHash.startsWith("$2")).toBe(true);
+    const accountContext = await browser.newContext({ baseURL: base });
+    try {
+      const signedIn = await accountContext.request.post("/api/login", {
+        headers: { origin: base },
+        data: { email, password },
+      });
+      expect(signedIn.status()).toBe(200);
+      const session = await accountContext.request.get("/api/session");
+      expect((await session.json()).user).toMatchObject({ email, role: accountRole[accountType] });
+    } finally {
+      await accountContext.close();
+    }
     expect(
       await db.auditLog.count({
         where: { targetId: user.id, action: "ACCOUNT_CREATED" },
@@ -145,7 +158,7 @@ test("SELLER: login destination, product/inventory permission and service/API es
     active: true,
     featured: false,
     isNew: false,
-    image: "/images/lsoul/products/dam-ricci-dress-nguyen-ban-1.webp",
+    image: fixture.product.image,
   };
   const created = await page.request.post("/api/admin/product", {
     headers: { origin: base },
@@ -204,6 +217,10 @@ test("SELLER: login destination, product/inventory permission and service/API es
         id: fixture.accounts.SELLER.id,
         role: "ADMIN",
         label: "forged actor role",
+        permissionVersion: (await db.user.findUniqueOrThrow({
+          where: { id: fixture.accounts.SELLER.id },
+          select: { permissionVersion: true },
+        })).permissionVersion,
       },
     ),
   ).rejects.toThrow();
@@ -239,7 +256,7 @@ test("CUSTOMER: own data only, no management, disabled session revoked and unloc
     where: { userId: fixture.accounts.CUSTOMER.id },
   });
   // A different customer is created via account management, then denied the order URL.
-  const owner = fixture.accounts.ADMIN;
+  const owner = await db.user.findUniqueOrThrow({ where: { id: fixture.accounts.ADMIN.id } });
   const privatePassword = randomUUID();
   const otherAccount = await manageAccount(
     {
@@ -250,7 +267,7 @@ test("CUSTOMER: own data only, no management, disabled session revoked and unloc
       reason: "Kiểm thử quyền riêng tư",
     },
     "create",
-    { id: owner.id, role: "ADMIN", label: "owner" },
+    { id: owner.id, role: "ADMIN", label: "owner", permissionVersion: owner.permissionVersion },
   );
   const separate = await browser.newContext({ baseURL: base });
   await separate.setExtraHTTPHeaders({

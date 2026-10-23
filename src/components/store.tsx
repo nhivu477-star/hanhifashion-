@@ -8,7 +8,7 @@ import { useProductSelection } from "./product-selection";
 import { SizeAdvisor } from "./size-advisor";
 import { decodeChart } from "@/lib/sizing";
 import { BrandLogo } from "./brand-logo";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
@@ -22,20 +22,17 @@ import {
   ArrowRight,
   Plus,
   Minus,
-  Check,
   ChevronLeft,
   ChevronRight,
   ChevronDown,
   Phone,
   LayoutDashboard,
 } from "lucide-react";
-import { officialContacts, type NavigationCategory } from "@/lib/taxonomy";
+import { type NavigationCategory } from "@/lib/taxonomy";
 import {
-  categories,
   effectivePrice,
   money,
   sizes,
-  colors,
   statusLabels,
 } from "@/lib/catalog";
 export async function api(action: string, body?: unknown) {
@@ -53,15 +50,32 @@ export function Header({
   managementHref,
   announcement,
   navigation,
+  collections = [],
   contactPhone,
 }: {
   managementHref?: string;
   announcement: string;
   navigation: NavigationCategory[];
+  collections?: { slug: string; name: string }[];
   contactPhone?: string;
 }) {
   const router = useRouter();
+  const hasContactPhone = /^\+?[\d\s().-]{8,20}$/.test(contactPhone ?? "");
   const pathname = usePathname();
+  const previousPath = useRef(pathname);
+  const restoredPath = useRef<string | null>(null);
+  useLayoutEffect(() => {
+    // Catch-all routes reuse the page; new products must not inherit the recommendations' scroll.
+    if (
+      previousPath.current !== pathname &&
+      pathname.startsWith("/san-pham/") &&
+      restoredPath.current !== pathname
+    ) {
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    }
+    previousPath.current = pathname;
+    restoredPath.current = null;
+  }, [pathname]);
   const urlParams = useSearchParams();
   const [suggestions, setSuggestions] = useState(false);
   const [selectedResult, setSelectedResult] = useState(-1);
@@ -100,7 +114,7 @@ export function Header({
       () =>
         api("search?suggest=1&q=" + encodeURIComponent(q))
           .then((r) => {
-            if (!cancelled) setResults(r.products.slice(0, 4));
+            if (!cancelled) setResults(r.products);
           })
           .catch(() => {
             if (!cancelled) {
@@ -134,6 +148,7 @@ export function Header({
   }, [pathname]);
   useEffect(() => {
     const dismiss = () => {
+      restoredPath.current = window.location.pathname;
       setOpen(false);
       setSearch(false);
       setSuggestions(false);
@@ -263,7 +278,7 @@ export function Header({
                           href={"/san-pham/" + p.slug}
                           onClick={() => setSuggestions(false)}
                         >
-                          <img src={p.images[0]?.url} alt={p.name} />
+                          <SafeImage src={p.images[0]?.url} alt={p.name} sizes="64px" />
                           <span>
                             {p.name}
                             <br />
@@ -291,12 +306,10 @@ export function Header({
                 ) : (
                   <a
                     className="header-contact"
-                    href={
-                      "tel:" + (contactPhone || officialContacts.contactPhone)
-                    }
+                    href={hasContactPhone ? "tel:" + contactPhone : "/lien-he"}
                   >
                     <Phone size={22} strokeWidth={1.5} />
-                    <span>Gọi ngay</span>
+                    <span>{hasContactPhone ? "Gọi ngay" : "Liên hệ"}</span>
                   </a>
                 )}
                 <Link
@@ -417,17 +430,16 @@ export function Header({
                     Cảm hứng phối đồ <ChevronDown size={18} />
                   </summary>
                   <div className="drawer-submenu">
-                    {[
-                      ["new-season", "Mùa mới"],
-                      ["statement", "Dấu ấn cá tính"],
-                      ["essentials", "Thiết kế hằng ngày"],
-                    ].map(([slug, label]) => (
+                    <Link onClick={close} href="/bo-suu-tap">
+                      Tất cả bộ sưu tập
+                    </Link>
+                    {collections.map(({ slug, name }) => (
                       <Link
                         key={slug}
                         onClick={close}
                         href={"/bo-suu-tap/" + slug}
                       >
-                        {label}
+                        {name}
                       </Link>
                     ))}
                   </div>
@@ -514,7 +526,7 @@ export function Header({
                         (selectedResult === index ? " selected" : "")
                       }
                     >
-                      <img src={p.images[0]?.url} alt={p.name} />
+                      <SafeImage src={p.images[0]?.url} alt={p.name} sizes="64px" />
                       <span>
                         {p.name}
                         <br />
@@ -553,7 +565,11 @@ export function SafeImage({
           {...rest}
           src={source}
           style={{ objectPosition: `${focalX}% ${focalY}%`, ...rest.style }}
-          alt={alt || "Trang phục HÀ NHI"}
+          alt={
+            failed || !src
+              ? "Hình ảnh đang được cập nhật"
+              : alt || "Trang phục HÀ NHI"
+          }
           width={rest.width ?? 512}
           height={rest.height ?? 683}
           sizes={
@@ -567,20 +583,55 @@ export function SafeImage({
     </LocalizedContent>
   );
 }
+// Cards mount together; share only the in-flight read, never account data across visits.
+let wishlistRequest: Promise<{ productId: string }[]> | undefined;
+function loadWishlist() {
+  wishlistRequest ??= api("wishlist").finally(() => {
+    wishlistRequest = undefined;
+  });
+  return wishlistRequest;
+}
+function localWishlist(): string[] {
+  try {
+    const stored: unknown = JSON.parse(localStorage.getItem("hn_wishlist") || "[]");
+    return Array.isArray(stored)
+      ? stored.filter((id): id is string => typeof id === "string").slice(0, 200)
+      : [];
+  } catch {
+    return [];
+  }
+}
 export function WishButton({ id }: { id: string }) {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
   useEffect(() => {
-    let list: string[] = [];
-    try {
-      list = JSON.parse(localStorage.getItem("hn_wishlist") || "[]");
-    } catch {}
-    setSaved(list.includes(id));
-    api("wishlist")
+    let cancelled = false;
+    let remoteSaved = false;
+    let changed = false;
+    const sync = (event?: Event) => {
+      if (event instanceof CustomEvent && event.detail?.id === id) {
+        remoteSaved = event.detail.saved === true;
+        changed = true;
+      }
+      setSaved(remoteSaved || localWishlist().includes(id));
+    };
+    sync();
+    loadWishlist()
       .then((r) => {
-        if (r.some((i: any) => i.productId === id)) setSaved(true);
+        if (!cancelled && !changed) {
+          remoteSaved = r.some((i) => i.productId === id);
+          sync();
+        }
       })
       .catch(() => {});
+    window.addEventListener("wishlist-change", sync);
+    window.addEventListener("storage", sync);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("wishlist-change", sync);
+      window.removeEventListener("storage", sync);
+    };
   }, [id]);
   return (
     <LocalizedContent>
@@ -590,32 +641,38 @@ export function WishButton({ id }: { id: string }) {
           aria-label={saved ? "Bỏ yêu thích" : "Yêu thích sản phẩm"}
           aria-pressed={saved}
           title={error || undefined}
+          disabled={busy}
           onClick={async () => {
             const next = !saved;
+            const previous = localWishlist();
+            const list = next
+              ? [...new Set([...previous, id])]
+              : previous.filter((x) => x !== id);
+            setError("");
+            setBusy(true);
             setSaved(next);
-            let list: string[] = [];
-            try {
-              list = JSON.parse(localStorage.getItem("hn_wishlist") || "[]");
-            } catch {}
-            localStorage.setItem(
-              "hn_wishlist",
-              JSON.stringify(
-                next
-                  ? [...new Set([...list, id])]
-                  : list.filter((x) => x !== id),
-              ),
-            );
             try {
               const s = await api("session");
               if (s.user)
                 await api("wishlist", { productId: id, remove: !next });
-              window.dispatchEvent(new Event("wishlist-change"));
+              try {
+                localStorage.setItem("hn_wishlist", JSON.stringify(list));
+              } catch {
+                if (!s.user) throw new Error("Không thể lưu yêu thích trong trình duyệt này.");
+              }
+              window.dispatchEvent(
+                new CustomEvent("wishlist-change", { detail: { id, saved: next } }),
+              );
             } catch (e) {
-              setError(String(e));
+              setSaved(!next);
+              setError((e as Error).message);
+            } finally {
+              setBusy(false);
             }
           }}
         >
           <Heart size={18} fill={saved ? "currentColor" : "none"} />
+          {error && <span className="sr-only" role="alert">{error}</span>}
         </button>
       }
     </LocalizedContent>
@@ -723,6 +780,8 @@ export function ProductPurchase({ product: p }: { product: any }) {
       )
         setQuantity(saved.quantity);
     } catch {}
+    setError("");
+    setMessage("");
   }, [p.id]);
   const variant = p.variants.find(
     (v: any) => v.color === color && v.size === size,
@@ -735,6 +794,10 @@ export function ProductPurchase({ product: p }: { product: any }) {
     setMessage("");
     if (!variant) {
       setError("Nàng vui lòng chọn màu và kích cỡ.");
+      return;
+    }
+    if (quantity > variant.stock) {
+      setError(`Chỉ còn ${variant.stock} sản phẩm trong kho. Nàng vui lòng giảm số lượng.`);
       return;
     }
     if (adding.current) return;
@@ -800,9 +863,11 @@ export function ProductPurchase({ product: p }: { product: any }) {
                 style={{ backgroundColor: v.colorHex }}
                 title={v.color}
                 aria-label={v.color}
+                aria-pressed={color === v.color}
                 onClick={() => {
                   setColor(v.color);
                   setSize("");
+                  setQuantity(1);
                 }}
               />
             ))}
@@ -827,6 +892,7 @@ export function ProductPurchase({ product: p }: { product: any }) {
                   <button
                     key={s}
                     className={s === size ? "chosen" : ""}
+                    aria-pressed={s === size}
                     disabled={!v || !v.stock}
                     onClick={() => {
                       setSize(s);
@@ -858,7 +924,7 @@ export function ProductPurchase({ product: p }: { product: any }) {
             <button
               className="icon-button"
               aria-label="Giảm số lượng"
-              disabled={quantity <= 1}
+              disabled={quantity <= 1 || busy}
               onClick={() => setQuantity(quantity - 1)}
             >
               <Minus size={16} />
@@ -880,6 +946,7 @@ export function ProductPurchase({ product: p }: { product: any }) {
               <Plus size={16} />
             </button>
           </div>
+          <div className="purchase-actions">
           <button
             className="button full"
             onClick={() => add()}
@@ -894,6 +961,7 @@ export function ProductPurchase({ product: p }: { product: any }) {
           >
             MUA NGAY
           </button>
+          </div>
           {error && (
             <p role="alert" className="error">
               {error}
@@ -927,7 +995,7 @@ export function Gallery({ images }: { images: any[] }) {
             onTouchStart={(e) => (start.current = e.touches[0].clientX)}
             onTouchEnd={(e) => {
               const delta = e.changedTouches[0].clientX - start.current;
-              if (Math.abs(delta) > 40)
+              if (images.length > 1 && Math.abs(delta) > 40)
                 setIndex(
                   (index + (delta > 0 ? -1 : 1) + images.length) %
                     images.length,
@@ -974,6 +1042,7 @@ export function Gallery({ images }: { images: any[] }) {
                 className={i === index ? "chosen" : ""}
                 onClick={() => setIndex(i)}
                 aria-label={"Xem ảnh " + (i + 1)}
+                aria-pressed={i === index}
               >
                 <SafeImage src={img.url} alt={img.alt} sizes="90px" />
               </button>
@@ -982,6 +1051,8 @@ export function Gallery({ images }: { images: any[] }) {
           <dialog
             className="zoom-dialog"
             ref={d}
+            aria-label="Ảnh sản phẩm phóng to"
+            onClose={() => setZoom(false)}
             onCancel={() => setZoom(false)}
           >
             <button
@@ -1292,20 +1363,23 @@ export function ActionButton({
 export function WishlistPage() {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [attempt, setAttempt] = useState(0);
   useEffect(() => {
     const load = async () => {
+      setError("");
       try {
         const s = await api("session");
         if (s.user) {
           const w = await api("wishlist");
           setProducts(w.map((i: any) => i.product));
         } else {
-          const ids: string[] = JSON.parse(
-            localStorage.getItem("hn_wishlist") || "[]",
-          );
+          const ids = localWishlist();
           const res = await api("guest-wishlist", { ids });
           setProducts(res);
         }
+      } catch (e) {
+        setError((e as Error).message);
       } finally {
         setLoading(false);
       }
@@ -1313,9 +1387,22 @@ export function WishlistPage() {
     load();
     window.addEventListener("wishlist-change", load);
     return () => window.removeEventListener("wishlist-change", load);
-  }, []);
+  }, [attempt]);
   return loading ? (
     <p>Đang mở tủ đồ yêu thích...</p>
+  ) : error ? (
+    <div className="empty">
+      <p className="error" role="alert">{error}</p>
+      <button
+        className="button outline"
+        onClick={() => {
+          setLoading(true);
+          setAttempt((value) => value + 1);
+        }}
+      >
+        Thử tải lại yêu thích
+      </button>
+    </div>
   ) : products.length ? (
     <div className="product-grid">
       {products.map((p) => (

@@ -4,6 +4,8 @@ Tiêu chuẩn thực thi dựa trên PROJECT_SPEC và chính sách cửa hàng h
 
 Đọc kết quả thực thi tại `business-acceptance-report.md`. Danh mục có 31 Use Case, mỗi mục có 6 nhóm tiêu chí Given–When–Then (186 nhóm). PASS chỉ được ghi khi phiên bản đang nghiệm thu có bằng chứng thực thi, không phải cam kết mọi tổ hợp hay sẵn sàng bán thật.
 
+Hồ sơ BA dễ đọc và truy vết: [BRD](business-requirements.md), [use cases](use-cases.md), [quy trình](business-processes.md), [business rules](business-rules.md), [ERD](data-model.md), [test scenarios](test-scenarios.md). Mọi tiêu chí dưới đây phải tuân thủ ma trận ba vai trò: SELLER không quản trị tài khoản/tài chính hoặc quyết định/kiểm hàng/đổi trả; chỉ ADMIN đọc audit toàn hệ thống. `STAFF-*` là ID chức năng, không phải role.
+
 ## Phạm vi áp dụng
 
 - **UC01:** Tài khoản mua hàng dùng role CUSTOMER ; đăng nhập bằng email hoặc số điện thoại. Đăng ký yêu cầu ít nhất một trong hai; giữ validation và quy tắc duy nhất của định danh hiện hành. Đăng ký hiện tự đăng nhập; không tự cấp quyền từ payload.
@@ -11,13 +13,15 @@ Tiêu chuẩn thực thi dựa trên PROJECT_SPEC và chính sách cửa hàng h
 - **UC04:** Preview local có ảnh tham chiếu, không coi là hàng/ảnh đã xác minh thương mại. Chế độ commercial vẫn kiểm publication/readiness.
 - **UC09:** Chỉ COD nội bộ theo PROJECT_SPEC; phương thức khác không được trình bày như thanh toán thật. Địa chỉ VN, tiền giao dịch VND.
 - **UC10:** Thu COD, chuyển tiền về và đối soát mô phỏng độc lập; không kết nối cổng thanh toán hoặc xác thực tiền thật.
-- **UC12:** Hủy toàn bộ theo quy tắc hiện hành; hủy một phần bị khóa chờ duyệt chính sách. Đơn đang giao đi theo shipment/return, không hoàn tồn tùy tiện.
+- **UC12:** Hủy toàn bộ theo quy tắc hiện hành; hủy một phần bị khóa chờ duyệt chính sách. Đơn đang giao theo shipment/return, không hoàn tồn tùy tiện. RETURNED→CANCELLED cần UNPAID, reason và returnedItems đủ từng dòng đúng một lần; sellableQuantity/damagedQuantity nguyên không âm và tổng bằng lượng dòng. Chỉ hoàn tồn lượng bán được một lần, hàng hỏng không vào tồn bán, phân loại giữ audit/history vận hành.
 - **UC13:** Dùng danh sách trạng thái, lọc ngày, tìm mã, ưu tiên và phân công trong module hiện tại; không thêm hệ thống nhân sự hoặc chấm công.
 - **UC14:** Checkout đã trừ tồn và giữ snapshot; xác nhận không trừ lại. Không dùng tồn còn lại sau khi đã xuất để kết luận đơn mua đơn vị cuối là thiếu hàng.
 - **UC15:** Giữ enum PROCESSING và ghi packedAt/packedBy cùng checklist SKU/màu/size/lượng. Tạo shipment hoặc chuyển SHIPPING phải đã kiểm tra đóng gói; không thêm enum phá lịch sử cũ.
 - **UC16:** Mã HN-SHIP-* là hồ sơ giao nhận local, không phải mã hãng. Không gọi logistics bên ngoài.
 - **UC18:** Đánh giá xác minh mua sau giao; SELLER có quyền hỗ trợ phi tài chính, trả lời và ẩn/hiện có lý do. Hỗ trợ dùng inquiry + replies nội bộ, không xây chat thời gian thực ngoài phạm vi.
 - **UC21:** Ưu tiên lưu nháp/readiness, ẩn sản phẩm/màu và giữ SKU/ảnh đã có ledger; không cung cấp hard delete làm mất snapshot. Không suy ra quyền sử dụng thương mại từ ảnh tham chiếu.
+- **UC20:** ADMIN quản trị tài khoản/quyền/nhật ký; SELLER chỉ nhóm vận hành được cấp, CUSTOMER chỉ dữ liệu của mình. Không vai trò chuyên biệt hoặc alias.
+- **UC24:** Hủy chuyển hoàn phải áp dụng kiểm từng dòng của UC12/BR-019; không dùng hủy để hoàn toàn bộ hàng hỏng. Hủy trước bàn giao giữ quy tắc hoàn tồn bình thường.
 - **UC23:** Hai loại voucher hiện hành FIXED/PERCENT; một mã mỗi đơn. Phí ship chuẩn 30.000đ và miễn ship theo ngưỡng net hiện hành. Không tự sáng tạo chính sách chồng mã, đối tượng riêng hay đổi mức phí ngoài cấu hình đã duyệt.
 - **UC26:** Chỉ lỗi được xác minh trong đủ 72 giờ từ mốc nhận; ảnh không bắt buộc theo chính sách hiện hành. Đổi SKU chỉ cùng đơn giá lịch sử; khác giá bị từ chối chờ chính sách.
 - **UC27:** SIMULATED REFUND, không chuyển tiền thật; duyệt và thực thi theo quyền riêng, giữ trần khoản thực thu và số lượng được phép.
@@ -727,7 +731,7 @@ Given: Đơn tồn tại; đúng ownership/quyền
 
 When: Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.
 
-Then: orders.read; khách sở hữu; guest capability tối thiểu
+Then: orders.read; khách có phiên sở hữu; capability chỉ đơn guest cũ userId=null, không thay phiên cho đơn tài khoản
 
 PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thiếu bằng chứng.
 
@@ -761,7 +765,7 @@ Hủy toàn bộ theo quy tắc hiện hành; hủy một phần bị khóa ch�
 
 Given: UNPAID; chưa giao hoặc hàng chuyển hoàn đã về
 
-When: Cancel → hoàn lượng còn lại → release voucher một lần
+When: Cancel → hoàn lượng hợp lệ (RETURNED chỉ sellableQuantity đã kiểm) → release voucher một lần
 
 Then: Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.
 
@@ -771,7 +775,7 @@ PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thi�
 
 Given: UNPAID; chưa giao hoặc hàng chuyển hoàn đã về
 
-When: Retry CANCELLED no-op; trả về rồi hủy
+When: Retry CANCELLED no-op; trả về rồi kiểm đủ returnedItems trước hủy
 
 Then: Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.
 
@@ -781,7 +785,7 @@ PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thi�
 
 Given: UNPAID; chưa giao hoặc hàng chuyển hoàn đã về
 
-When: Đã PAID; đang giao/chưa hoàn về; khách hủy muộn
+When: Đã PAID; đang giao/chưa hoàn về; khách hủy muộn; RETURNED thiếu/trùng/sai dòng hoặc tổng lượng không bằng quantity dòng
 
 Then: Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.
 
@@ -803,7 +807,7 @@ Given: UNPAID; chưa giao hoặc hàng chuyển hoàn đã về
 
 When: Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.
 
-Then: Hoàn tồn/coupon/history/audit atomic; paid dùng refund flow
+Then: Chỉ phần bán được hoàn tồn sau chuyển hoàn; stock/movement/coupon/history/audit kiểm hàng atomic; paid dùng refund flow
 
 PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thiếu bằng chứng.
 
@@ -859,7 +863,7 @@ Given: Đơn tồn tại; đúng ownership/quyền; Trạng thái đầu hợp l
 
 When: Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.
 
-Then: orders.read; khách sở hữu; guest capability tối thiểu; orders.manage; orders.cancel cho hủy
+Then: orders.read; khách có phiên sở hữu; capability chỉ đơn guest cũ userId=null; orders.manage; orders.cancel cho hủy; hn_order/accessToken không thay phiên cho đơn tài khoản
 
 PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thiếu bằng chứng.
 
@@ -1067,7 +1071,7 @@ Given: PROCESSING, UNPAID, COD payment khớp; chưa có shipment; Trạng thái
 
 When: Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.
 
-Then: Một shipment/order; không trừ tồn lần hai; Order/shipment/event khớp; giao thành công vẫn UNPAID; Không hoàn tồn tại cả RETURNED và CANCELLED; timeline thật
+Then: Một shipment/order; không trừ tồn lần hai; Order/shipment/event khớp; giao thành công vẫn UNPAID; RETURNED không tự hoàn tồn, CANCELLED sau kiểm từng dòng chỉ hoàn lượng bán được một lần, hàng hỏng không vào tồn bán; timeline thật
 
 PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thiếu bằng chứng.
 
@@ -1255,7 +1259,7 @@ Given: Đúng CUSTOMER; phân trang; CUSTOMER; không phải chính tài khoản
 
 When: Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.
 
-Then: customers.read; quyền riêng để mở đơn/returns/support; customers.manage; staff.* / accounts.manage
+Then: ADMIN với customers.read/customers.manage/accounts.manage và quyền staff.* tương ứng; mở đơn/returns/support vẫn kiểm quyền riêng
 
 PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thiếu bằng chứng.
 
@@ -1299,7 +1303,7 @@ PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thi�
 
 Given: Không tự nâng quyền; actor có grant phù hợp; Phiên active/version đúng; quyền tại backend/service; Nhân viên có quyền đọc nhật ký
 
-When: Chỉ chấp nhận CUSTOMER, SELLER, ADMIN; vai trò khác bị từ chối; Vai trò chuyên biệt chỉ được nhóm việc tương ứng; Bản ghi cũ thiếu actor được giữ
+When: Chỉ chấp nhận CUSTOMER, SELLER, ADMIN; vai trò khác bị từ chối; SELLER chỉ nhóm vận hành được cấp và đổi trả chỉ đọc; CUSTOMER chỉ dữ liệu của mình; ADMIN toàn quyền; bản ghi cũ thiếu actor được giữ
 
 Then: Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.
 
@@ -1321,7 +1325,7 @@ Given: Không tự nâng quyền; actor có grant phù hợp; Phiên active/vers
 
 When: Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.
 
-Then: staff.* / accounts.manage; Mọi role; default deny; audit.read
+Then: ADMIN quản trị accounts.manage/staff.* và audit.read; mọi role bị default deny ngoài quyền đã khai báo
 
 PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thiếu bằng chứng.
 
@@ -1553,7 +1557,7 @@ Bằng chứng cần có: kết quả thực thi mới theo các tiêu chí trê
 
 Given: Đơn tồn tại; đúng ownership/quyền; Trạng thái đầu hợp lệ; lý do khi hủy/giao nhận; UNPAID; chưa giao hoặc hàng chuyển hoàn đã về
 
-When: Tìm mã → xem snapshot/timeline thực; PENDING→CONFIRMED→PROCESSING; từ chối dùng CANCELLED; Cancel → hoàn lượng còn lại → release voucher một lần
+When: Tìm mã → xem snapshot/timeline thực; PENDING→CONFIRMED→PROCESSING; từ chối dùng CANCELLED; hủy hoàn lượng hợp lệ (RETURNED chỉ sellableQuantity đã kiểm) → release voucher một lần
 
 Then: Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.
 
@@ -1563,7 +1567,7 @@ PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thi�
 
 Given: Đơn tồn tại; đúng ownership/quyền; Trạng thái đầu hợp lệ; lý do khi hủy/giao nhận; UNPAID; chưa giao hoặc hàng chuyển hoàn đã về
 
-When: Tra cứu mã+phone chỉ dữ liệu tối thiểu; Đường giao nhận thủ công trước có shipment; Retry CANCELLED no-op; trả về rồi hủy
+When: Tra cứu mã+phone chỉ dữ liệu tối thiểu; đường giao nhận thủ công trước có shipment; retry CANCELLED no-op; hàng quay về phải kiểm đủ từng dòng bán được/hỏng trước hủy
 
 Then: Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.
 
@@ -1585,7 +1589,7 @@ Given: Đơn tồn tại; đúng ownership/quyền; Trạng thái đầu hợp l
 
 When: Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.
 
-Then: orders.read; khách sở hữu; guest capability tối thiểu; orders.manage; orders.cancel cho hủy; orders.cancel hoặc owner trước chuẩn bị
+Then: orders.read; khách có phiên sở hữu; capability chỉ đơn guest cũ userId=null; orders.manage; orders.cancel cho hủy; hn_order/accessToken không thay phiên cho đơn tài khoản
 
 PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thiếu bằng chứng.
 
@@ -1595,7 +1599,7 @@ Given: Đơn tồn tại; đúng ownership/quyền; Trạng thái đầu hợp l
 
 When: Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.
 
-Then: UI/API/DB khớp tổng tiền/trạng thái; public allowlist; CAS + history + audit; không tự ghi PAID từ status; Hoàn tồn/coupon/history/audit atomic; paid dùng refund flow
+Then: UI/API/DB khớp tổng tiền/trạng thái; public allowlist; CAS + history + audit; không tự ghi PAID từ status; RETURNED chỉ hoàn tồn lượng bán được sau kiểm đủ từng dòng, hàng hỏng không vào tồn bán; movement/coupon/history/audit atomic; paid dùng refund flow
 
 PASS khi mọi assertion liên kết đạt; FAIL khi có sai lệch hoặc thiếu bằng chứng.
 

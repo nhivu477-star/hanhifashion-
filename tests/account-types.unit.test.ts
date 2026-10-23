@@ -18,9 +18,9 @@ describe("Three canonical account tiers", () => {
   });
   it("seller has operational permissions but no identity or financial grants", () => {
     expect(isStaff("SELLER")).toBe(true);
-    for (const p of ["products.create", "products.update", "inventory.adjust", "orders.manage", "shipping.update", "returns.review", "inquiries.manage"] as const)
+    for (const p of ["products.create", "products.update", "inventory.adjust", "orders.manage", "shipping.update", "returns.read", "inquiries.manage"] as const)
       expect(can("SELLER", p)).toBe(true);
-    for (const p of ["accounts.manage", "staff.create", "roles.assign", "cod.read", "cod.collection.confirm", "refunds.approve", "refunds.execute", "analytics.finance.read", "analytics.profit.read", "analytics.costs.manage"] as const)
+    for (const p of ["returns.review", "returns.inspect", "returns.exchange", "accounts.manage", "staff.create", "roles.assign", "cod.read", "cod.collection.confirm", "refunds.approve", "refunds.execute", "analytics.finance.read", "analytics.profit.read", "analytics.costs.manage"] as const)
       expect(can("SELLER", p)).toBe(false);
   });
   it("uses role-specific defaults and rejects forbidden return destinations", () => {

@@ -1,6 +1,6 @@
 "use client";
 import { LocalizedContent } from "./localization";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { BrandLogo } from "./brand-logo";
 import { ActionButton } from "./store";
@@ -112,18 +112,28 @@ export function AdminFrame({
   activePath: string;
 }) {
   const [open, setOpen] = useState(false),
-    [search, setSearch] = useState(""),
-    [compact, setCompact] = useState(true);
+    [search, setSearch] = useState("");
+  const navigation = useRef<HTMLElement>(null);
+  const menuButton = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     const media = window.matchMedia("(max-width: 1023px)");
     const update = () => {
-      setCompact(media.matches);
       setOpen(false);
     };
     update();
     media.addEventListener("change", update);
     return () => media.removeEventListener("change", update);
   }, []);
+  useEffect(() => {
+    if (!open) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    navigation.current?.querySelector<HTMLButtonElement>(".admin-mobile-close")?.focus();
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      menuButton.current?.focus();
+    };
+  }, [open]);
   const managementHref = accountLoginDestination(role);
   const activeSlug = analyticsLinks.some(([slug]) => slug === activePath)
     ? activePath
@@ -142,7 +152,31 @@ export function AdminFrame({
           }
         }}
       >
-        <aside className={"admin-nav " + (open ? "is-open" : "")} inert={compact && !open}>
+        <aside
+          ref={navigation}
+          id="admin-navigation"
+          className={"admin-nav " + (open ? "is-open" : "")}
+          inert={!open}
+          role={open ? "dialog" : undefined}
+          aria-modal={open || undefined}
+          aria-label="Điều hướng quản trị"
+          onKeyDown={(e) => {
+            if (e.key !== "Tab") return;
+            const controls = navigation.current?.querySelectorAll<HTMLElement>(
+              'a[href], button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex="0"]',
+            );
+            if (!controls?.length) return;
+            const first = controls[0];
+            const last = controls[controls.length - 1];
+            if (e.shiftKey && document.activeElement === first) {
+              e.preventDefault();
+              last.focus();
+            } else if (!e.shiftKey && document.activeElement === last) {
+              e.preventDefault();
+              first.focus();
+            }
+          }}
+        >
           <Link
             className="admin-brand"
             href={managementHref}
@@ -217,13 +251,15 @@ export function AdminFrame({
             onClick={() => setOpen(false)}
           />
         )}
-        <div className="admin-workspace">
+        <div className="admin-workspace" inert={open}>
           <header className="admin-topbar">
             <div className="admin-header-brand">
               <button
                 className="admin-menu-button"
+                ref={menuButton}
                 aria-label="Mở menu quản trị"
                 aria-expanded={open}
+                aria-controls="admin-navigation"
                 onClick={() => setOpen(!open)}
               >
                 <Menu size={22} />

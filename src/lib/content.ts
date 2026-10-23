@@ -39,7 +39,7 @@ export const content: Record<string, ContentEntry> = {
       ],
       [
         "Trải nghiệm hiện tại",
-        "Website hiện là bản trải nghiệm. Thao tác đặt hàng chỉ tạo đơn, chưa thu tiền, chưa gửi hàng và chưa kết nối đơn vị vận chuyển. Nàng nên dùng thông tin và không nhập dữ liệu thẻ ngân hàng.",
+        "Website hiện là bản trải nghiệm. Thao tác đặt hàng chỉ tạo đơn, chưa thu tiền, chưa gửi hàng và chưa kết nối đơn vị vận chuyển. Chỉ cung cấp thông tin cần thiết và không nhập dữ liệu thẻ ngân hàng.",
       ],
     ],
   },

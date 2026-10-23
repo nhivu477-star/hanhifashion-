@@ -65,7 +65,7 @@ export async function importEditorial(db: PrismaClient) {
     await db.collection.updateMany({
       where: {
         slug: { in: s.collections },
-        image: { in: ["/images/editorial-blazer.webp", "/images/hero.png"] },
+        image: { in: ["/images/editorial-blazer.webp", ""] },
       },
       data: { image: path },
     });

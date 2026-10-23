@@ -1,8 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { normalize } from "../src/lib/catalog";
 import { subcategories, officialContacts } from "../src/lib/taxonomy";
-const db = new PrismaClient();
-export async function applyTaxonomy() {
+export async function applyTaxonomy(db: PrismaClient, initializeContacts = true) {
   const initializeOrder =
     (await db.category.count({ where: { parentId: { not: null } } })) === 0;
   await db.category.upsert({
@@ -13,7 +12,7 @@ export async function applyTaxonomy() {
       name: "Áo khoác & Len",
       description:
         "Những lớp trang phục nhẹ nhàng, ấm áp và thanh lịch cho nàng công sở.",
-      image: "/images/blazer.png",
+      image: "",
       sortOrder: 7,
     },
   });
@@ -73,7 +72,7 @@ export async function applyTaxonomy() {
         });
     }
   }
-  for (const [key, value] of Object.entries(officialContacts)) {
+  if (initializeContacts) for (const [key, value] of Object.entries(officialContacts)) {
     const old = await db.storeSetting.findUnique({ where: { key } });
     // Replace only initial placeholder settings; preserve subsequent admin edits.
     if (!old || ["hello@hanhi.local", "Chưa thiết lập"].includes(old.value))
@@ -83,7 +82,8 @@ export async function applyTaxonomy() {
         create: { key, value },
       });
   }
-  await db.$disconnect();
 }
-if (process.argv[1]?.endsWith("apply-taxonomy.ts"))
-  await applyTaxonomy().finally(() => db.$disconnect());
+if (process.argv[1]?.endsWith("apply-taxonomy.ts")) {
+  const db = new PrismaClient();
+  await applyTaxonomy(db).finally(() => db.$disconnect());
+}

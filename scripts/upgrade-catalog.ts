@@ -1,7 +1,7 @@
 import { supplementColors } from "./supplement-colors";
 import { importEditorial } from "./import-editorial";
 import { PrismaClient } from "@prisma/client";
-import { enrichCatalog, rebuildSampleAssets } from "./enrich-catalog";
+import { enrichCatalog } from "./enrich-catalog";
 import { catalogTargets } from "./catalog-expansion";
 import { refreshSearch } from "../src/lib/search";
 export async function upgradeCatalog(db: PrismaClient) {
@@ -18,7 +18,6 @@ export async function upgradeCatalog(db: PrismaClient) {
   await enrichCatalog(db);
   await supplementColors(db);
   await enrichCatalog(db);
-  await rebuildSampleAssets(db);
   const products = await db.product.findMany({
     where: { enrichmentVersion: { gte: 1 } },
     include: {

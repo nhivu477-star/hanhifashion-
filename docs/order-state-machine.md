@@ -21,8 +21,8 @@ CANCELLED --> [*]
 ```
 
 - Giữ nguyên tất cả tên trạng thái cũ; chỉ thêm DELIVERY_FAILED và RETURNED (cột string, không sửa enum).
-- Khách (đăng nhập sở hữu đơn hoặc có cookie capability của đơn khách) chỉ hủy PENDING/CONFIRMED và UNPAID. Đây là yêu cầu được xử lý ngay khi đủ điều kiện, không có hàng đợi duyệt giả.
-- Admin hủy thêm PROCESSING hoặc RETURNED, chỉ khi UNPAID. Giao thất bại chưa trả tồn; cần ghi nhận hàng quay về rồi mới hủy.
+- Khách có phiên hợp lệ sở hữu đơn, hoặc capability đúng đơn guest cũ userId=null, chỉ hủy PENDING/CONFIRMED và UNPAID. Với đơn có userId, cookie hn_order/accessToken không thay phiên sau logout/thu hồi. Đây là yêu cầu được xử lý ngay khi đủ điều kiện, không có hàng đợi duyệt giả.
+- SELLER/ADMIN hủy thêm PROCESSING hoặc RETURNED, chỉ khi UNPAID. Giao thất bại chưa trả tồn; RETURNED→CANCELLED cần kiểm đủ từng dòng bán được/hỏng (tổng bằng lượng dòng), chỉ hoàn tồn lượng bán được một lần cùng movement/audit/history; không hoàn tồn hàng hỏng hoặc giả kiểm hàng. Hủy trước bàn giao giữ quy tắc hoàn tồn bình thường.
 - Lặp CANCELLED → CANCELLED là no-op idempotent, không phải cạnh hợp lệ mới; không thêm history/stock/coupon lần hai.
 - Mọi cạnh khác bị từ chối. Bắt buộc reason cho hủy, bàn giao, kết quả giao và hàng quay về.
 

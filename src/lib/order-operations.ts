@@ -3,7 +3,7 @@ import { orderTransaction } from "./order-lifecycle";
 import { requireActorPermission, operationalAudit } from "./authorization";
 import { mutationReceipt } from "./mutation-receipt";
 import { can } from "./rbac";
-export async function packOrder(input: unknown, actor: { id: string }) {
+export async function packOrder(input: unknown, actor: { id: string; permissionVersion: number }) {
   const d = z
     .object({
       id: z.string(),
@@ -100,7 +100,7 @@ export async function packOrder(input: unknown, actor: { id: string }) {
     return { id: order.id };
   });
 }
-export async function assignOrder(input: unknown, actor: { id: string }) {
+export async function assignOrder(input: unknown, actor: { id: string; permissionVersion: number }) {
   const d = z
     .object({
       id: z.string(),

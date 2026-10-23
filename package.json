@@ -2,17 +2,28 @@
   "name": "ha-nhi-fashion",
   "version": "1.0.0",
   "private": true,
+  "packageManager": "pnpm@10.34.7",
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "scripts": {
-    "dev": "next dev --turbopack --hostname 127.0.0.1",
+    "dev": "next dev --hostname 127.0.0.1",
     "build": "NEXT_DIST_DIR=.next-production next build",
     "start": "NEXT_DIST_DIR=.next-production next start --hostname 127.0.0.1",
     "test": "vitest run",
     "test:e2e": "tsx scripts/testing/prepare-browser-tests.ts && playwright test",
+    "test:uat": "tsx scripts/testing/run-uat-browser.ts",
     "admin:create": "tsx scripts/create-admin.ts",
     "format": "prettier --write src prisma/seed.ts scripts tests *.ts *.json *.mjs",
     "catalog:audit": "tsx scripts/audit-catalog.ts",
     "catalog:upgrade": "tsx scripts/upgrade-catalog.ts",
     "lint": "eslint src scripts tests --max-warnings 0",
+    "typecheck": "next typegen && tsc --noEmit",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate deploy",
+    "demo:setup": "tsx scripts/setup-demo.ts",
+    "demo:dev": "tsx scripts/run-demo.ts",
+    "test:critical": "tsx scripts/testing/run-business-tests.ts --stable --reuse-build --analytics --acceptance",
     "test:orders": "tsx scripts/testing/run-business-tests.ts",
     "test:shipping": "tsx scripts/testing/run-business-tests.ts --shipping",
     "test:returns": "tsx scripts/testing/run-business-tests.ts --returns --stable",
@@ -27,7 +38,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
-    "@prisma/client": "6.19.0",
+    "@prisma/client": "6.19.3",
     "bcryptjs": "^3.0.2",
     "exceljs": "4.4.0",
     "lucide-react": "^0.468.0",
@@ -39,7 +50,6 @@
     "zod": "^3.25.0"
   },
   "devDependencies": {
-    "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.55.0",
     "@tailwindcss/postcss": "^4.1.0",
     "@types/node": "^22.0.0",
@@ -48,11 +58,18 @@
     "@typescript-eslint/parser": "^8.71.2",
     "eslint": "^10.13.0",
     "prettier": "^3.9.10",
-    "prisma": "6.19.0",
+    "prisma": "6.19.3",
     "tailwindcss": "^4.1.0",
     "tsx": "^4.20.0",
     "typescript": "^5.9.0",
-    "vitest": "^3.2.0"
+    "vitest": "4.1.12"
+  },
+  "pnpm": {
+    "overrides": {
+      "next>postcss": "8.5.31",
+      "@prisma/config>deepmerge-ts": "8.0.2",
+      "exceljs>uuid": "11.1.1"
+    }
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

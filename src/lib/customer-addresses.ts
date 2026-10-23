@@ -1,10 +1,10 @@
 import { z } from "zod";
 import { customerAddressSchema } from "./localization/config";
 import { orderTransaction } from "./order-lifecycle";
-import { operationalAudit } from "./authorization";
+import { operationalAudit, requireCurrentAccount } from "./authorization";
 export async function saveCustomerAddress(
   input: Record<string, unknown>,
-  actor: { id: string },
+  actor: { id: string; permissionVersion: number },
 ) {
   const operation = z
     .object({
@@ -15,8 +15,7 @@ export async function saveCustomerAddress(
     })
     .parse(input);
   return orderTransaction(async (tx) => {
-    const user = await tx.user.findUniqueOrThrow({ where: { id: actor.id } });
-    if (!user.active) throw Error("Tài khoản không hoạt động.");
+    const user = await requireCurrentAccount(tx, actor);
     const old = operation.id
       ? await tx.address.findFirst({
           where: { id: operation.id, userId: user.id },

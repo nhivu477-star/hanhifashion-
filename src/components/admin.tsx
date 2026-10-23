@@ -409,6 +409,7 @@ export async function AdminPage({
           <OrderActions
             hasShipment={!!o.shipment}
             id={o.id}
+            items={o.items}
             status={o.status}
             paymentStatus={o.paymentStatus}
             admin
@@ -840,7 +841,7 @@ export async function AdminPage({
         <SimpleForm
           action="admin/category"
           initial={{
-            image: "/images/ao-so-mi.svg",
+            image: "",
             active: true,
             sortOrder: 0,
           }}
@@ -965,7 +966,7 @@ export async function AdminPage({
         <SimpleForm
           action="admin/banner"
           initial={{
-            image: "/images/hero.png",
+            image: "",
             href: "/hang-moi",
             active: true,
           }}

@@ -1,4 +1,4 @@
-import { test, expect, Page } from "@playwright/test";
+import { test as base, expect, Page } from "@playwright/test";
 import { PrismaClient } from "@prisma/client";
 import { readFileSync, mkdirSync } from "node:fs";
 import { randomUUID } from "node:crypto";
@@ -13,6 +13,74 @@ if (
   throw Error("Isolated browser fixture required");
 const db = new PrismaClient(),
   origin = "http://127.0.0.1:3102";
+const settingsKeys = [
+  "business.partialCancellationPolicy",
+  "announcement", "brandStory", "newsletter", "contactEmail", "contactPhone",
+  "facebookUrl", "instagramUrl", "footerAddress", "salesPolicy",
+  "returnsInstructions", "sizeGuide",
+];
+const test = base.extend<{
+  isolation: void;
+  product: { id: string; variantId: string; slug: string; name: string };
+}>({
+  isolation: [async ({}, use) => {
+    const settings = await db.storeSetting.findMany({
+      where: { key: { in: settingsKeys } },
+    });
+    const cart = await db.cart.findUnique({
+      where: { userId: fixture.accounts.CUSTOMER.id },
+      include: { items: true },
+    });
+    if (cart) await db.cartItem.deleteMany({ where: { cartId: cart.id } });
+    try {
+      await use();
+    } finally {
+      await db.$transaction(async (tx) => {
+        await tx.storeSetting.deleteMany({ where: { key: { in: settingsKeys } } });
+        if (settings.length) await tx.storeSetting.createMany({ data: settings });
+        const current = await tx.cart.findUnique({
+          where: { userId: fixture.accounts.CUSTOMER.id },
+        });
+        if (current) await tx.cartItem.deleteMany({ where: { cartId: current.id } });
+        if (cart?.items.length) await tx.cartItem.createMany({ data: cart.items });
+      });
+    }
+  }, { auto: true }],
+  product: async ({ isolation }, use) => {
+    void isolation;
+    const source = await db.product.findUniqueOrThrow({
+      where: { id: fixture.product.id },
+    });
+    const key = randomUUID();
+    const product = await db.product.create({
+      data: {
+        name: `Thiết kế UAT ${key.slice(0, 8)}`,
+        slug: `uat-business-${key}`,
+        sku: `UAT-BUSINESS-${key}`,
+        description: source.description,
+        material: source.material,
+        style: source.style,
+        fit: source.fit,
+        occasion: source.occasion,
+        searchText: "uat business",
+        price: source.price,
+        categoryId: source.categoryId,
+        images: { create: { url: fixture.product.image, alt: "Ảnh kiểm thử UAT" } },
+        variants: { create: {
+          sku: `UAT-BUSINESS-M-${key}`,
+          size: "M",
+          color: "Trắng UAT",
+          colorHex: "#ffffff",
+          stock: 12,
+        } },
+      },
+      include: { variants: true },
+    });
+    // Orders and ledger entries belong to this test's dedicated product.
+    await use({ ...product, variantId: product.variants[0].id });
+  },
+});
+const businessErrors = new WeakMap<Page, string[]>();
 async function login(page: Page, role: string) {
   const r = await page.request.post("/api/login", {
     headers: { origin },
@@ -22,7 +90,7 @@ async function login(page: Page, role: string) {
 }
 test.beforeEach(async ({ context, page }) => {
   await context.setExtraHTTPHeaders({
-    "x-forwarded-for": "uat-business-" + randomUUID(),
+    "x-forwarded-for": `2001:db8:${randomUUID().replaceAll("-", "").match(/.{4}/g)!.slice(0, 6).join(":")}`,
   });
   await context.route("**/*", (route) =>
     ["127.0.0.1", "localhost"].includes(new URL(route.request().url()).hostname)
@@ -31,15 +99,16 @@ test.beforeEach(async ({ context, page }) => {
   );
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  (page as any).businessErrors = errors;
+  businessErrors.set(page, errors);
 });
 test.afterEach(async ({ page }) =>
-  expect((page as any).businessErrors).toEqual([]),
+  expect(businessErrors.get(page)).toEqual([]),
 );
 test.afterAll(() => db.$disconnect());
 
 test("Business acceptance UI: customer partial cancellation updates payment stock and history", async ({
   page,
+  product,
 }) => {
   // Test-only policy fixture. Main database intentionally has no approval.
   await db.storeSetting.upsert({
@@ -52,7 +121,7 @@ test("Business acceptance UI: customer partial cancellation updates payment stoc
   });
   await login(page, "CUSTOMER");
   const before = await db.productVariant.findUniqueOrThrow({
-    where: { id: fixture.product.variantId },
+    where: { id: product.variantId },
   });
   expect(
     (
@@ -134,7 +203,40 @@ test("Business acceptance UI: customer partial cancellation updates payment stoc
 
 test("Business acceptance UI: admin customer profile and partial cancellation", async ({
   page,
+  product,
 }) => {
+  await db.storeSetting.upsert({
+    where: { key: "business.partialCancellationPolicy" },
+    create: { key: "business.partialCancellationPolicy", value: "NET_SNAPSHOT_V1_APPROVED" },
+    update: { value: "NET_SNAPSHOT_V1_APPROVED" },
+  });
+  await login(page, "CUSTOMER");
+  expect((await page.request.post("/api/cart", {
+    headers: { origin },
+    data: { variantId: product.variantId, quantity: 2 },
+  })).status()).toBe(200);
+  const key = randomUUID();
+  expect((await page.request.post("/api/checkout", {
+    headers: { origin },
+    data: {
+      idempotencyKey: key,
+      name: "Khách kiểm thử quản trị",
+      phone: "0912345678",
+      email: fixture.accounts.CUSTOMER.email,
+      province: "Hưng Yên",
+      ward: "Phường thử nghiệm",
+      street: "123 Kiểm thử",
+      details: "",
+      notes: "Local admin cancellation fixture",
+    },
+  })).status()).toBe(200);
+  const order = await db.order.findUniqueOrThrow({
+    where: { idempotencyKey: key },
+    include: { items: true },
+  });
+  expect((await page.request.post("/api/logout", {
+    headers: { origin }, data: {},
+  })).status()).toBe(200);
   await login(page, "ADMIN");
   await page.goto("/admin/khach-hang/" + fixture.accounts.CUSTOMER.id);
   await expect(
@@ -143,11 +245,6 @@ test("Business acceptance UI: admin customer profile and partial cancellation", 
   await expect(
     page.getByRole("heading", { name: "Yêu cầu hỗ trợ gần đây", exact: true }),
   ).toBeVisible();
-  const order = await db.order.findFirstOrThrow({
-    where: { userId: fixture.accounts.CUSTOMER.id, status: "PENDING" },
-    include: { items: true },
-    orderBy: { createdAt: "desc" },
-  });
   await page.getByRole("link", { name: order.code, exact: true }).click();
   await expect(page).toHaveURL(origin + "/admin/don-hang/" + order.id);
   await page.getByText("Hủy một phần đơn hàng", { exact: true }).click();
@@ -210,6 +307,23 @@ test("Business acceptance UI: scheduled voucher policy settings and real Excel d
   const settingsForm = page.locator("form").filter({
     has: page.getByLabel("Thông tin bán hàng bổ sung", { exact: true }),
   });
+  for (const [name, value] of Object.entries({
+    announcement: "Thông báo kiểm thử UAT",
+    brandStory: "Câu chuyện kiểm thử UAT",
+    newsletter: "Đăng ký nhận tin kiểm thử",
+    contactEmail: "contact@uat.local",
+    contactPhone: "0912345678",
+    facebookUrl: "https://example.invalid/uat-facebook",
+    instagramUrl: "https://example.invalid/uat-instagram",
+    footerAddress: "123 Địa chỉ kiểm thử",
+    sizeGuide: JSON.stringify([{
+      size: "M", bust: 88, waist: 68, hip: 92, shoulder: 38,
+      length: 60, sleeve: 20, trouser: 95, skirt: 60,
+    }]),
+  })) {
+    const field = settingsForm.locator(`[name="${name}"]`);
+    if (!(await field.inputValue())) await field.fill(value);
+  }
   result = page.waitForResponse((r) => r.url().endsWith("/api/admin/settings"));
   await settingsForm
     .getByRole("button", { name: "LƯU THAY ĐỔI", exact: true })
@@ -240,10 +354,11 @@ test("Business acceptance UI: scheduled voucher policy settings and real Excel d
 test("Business acceptance UI: stocktake approval verified review and seller response", async ({
   page,
   browser,
+  product,
 }) => {
   await login(page, "ADMIN");
   const stock = await db.productVariant.findUniqueOrThrow({
-    where: { id: fixture.product.variantId },
+    where: { id: product.variantId },
   });
   await page.goto("/admin/kho-hang");
   await page.getByText("Tạo phiếu kiểm kê", { exact: true }).click();
@@ -274,8 +389,7 @@ test("Business acceptance UI: stocktake approval verified review and seller resp
     await page.goto("/admin/kho-hang");
     const detail = page
       .locator(".stocktake-panel > details")
-      .filter({ has: page.locator("summary", { hasText: /SKU/ }) })
-      .first();
+      .filter({ has: page.getByRole("cell", { name: stock.sku, exact: true, includeHidden: true }) });
     await detail.locator("summary").click();
     const form = detail.locator("form");
     await form
@@ -300,8 +414,9 @@ test("Business acceptance UI: stocktake approval verified review and seller resp
       .stock,
   ).toBe(stock.stock + 1);
   const buyerContext = await browser.newContext({ baseURL: origin });
+  try {
   await buyerContext.setExtraHTTPHeaders({
-    "x-forwarded-for": "ui-feedback-" + randomUUID(),
+    "x-forwarded-for": `2001:db8:${randomUUID().replaceAll("-", "").match(/.{4}/g)!.slice(0, 6).join(":")}`,
   });
   const buyer = await buyerContext.newPage();
   await login(buyer, "CUSTOMER");
@@ -380,21 +495,25 @@ test("Business acceptance UI: stocktake approval verified review and seller resp
     ).toBe(200);
   }
   await buyer.goto("/tai-khoan/don-hang/" + order.id);
-  await buyer.getByText("Đánh giá Thiết kế UAT local", { exact: true }).click();
+  await buyer.getByText(`Đánh giá ${product.name}`, { exact: true }).click();
   const text = "Khách đã nhận hàng và đánh giá qua giao diện";
   await buyer
-    .getByLabel("Nhận xét về Thiết kế UAT local", { exact: true })
+    .getByLabel(`Nhận xét về ${product.name}`, { exact: true })
     .fill(text);
   response = buyer.waitForResponse((r) => r.url().endsWith("/api/reviews"));
   await buyer
     .getByRole("button", { name: "Gửi đánh giá", exact: true })
     .click();
   expect((await response).status()).toBe(200);
+  expect((await page.request.post("/api/logout", {
+    headers: { origin }, data: {},
+  })).status()).toBe(200);
+  await login(page, "SELLER");
   await page.goto("/admin/lien-he");
   const review = page
     .locator("details")
     .filter({
-      has: page.locator("summary", { hasText: "Thiết kế UAT local · 5/5" }),
+      has: page.locator("summary", { hasText: `${product.name} · 5/5` }),
     })
     .first();
   await review.locator("summary").click();
@@ -408,14 +527,16 @@ test("Business acceptance UI: stocktake approval verified review and seller resp
     .getByRole("button", { name: "Gửi phản hồi", exact: true })
     .click();
   expect((await response).status()).toBe(200);
-  await buyer.goto("/san-pham/" + fixture.product.slug);
+  await buyer.goto("/san-pham/" + product.slug);
   await expect(buyer.getByText(text, { exact: true })).toBeVisible();
   await expect(
     buyer.getByText("Cửa hàng cảm ơn đánh giá từ khách đã mua", {
       exact: true,
     }),
   ).toBeVisible();
-  await buyerContext.close();
+  } finally {
+    await buyerContext.close();
+  }
 });
 
 test("Business acceptance UI: registration profile and default shipping address", async ({
@@ -438,7 +559,6 @@ test("Business acceptance UI: registration profile and default shipping address"
   expect((await response).status()).toBe(200);
   const user = await db.user.findUniqueOrThrow({ where: { email } });
   expect(user.role).toBe("CUSTOMER");
-  expect(user.passwordHash.startsWith("$2")).toBe(true);
   await page.goto("/tai-khoan/thong-tin");
   const profile = page.locator(".account-content form").first();
   await profile

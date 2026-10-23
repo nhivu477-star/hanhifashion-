@@ -304,7 +304,7 @@ test("customer login → cart → COD checkout → shipping → defect return �
   await page
     .locator("input[name=evidence]")
     .setInputFiles(
-      "public" + "/images/lsoul/products/dam-ricci-dress-nguyen-ban-1.webp",
+      "public" + fixture.product.image,
     );
   const claimResponse = page.waitForResponse(
     (r) => r.url().endsWith("/api/returns") && r.request().method() === "POST",

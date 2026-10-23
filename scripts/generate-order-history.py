@@ -15,7 +15,7 @@ def put(t,**d):
  c.execute('insert into "'+t+'" ('+','.join('"'+k+'"' for k in d)+') values ('+','.join('?' for _ in d)+')',list(d.values()));return d.get('id')
 def mark(t,i):put('SyntheticRecord',id=uid(),batchId=batch,entity=t,recordId=i)
 def movement(v,delta,t,reason,order=None):
- i=put('InventoryMovement',id=uid(),variantId=v,delta=delta,reason=reason,orderId=order,actorId=actor,kind='IN' if delta>0 else 'OUT',occurredAt=t,createdAt=t,notes='Generated local history',eventKey=uid());mark('InventoryMovement',i);ledger.append((t,i,v,delta))
+ i=put('InventoryMovement',id=uid(),variantId=v,delta=delta,reason=reason,orderId=order,actorId=actor,kind='IN' if delta>0 else 'OUT',occurredAt=t,createdAt=t,notes='Ghi nhận biến động kho theo nghiệp vụ',eventKey=uid());mark('InventoryMovement',i);ledger.append((t,i,v,delta))
 variants=list(c.execute('select v.*,p.name,p.price,p.salePrice,(select url from ProductImage where productId=p.id order by position limit 1) image from ProductVariant v join Product p on p.id=v.productId where p.active=1 and p.price>0'))
 # Realistic shape, not inferred real commerce or fabricated verified merchandise/cost data.
 with c:
@@ -61,13 +61,13 @@ with c:
    for j,s in enumerate(sp):put('ShipmentEvent',id=uid(),shipmentId=sid,previousStatus=sp[j-1] if j else None,status=s,actorId=actor,source='LOCAL_MANUAL',reason='Cập nhật vận chuyển',createdAt=stimes[s])
    if sstatus in ['DELIVERY_FAILED','RETURNED']:put('DeliveryAttempt',id=uid(),shipmentId=sid,reasonCode='RECIPIENT_UNAVAILABLE',note='Chưa liên hệ được người nhận',actorId=actor,createdAt=dt)
    for table,amount in [('CODCollection',collected),('CODRemittance',remitted)]:
-    if amount:put(table,id=uid(),shipmentId=sid,eventKey=uid(),provider='LOCAL_MANUAL',reference='HN-LEDGER-'+uid(),amount=amount,evidence='Internal synthetic ledger; no money transfer',occurredAt=end,actorId=actor,createdAt=end)
+    if amount:put(table,id=uid(),shipmentId=sid,eventKey=uid(),provider='LOCAL_MANUAL',reference='HN-LEDGER-'+uid(),amount=amount,evidence='Hồ sơ đối soát nội bộ; không phát sinh chuyển tiền.',occurredAt=end,actorId=actor,createdAt=end)
    if reconciled:put('CODReconciliation',id=uid(),shipmentId=sid,eventKey=uid(),action='RECONCILE',previousStatus='PENDING',status='RECONCILED',expected=expected,collected=collected,remitted=remitted,outstanding=0,note='Đối chiếu sổ thu',actorId=actor,createdAt=end)
   if fulfilled and n<970 and n%17==0:
    iid,v,q,net=items[0];rid=uid();amount=net//q;rt=dt+3600000;disp='SELLABLE' if n%2 else 'DAMAGED';restock=disp=='SELLABLE'
    put('ReturnRequest',id=rid,reference='HN-RETURN-'+uid(),eventKey=uid(),payloadHash=hashlib.sha256(rid.encode()).hexdigest(),orderId=oid,userId=u,status='COMPLETED',resolution='REFUND',reason='Lỗi đường may được xác nhận',policyVersion='DEFECT_72H_V1_2026-10-18',deliveredAt=dt,deadline=dt+3*day,released=0,version=6,createdAt=rt,updatedAt=end)
    ri=uid();put('ReturnItem',id=ri,requestId=rid,orderItemId=iid,quantity=1,amount=amount,disposition=disp,restocked=restock)
-   put('ReturnInspection',id=uid(),itemId=ri,actorId=actor,condition=disp,notes='Đã kiểm tra lỗi sản phẩm',evidence='Internal synthetic inspection',createdAt=rt+4*3600000)
+   put('ReturnInspection',id=uid(),itemId=ri,actorId=actor,condition=disp,notes='Đã kiểm tra lỗi sản phẩm',evidence='Hồ sơ kiểm hàng nội bộ; chưa có chứng từ thực tế.',createdAt=rt+4*3600000)
    states=['REQUESTED','UNDER_REVIEW','APPROVED','RECEIVED','INSPECTED','REFUND_PENDING','COMPLETED']
    for j,s in enumerate(states):put('ReturnHistory',id=uid(),requestId=rid,previousStatus=states[j-1] if j else None,status=s,actorId=actor,reason='Xử lý lỗi sản phẩm',createdAt=rt+j*3600000)
    put('MockRefund',id=uid(),reference='HN-REFUND-'+uid(),requestId=rid,orderId=oid,paymentId=pid,amount=amount,shippingAmount=0,reason='Lỗi sản phẩm',status='SIMULATED_COMPLETED',approvalActor=actor,completionActor=actor,createdAt=rt+5*3600000,completedAt=rt+6*3600000)

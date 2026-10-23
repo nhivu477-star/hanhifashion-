@@ -219,7 +219,7 @@ export async function ReturnsAdmin({
           exchange: true,
         },
       },
-      evidence: { select: { id: true } },
+      evidence: role === "ADMIN" ? { select: { id: true } } : false,
       history: { orderBy: { createdAt: "asc" } },
       refund: true,
     },
@@ -285,7 +285,7 @@ export async function ReturnsAdmin({
             Duyệt nghĩa là đã xác minh lỗi và thống nhất phương án với khách.
             Không duyệt đổi theo sở thích.
           </p>
-          <div className="return-evidence">
+          {role === "ADMIN" && <div className="return-evidence">
             {r.evidence.map((e) => (
               <a
                 key={e.id}
@@ -299,7 +299,7 @@ export async function ReturnsAdmin({
                 />
               </a>
             ))}
-          </div>
+          </div>}
           {next.length > 0 && (
             <ReturnAction
               key={r.status}

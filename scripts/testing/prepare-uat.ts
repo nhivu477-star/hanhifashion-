@@ -1,12 +1,16 @@
 import { PrismaClient } from "@prisma/client";
 import { hash } from "bcryptjs";
 import { randomUUID } from "node:crypto";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, realpath, rename, writeFile } from "node:fs/promises";
+import path from "node:path";
+import sharp from "sharp";
+import { regularFile, writePrivate } from "../demo-workspace";
 import { rolePermissions } from "../../src/lib/rbac";
 
 const database = process.env.DATABASE_URL;
-if (!/^file:\.\/final-uat-browser-[\w-]+\.db$/.test(database ?? ""))
+if (!database || !/^file:\.\/final-uat-browser-[\w-]+\.db$/.test(database))
   throw Error("Final UAT requires a named isolated browser database");
+await regularFile(path.resolve("prisma", database.slice("file:./".length)));
 const db = new PrismaClient();
 const accounts: Record<
   string,
@@ -26,8 +30,22 @@ for (const role of Object.keys(rolePermissions)) {
   });
   accounts[role] = { id: user.id, email, password };
 }
-const category = await db.category.findUniqueOrThrow({ where: { slug: "ao" } });
-const image = "/images/lsoul/products/dam-ricci-dress-nguyen-ban-1.webp";
+const imageName = process.env.UAT_IMAGE_NAME;
+if (!imageName || !/^uat-[a-f0-9-]{36}\.webp$/.test(imageName))
+  throw Error("UAT requires its own temporary technical image.");
+await mkdir("public/uploads", { recursive: true });
+if (await realpath("public/uploads") !== path.resolve("public/uploads"))
+  throw Error("UAT upload directory must not contain symbolic links.");
+const image = "/uploads/" + imageName;
+await writeFile("public" + image, await sharp({
+  create: { width: 300, height: 400, channels: 3, background: "#e5e7eb" },
+}).webp().toBuffer(), { flag: "wx", mode: 0o600 });
+const root = await db.category.create({
+  data: { slug: "trang-phuc", name: "Trang phục", description: "Danh mục tổng hợp cho nghiệm thu riêng.", image },
+});
+const category = await db.category.create({
+  data: { slug: "ao", name: "Áo", description: "Danh mục con tổng hợp cho nghiệm thu riêng.", parentId: root.id, image },
+});
 const product = await db.product.create({
   data: {
     name: "Thiết kế UAT local",
@@ -40,7 +58,8 @@ const product = await db.product.create({
     occasion: "UAT",
     searchText: "thiet ke uat local",
     price: 600000,
-    categoryId: category.id,
+    categoryId: root.id,
+    subcategoryId: category.id,
     active: true,
     isNew: true,
     featured: true,
@@ -74,9 +93,8 @@ const variant = await db.productVariant.findUniqueOrThrow({
   where: { sku: "FINAL-UAT-M" },
 });
 await mkdir("verification/final-uat", { recursive: true });
-await writeFile(
-  "verification/final-uat/fixtures.json",
-  JSON.stringify({
+const privateFixture = `verification/final-uat/fixtures-${randomUUID()}.json`;
+await writePrivate(privateFixture, {
     database,
     accounts,
     product: {
@@ -84,10 +102,10 @@ await writeFile(
       slug: product.slug,
       variantId: variant.id,
       initialStock: variant.stock,
+      image,
     },
-  }),
-  { mode: 0o600 },
-);
+  });
+await rename(privateFixture, "verification/final-uat/fixtures.json");
 await db.$disconnect();
 console.log(
   "Final UAT: isolated accounts and one synthetic test product prepared.",

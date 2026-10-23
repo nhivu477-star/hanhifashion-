@@ -4,11 +4,23 @@ import { normalize } from "./catalog";
 export async function refreshSearch(ids?: string[]) {
   const products = await db.product.findMany({
     where: ids ? { id: { in: ids } } : {},
-    include: {
-      category: true,
-      variants: { select: { color: true } },
-      subcategory: true,
-      collections: { include: { collection: true } },
+    select: {
+      id: true,
+      name: true,
+      sku: true,
+      description: true,
+      searchText: true,
+      sleeveType: true,
+      length: true,
+      styleTags: true,
+      material: true,
+      style: true,
+      fit: true,
+      occasion: true,
+      category: { select: { name: true } },
+      variants: { select: { color: true }, distinct: ["color"] },
+      subcategory: { select: { name: true } },
+      collections: { select: { collection: { select: { name: true } } } },
     },
   });
   for (const p of products) {
@@ -26,10 +38,11 @@ export async function refreshSearch(ids?: string[]) {
         p.style,
         p.fit,
         p.occasion,
-        ...new Set(p.variants.map((v) => v.color)),
+        ...p.variants.map((v) => v.color),
         ...p.collections.map((c) => c.collection.name),
       ].join(" "),
     );
-    await db.product.update({ where: { id: p.id }, data: { searchText } });
+    if (searchText !== p.searchText)
+      await db.product.update({ where: { id: p.id }, data: { searchText } });
   }
 }

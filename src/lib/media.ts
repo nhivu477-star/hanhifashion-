@@ -184,7 +184,7 @@ async function deleteMediaAssetData(
 async function auditedMedia(
   target: "media" | "publication" | "media-delete",
   input: unknown,
-  actor: { id: string },
+  actor: { id: string; permissionVersion: number },
 ) {
   const b = z
     .object({ id: z.string().optional(), productId: z.string().optional() })
@@ -215,9 +215,9 @@ async function auditedMedia(
     return id;
   });
 }
-export const saveMediaAsset = (input: unknown, actor: { id: string }) =>
+export const saveMediaAsset = (input: unknown, actor: { id: string; permissionVersion: number }) =>
   auditedMedia("media", input, actor);
-export const savePublication = (input: unknown, actor: { id: string }) =>
+export const savePublication = (input: unknown, actor: { id: string; permissionVersion: number }) =>
   auditedMedia("publication", input, actor);
-export const deleteMediaAsset = (input: unknown, actor: { id: string }) =>
+export const deleteMediaAsset = (input: unknown, actor: { id: string; permissionVersion: number }) =>
   auditedMedia("media-delete", input, actor);

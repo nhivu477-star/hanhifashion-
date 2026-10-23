@@ -1,10 +1,15 @@
-import { test, expect, APIRequestContext } from "@playwright/test";
+import { expect, type APIRequestContext } from "@playwright/test";
+import { test, registerCustomer, browserDatabase, credentials } from "./fixtures";
+import sharp from "sharp";
 import { readFileSync } from "node:fs";
+import { unlink } from "node:fs/promises";
 import { PrismaClient } from "@prisma/client";
-const creds = () => JSON.parse(readFileSync(".test-credentials.json", "utf8"));
-const db = new PrismaClient({
-  datasources: { db: { url: creds().database } },
+import { z } from "zod";
+const searchResults = z.object({
+  count: z.number().int().nonnegative(),
+  products: z.array(z.object({ id: z.string() })),
 });
+const db = new PrismaClient({ datasources: { db: { url: browserDatabase } } });
 const post = async (r: APIRequestContext, a: string, d: any) => {
   const res = await r.post("/api/" + a, { data: d });
   return { status: res.status(), data: await res.json() };
@@ -21,26 +26,25 @@ const customer = {
 };
 async function variant() {
   return db.productVariant.findFirstOrThrow({
-    where: { stock: { gte: 10 }, product: { active: true } },
+    where: { stock: { gte: 10 }, product: { active: true }, colorRecord: { active: true } },
     include: { product: true },
   });
 }
 async function login(r: APIRequestContext) {
-  const c = creds();
-  const res = await post(r, "login", c);
+  const res = await post(r, "login", { email: credentials.email, password: credentials.password });
   expect(res.status).toBe(200);
 }
 test.afterAll(() => db.$disconnect());
 test("01 homepage and main navigation", async ({ page }) => {
   await page.goto("/");
-  await expect(page.locator("h1")).toContainText("thanh lịch");
+  await expect(page.locator("h1")).toHaveText("Thiết kế dành cho nàng");
   await expect(
-    page.locator(".product-section").first().locator(".product-card"),
-  ).toHaveCount(12);
+    page.locator(".fashion-product-section").first().locator(".product-card"),
+  ).toHaveCount(8);
   await page.getByRole("button", { name: "Mở menu" }).click();
   await page
     .locator(".drawer summary")
-    .filter({ hasText: "Thời trang công sở" })
+    .filter({ hasText: "Thời trang nữ" })
     .click();
   await page
     .locator(".drawer-category summary")
@@ -62,7 +66,7 @@ test("02 seed distribution and foreign keys", async () => {
     include: { _count: { select: { products: true } } },
     orderBy: { slug: "asc" },
   });
-  expect(counts.map((c) => c._count.products).sort((a, b) => a - b)).toEqual([
+  expect(counts.map((c) => c._count.products).filter(Boolean).sort((a, b) => a - b)).toEqual([
     20, 35, 35, 40, 45, 45, 45, 55,
   ]);
   const fk = await db.$queryRawUnsafe<any[]>("PRAGMA foreign_keys");
@@ -104,25 +108,31 @@ test("03 all storefront and informational routes render", async ({
 });
 test("04 filters combine in database and URL", async ({ page, request }) => {
   await page.goto("/thoi-trang-cong-so");
-  await page.getByLabel("Danh mục", { exact: true }).selectOption("ao-so-mi");
+  await page.getByRole("button", { name: "Bộ lọc", exact: true }).click();
+  const filters = page.getByRole("dialog", { name: "Bộ lọc sản phẩm" });
+  await filters.getByLabel("Danh mục", { exact: true }).selectOption("ao-so-mi");
   await expect(page).toHaveURL(/category=ao-so-mi/);
-  await page.getByLabel("Chất liệu", { exact: true }).selectOption("Cotton");
+  await filters.getByLabel("Chất liệu", { exact: true }).selectOption("Cotton");
   await expect(page).toHaveURL(/material=Cotton/);
-  const res = await (
+  const res = searchResults.parse(await (
     await request.get(
       "/api/search?category=ao-so-mi&material=Cotton&size=M&stock=1&min=400000&max=700000",
     )
-  ).json();
+  ).json());
   expect(res.count).toBeGreaterThan(0);
-  expect(
-    res.products.every(
-      (p: any) =>
-        p.material === "Cotton" &&
-        p.category.slug === "ao-so-mi" &&
-        (p.salePrice ?? p.price) >= 400000 &&
-        (p.salePrice ?? p.price) <= 700000,
-    ),
-  ).toBeTruthy();
+  expect(res.products.length).toBeGreaterThan(0);
+  const products = await db.product.findMany({
+    where: { id: { in: res.products.map((p) => p.id) } },
+    include: { category: true, variants: { include: { colorRecord: true } } },
+  });
+  expect(products).toHaveLength(res.products.length);
+  for (const p of products) {
+    expect(p.material).toBe("Cotton");
+    expect(p.category.slug).toBe("ao-so-mi");
+    expect(p.salePrice ?? p.price).toBeGreaterThanOrEqual(400000);
+    expect(p.salePrice ?? p.price).toBeLessThanOrEqual(700000);
+    expect(p.variants.some((v) => v.size === "M" && v.stock > 0 && (!v.colorRecord || v.colorRecord.active))).toBe(true);
+  }
 });
 test("05 actual discounted price sorting", async ({ request }) => {
   for (const sort of ["price-asc", "price-desc"]) {
@@ -146,8 +156,11 @@ test("06 accent-insensitive search and no-results", async ({
 });
 test("07 gallery, variants, disabled out-of-stock and add-to-cart", async ({
   page,
+  gallery,
 }) => {
   const p = await db.product.findUniqueOrThrow({ where: { sku: "HN001" } });
+  await registerCustomer(page.request);
+  await gallery([p.id]);
   await page.goto("/san-pham/" + p.slug);
   await expect(
     page
@@ -174,6 +187,7 @@ test("07 gallery, variants, disabled out-of-stock and add-to-cart", async ({
 test("08 cart quantity update remove and stock rejection", async ({
   request,
 }) => {
+  await registerCustomer(request);
   const v = await variant();
   expect(
     (await post(request, "cart", { variantId: v.id, quantity: 2 })).status,
@@ -190,6 +204,7 @@ test("08 cart quantity update remove and stock rejection", async ({
   expect((await (await request.get("/api/cart")).json()).items).toHaveLength(0);
 });
 test("09 server rejects out-of-stock variant", async ({ request }) => {
+  await registerCustomer(request);
   const v = await db.productVariant.findFirstOrThrow({ where: { stock: 0 } });
   expect(
     (await post(request, "cart", { variantId: v.id, quantity: 1 })).status,
@@ -197,8 +212,9 @@ test("09 server rejects out-of-stock variant", async ({ request }) => {
 });
 test("10 COD checkout, authoritative price, duplicate protection and privacy", async ({
   request,
-  browser,
+  browser, baseURL,
 }) => {
+  const owner = await registerCustomer(request);
   const v = await variant();
   const before = v.stock;
   await post(request, "cart", { variantId: v.id, quantity: 2 });
@@ -219,20 +235,37 @@ test("10 COD checkout, authoritative price, duplicate protection and privacy", a
     include: { items: true },
   });
   expect(order.paymentStatus).toBe("UNPAID");
-  const subtotal = (v.product.salePrice ?? v.product.price) * 2;
+  const subtotal = (v.priceOverride ?? v.product.salePrice ?? v.product.price) * 2;
   expect(order.subtotal).toBe(subtotal);
   expect(order.total).toBe(subtotal + (subtotal >= 1000000 ? 0 : 30000));
   expect(
     (await db.productVariant.findUniqueOrThrow({ where: { id: v.id } })).stock,
   ).toBe(before - 2);
   expect((await request.get(a.data.redirect)).status()).toBe(200);
-  const stranger = await browser.newContext();
-  expect(
-    await (
-      await stranger.request.get("http://127.0.0.1:3100" + a.data.redirect)
-    ).text(),
-  ).toContain("Trang chưa được tìm thấy");
-  await stranger.close();
+  const stranger = await browser.newContext({ baseURL });
+  try {
+    // A historical account-order cookie must not remain a bearer capability.
+    await stranger.addCookies([{
+      name: `hn_order_${order.code}`, value: order.accessToken, url: baseURL!,
+    }]);
+    expect(await (await stranger.request.get(a.data.redirect)).text())
+      .toContain("Trang chưa được tìm thấy");
+    await registerCustomer(stranger.request);
+    expect(await (await stranger.request.get(a.data.redirect)).text())
+      .toContain("Trang chưa được tìm thấy");
+    expect((await post(stranger.request, "order/cancel", {
+      id: order.id, code: order.code, reason: "Không phải chủ đơn hàng",
+    })).status).toBe(400);
+  } finally {
+    await stranger.close();
+  }
+  await post(request, "logout", {});
+  expect(await (await request.get(a.data.redirect)).text()).toContain("Trang chưa được tìm thấy");
+  expect((await post(request, "order/cancel", {
+    id: order.id, code: order.code, reason: "Phiên chủ đơn đã đăng xuất",
+  })).status).toBe(400);
+  expect((await post(request, "login", owner)).status).toBe(200);
+  expect(await (await request.get(a.data.redirect)).text()).toContain(order.code);
 });
 test("11 admin dashboard and all management routes", async ({ request }) => {
   await login(request);
@@ -251,7 +284,7 @@ test("11 admin dashboard and all management routes", async ({ request }) => {
   ])
     expect((await request.get(route)).status(), route).toBe(200);
   const html = await (await request.get("/admin")).text();
-  expect(html).toContain("HN-");
+  expect(html).toContain("Báo cáo");
 });
 test("12 valid order status transitions, cancel restores stock once", async ({
   request,
@@ -273,13 +306,15 @@ test("12 valid order status transitions, cancel restores stock once", async ({
       .status,
   ).toBe(200);
   expect(
-    (await post(request, "admin/order", { id: o.id, status: "CANCELLED" }))
+    (await post(request, "admin/order", {
+      id: o.id, status: "CANCELLED", reason: "Khách xác nhận hủy đơn kiểm thử",
+    }))
       .status,
   ).toBe(200);
   expect(
     (await post(request, "admin/order", { id: o.id, status: "CANCELLED" }))
       .status,
-  ).toBe(400);
+  ).toBe(200);
   expect(
     (await db.productVariant.findUniqueOrThrow({ where: { id: v.id } })).stock,
   ).toBe(v.stock + o.items[0].quantity);
@@ -289,7 +324,7 @@ test("13 registration, login and customer order history", async ({
   page,
 }) => {
   const password = "Customer-test-" + crypto.randomUUID();
-  const email = "member@hanhi.test";
+  const email = `member-${crypto.randomUUID()}@hanhi.test`;
   const reg = await post(request, "register", {
     ...customer,
     email,
@@ -318,7 +353,7 @@ test("14 unauthorized admin mutations and cross-origin requests denied", async (
   request,
 }) => {
   const res = await post(request, "admin/settings", { announcement: "ATTACK" });
-  expect(res.status).toBe(400);
+  expect(res.status).toBe(403);
   const r = await request.post("/api/register", {
     data: {},
     headers: { Origin: "https://evil.example" },
@@ -326,15 +361,15 @@ test("14 unauthorized admin mutations and cross-origin requests denied", async (
   expect(r.status()).toBe(400);
 });
 test("15 admin create edit archive product and inventory", async ({
-  request,
+  request, page,
 }) => {
   await login(request);
-  const category = await db.category.findFirstOrThrow();
-  const sku = "QA" + Date.now();
+  const category = await db.category.findUniqueOrThrow({ where: { slug: "ao-so-mi" } });
+  const marker = "qa-" + crypto.randomUUID();
   const payload = {
     name: "Áo thử nghiệm quản trị",
-    slug: sku.toLowerCase(),
-    sku,
+    slug: marker,
+    sku: "",
     description: "Sản phẩm kiểm thử được tạo qua API quản trị.",
     categoryId: category.id,
     material: "Cotton",
@@ -346,41 +381,64 @@ test("15 admin create edit archive product and inventory", async ({
     active: true,
     featured: false,
     isNew: true,
-    image: "/images/ao-so-mi.svg",
+    image: "/images/awaiting-photo.svg",
   };
-  const r = await post(request, "admin/product", payload);
-  expect(r.status).toBe(200);
-  expect((await request.get("/san-pham/" + payload.slug)).status()).toBe(200);
-  const p = await db.product.findUniqueOrThrow({
-    where: { id: r.data.id },
-    include: { variants: true },
-  });
-  expect(
-    (
-      await post(request, "admin/stock", {
-        variantId: p.variants[0].id,
-        stock: 15,
-        reason: "QA nhập kho",
-      })
-    ).status,
-  ).toBe(200);
-  expect(
-    (
-      await post(request, "admin/stock", {
-        variantId: p.variants[0].id,
-        stock: -1,
-        reason: "QA âm",
-      })
-    ).status,
-  ).toBe(400);
-  await post(request, "admin/product", { ...payload, id: p.id, active: false });
-  expect(
-    await (await request.get("/san-pham/" + payload.slug)).text(),
-  ).toContain("Trang chưa được tìm thấy");
+  try {
+    const r = await post(request, "admin/product", payload);
+    expect(r.status).toBe(200);
+    expect((await request.get("/san-pham/" + payload.slug)).status()).toBe(200);
+    const p = await db.product.findUniqueOrThrow({
+      where: { id: r.data.id },
+      include: { variants: true },
+    });
+    expect(p.sku).toMatch(/^HN-TP-\d{4}$/);
+    expect((await post(request, "admin/stock", {
+      variantId: p.variants[0].id, stock: 15, reason: "QA nhập kho",
+    })).status).toBe(200);
+    expect((await db.productVariant.findUniqueOrThrow({ where: { id: p.variants[0].id } })).stock).toBe(15);
+    expect((await post(request, "admin/stock", {
+      variantId: p.variants[0].id, stock: -1, reason: "QA âm",
+    })).status).toBe(400);
+    expect((await db.productVariant.findUniqueOrThrow({ where: { id: p.variants[0].id } })).stock).toBe(15);
+    const edited = { ...payload, id: p.id, sku: p.sku, name: "Áo quản trị đã cập nhật", price: 720000 };
+    expect((await post(request, "admin/product", edited)).status).toBe(200);
+    expect(await db.product.findUniqueOrThrow({ where: { id: p.id } })).toMatchObject({
+      name: edited.name, price: edited.price, active: true,
+    });
+    const visible = searchResults.parse(await (await request.get("/api/search?q=" + encodeURIComponent(p.sku))).json());
+    expect(visible.products.map((product) => product.id)).toContain(p.id);
+    // Historical identifiers must survive metadata edits without renumbering stock.
+    const legacySku = "LEGACY-" + marker;
+    await db.product.update({ where: { id: p.id }, data: { sku: legacySku } });
+    const preserved = { ...edited, sku: legacySku, price: 725000 };
+    expect((await post(request, "admin/product", preserved)).status).toBe(200);
+    expect((await post(request, "admin/product", {
+      ...preserved, sku: "INVALID-CHANGE", price: 1,
+    })).status).toBe(400);
+    expect(await db.product.findUniqueOrThrow({ where: { id: p.id } })).toMatchObject({
+      sku: legacySku, price: preserved.price,
+    });
+    expect((await db.productVariant.findUniqueOrThrow({ where: { id: p.variants[0].id } })).sku).toBe(p.variants[0].sku);
+    expect((await post(request, "admin/product", { ...preserved, active: false })).status).toBe(200);
+    expect((await db.product.findUniqueOrThrow({ where: { id: p.id } })).active).toBe(false);
+    const archived = searchResults.parse(await (await request.get("/api/search?q=" + encodeURIComponent(legacySku))).json());
+    expect(archived.products).toHaveLength(0);
+    await page.goto("/san-pham/" + payload.slug);
+    await expect(page.getByRole("button", { name: "THÊM VÀO GIỎ HÀNG", exact: true })).toHaveCount(0);
+  } finally {
+    await db.$transaction(async (tx) => {
+      const fixture = await tx.product.findUnique({ where: { slug: marker } });
+      if (!fixture) return;
+      await tx.inventoryMovement.deleteMany({ where: { variant: { productId: fixture.id } } });
+      await tx.productVariant.deleteMany({ where: { productId: fixture.id } });
+      await tx.product.delete({ where: { id: fixture.id } });
+    });
+  }
 });
 test("16 coupon validity and usage limits", async ({ request }) => {
+  await registerCustomer(request);
   const v = await variant();
-  await post(request, "cart", { variantId: v.id, quantity: 3 });
+  expect((await post(request, "cart", { variantId: v.id, quantity: 3 })).status).toBe(200);
   const bad = await post(request, "quote", { coupon: "INVALID" });
   expect(bad.status).toBe(400);
   const q = await post(request, "quote", { coupon: "CHAO10" });
@@ -388,39 +446,88 @@ test("16 coupon validity and usage limits", async ({ request }) => {
   expect(q.data.discount).toBe(
     Math.min(Math.floor(q.data.subtotal * 0.1), 200000),
   );
+  const limited = await db.coupon.create({
+    data: {
+      code: ("LIMIT-" + crypto.randomUUID()).toUpperCase(), type: "FIXED", value: 50000,
+      minimum: 0, maximum: null, expiresAt: new Date(Date.now() + 86400000),
+      usageLimit: 1, active: true,
+    },
+  });
+  const couponIds = [limited.id];
+  try {
+    for (const data of [
+      { expiresAt: new Date(Date.now() - 86400000) },
+      { active: false },
+      { minimum: q.data.subtotal + 1 },
+      { used: 1 },
+    ]) {
+      const invalid = await db.coupon.create({
+        data: { ...limited, id: crypto.randomUUID(), code: ("INVALID-" + crypto.randomUUID()).toUpperCase(), ...data },
+      });
+      couponIds.push(invalid.id);
+      expect((await post(request, "quote", { coupon: invalid.code })).status).toBe(400);
+    }
+    const quoted = await post(request, "quote", { coupon: limited.code.toLowerCase() });
+    expect(quoted.status).toBe(200);
+    expect(quoted.data.discount).toBe(50000);
+    const key = crypto.randomUUID();
+    expect((await post(request, "checkout", {
+      ...customer, coupon: limited.code, idempotencyKey: key,
+    })).status).toBe(200);
+    const order = await db.order.findUniqueOrThrow({ where: { idempotencyKey: key } });
+    expect(order.discount).toBe(50000);
+    expect((await db.coupon.findUniqueOrThrow({ where: { id: limited.id } })).used).toBe(1);
+    expect((await post(request, "cart", { variantId: v.id, quantity: 1 })).status).toBe(200);
+    expect((await post(request, "quote", { coupon: limited.code })).status).toBe(400);
+    expect((await post(request, "order/cancel", {
+      id: order.id, reason: "Khách hủy đơn kiểm thử hoàn lượt voucher",
+    })).status).toBe(200);
+    expect((await db.coupon.findUniqueOrThrow({ where: { id: limited.id } })).used).toBe(0);
+    expect((await post(request, "quote", { coupon: limited.code })).status).toBe(200);
+  } finally {
+    await db.$transaction([
+      db.couponRedemption.deleteMany({ where: { couponId: { in: couponIds } } }),
+      db.coupon.deleteMany({ where: { id: { in: couponIds } } }),
+    ]);
+  }
 });
 test("17 guest wishlist persists and merges on registration", async ({
   page,
 }) => {
   await page.goto("/hang-moi");
-  await page.locator(".product-card .wish").first().click();
+  const wish = page.locator(".product-card .wish").first();
+  await wish.click();
+  await expect(wish).toHaveAttribute("aria-pressed", "true");
+  await expect(wish).toBeEnabled();
   await page.goto("/yeu-thich");
   await expect(page.locator(".product-card")).toHaveCount(1);
   await page.reload();
   await expect(page.locator(".product-card")).toHaveCount(1);
   await page.goto("/dang-ky");
   await page.getByLabel("Họ và tên", { exact: true }).fill("Khách Yêu Thích");
-  await page.locator('input[name="email"]').fill("wishlist@hanhi.test");
+  await page.locator('input[name="email"]').fill(`wishlist-${crypto.randomUUID()}@hanhi.test`);
   await page.locator('input[name="phone"]').fill("0912345678");
-  await page
-    .locator('input[name="password"]')
-    .fill("Wishlist-password-123");
-  await page
-    .getByLabel("Xác nhận mật khẩu", { exact: true })
-    .fill("Wishlist-password-123");
+  const password = `Wishlist-${crypto.randomUUID()}`;
+  await page.locator('input[name="password"]').fill(password);
+  await page.getByLabel("Xác nhận mật khẩu", { exact: true }).fill(password);
+  const registered = page.waitForResponse((response) =>
+    response.url().endsWith("/api/register") && response.request().method() === "POST",
+  );
   await page.getByRole("button", { name: "TẠO TÀI KHOẢN" }).click();
-  await expect(page).toHaveURL(/tai-khoan/);
+  expect((await registered).status()).toBe(200);
+  await page.getByRole("button", { name: "TẠO TÀI KHOẢN" }).waitFor({ state: "detached" });
   await page.goto("/yeu-thich");
   await expect(page.locator(".product-card")).toHaveCount(1);
 });
 test("18 mobile menu and checkout flow", async ({ page }) => {
+  await registerCustomer(page.request);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
   await page.getByRole("button", { name: "Mở menu" }).click();
   await expect(page.locator(".drawer")).toBeVisible();
   await page
     .locator(".drawer summary")
-    .filter({ hasText: "Thời trang công sở" })
+    .filter({ hasText: "Thời trang nữ" })
     .click();
   await page
     .locator(".drawer-category summary")
@@ -477,10 +584,10 @@ test("19 responsive homepage at every requested width", async ({ page }) => {
 });
 test("20 address ownership, profile and local password reset", async ({
   request,
-  browser,
+  browser, baseURL,
 }) => {
-  const password = "Address-test-password";
-  const email = "address@hanhi.test";
+  const password = `Address-${crypto.randomUUID()}`;
+  const email = `address-${crypto.randomUUID()}@hanhi.test`;
   await post(request, "register", {
     ...customer,
     email,
@@ -492,16 +599,14 @@ test("20 address ownership, profile and local password reset", async ({
   const address = await db.address.findFirstOrThrow({
     where: { userId: user.id },
   });
-  const stranger = await browser.newContext();
-  await post(stranger.request, "register", {
-    ...customer,
-    email: "stranger@hanhi.test",
-    password,
-    confirmPassword: password,
-  });
-  await post(stranger.request, "address", { id: address.id, delete: true });
-  expect(await db.address.count({ where: { id: address.id } })).toBe(1);
-  await stranger.close();
+  const stranger = await browser.newContext({ baseURL });
+  try {
+    await registerCustomer(stranger.request);
+    expect((await post(stranger.request, "address", { id: address.id, delete: true })).status).toBe(400);
+    expect(await db.address.count({ where: { id: address.id } })).toBe(1);
+  } finally {
+    await stranger.close();
+  }
   const reset = await post(request, "forgot", { email });
   expect(reset.status).toBe(200);
   expect(
@@ -516,7 +621,7 @@ test("21 admin category collection coupon and content persistence", async ({
     name: "Danh mục QA",
     slug: "qa-category",
     description: "Danh mục kiểm thử quản trị",
-    image: "/images/ao-so-mi.svg",
+    image: "/images/awaiting-photo.svg",
   });
   expect(c.status).toBe(200);
   expect((await request.get("/qa-category")).status()).toBe(200);
@@ -526,7 +631,7 @@ test("21 admin category collection coupon and content persistence", async ({
         name: "QA Collection",
         slug: "qa-collection",
         description: "Bộ sưu tập kiểm thử",
-        image: "/images/hero.png",
+        image: "/images/awaiting-photo.svg",
         productIds: [],
       })
     ).status,
@@ -562,16 +667,34 @@ test("22 payment recording requires delivered order", async ({ request }) => {
       })
     ).status,
   ).toBe(400);
-  for (const status of ["CONFIRMED", "PROCESSING", "SHIPPING", "DELIVERED"])
+  for (const status of ["CONFIRMED", "PROCESSING"]) {
     expect(
       (await post(request, "admin/order", { id: o.id, status })).status,
     ).toBe(200);
+  }
+  const items = await db.orderItem.findMany({ where: { orderId: o.id } });
+  expect(
+    (await post(request, "admin/order/pack", {
+      id: o.id, eventKey: crypto.randomUUID(), kind: "PACK",
+      reason: "Đã kiểm và đóng gói đơn kiểm thử",
+      items: items.map((item) => ({ id: item.id, quantity: item.quantity, checked: true })),
+    })).status,
+  ).toBe(200);
+  for (const status of ["SHIPPING", "DELIVERED"]) {
+    expect(
+      (await post(request, "admin/order", {
+        id: o.id, status, reason: "Ghi nhận giao nhận nội bộ kiểm thử", reference: "QA-MANUAL-DELIVERY",
+      })).status,
+    ).toBe(200);
+  }
   expect(
     (
       await post(request, "admin/order", {
         id: o.id,
         status: "DELIVERED",
         paid: true,
+        reason: "Xác nhận đã thực nhận COD nội bộ kiểm thử",
+        reference: "QA-COD-COLLECTED",
       })
     ).status,
   ).toBe(200);
@@ -583,7 +706,7 @@ test("22 payment recording requires delivered order", async ({ request }) => {
         paid: true,
       })
     ).status,
-  ).toBe(400);
+  ).toBe(200);
   expect(
     (await db.order.findUniqueOrThrow({ where: { id: o.id } })).paymentStatus,
   ).toBe("PAID");
@@ -610,12 +733,14 @@ test("23 mobile filter drawer keyboard and combined filtering", async ({
   await expect(page.locator(".product-card")).toHaveCount(24);
 });
 test("24 concurrent orders never oversell the final unit", async ({
-  browser,
+  browser, baseURL,
 }) => {
   const v = await variant();
   await db.productVariant.update({ where: { id: v.id }, data: { stock: 1 } });
-  const a = await browser.newContext();
-  const b = await browser.newContext();
+  const a = await browser.newContext({ baseURL });
+  const b = await browser.newContext({ baseURL });
+  await registerCustomer(a.request);
+  await registerCustomer(b.request);
   await post(a.request, "cart", { variantId: v.id, quantity: 1 });
   await post(b.request, "cart", { variantId: v.id, quantity: 1 });
   const keys = [crypto.randomUUID(), crypto.randomUUID()];
@@ -633,13 +758,15 @@ test("24 concurrent orders never oversell the final unit", async ({
   await a.close();
   await b.close();
 });
-test("25 authenticated cart merge and empty checkout validation", async ({
+test("25 legacy guest cart merge, guest mutation denial and empty checkout validation", async ({
   request,
 }) => {
   const v = await variant();
-  await post(request, "cart", { variantId: v.id, quantity: 2 });
-  const email = "merge@hanhi.test";
-  const password = "Merge-password-123";
+  expect((await post(request, "cart", { variantId: v.id, quantity: 2 })).status).toBe(401);
+  const legacy = await (await request.get("/api/cart")).json();
+  await db.cartItem.create({ data: { cartId: legacy.id, variantId: v.id, quantity: 2 } });
+  const email = `merge-${crypto.randomUUID()}@hanhi.test`;
+  const password = `Merge-${crypto.randomUUID()}`;
   expect(
     (
       await post(request, "register", {
@@ -654,7 +781,9 @@ test("25 authenticated cart merge and empty checkout validation", async ({
     (await (await request.get("/api/cart")).json()).items[0].quantity,
   ).toBe(2);
   await post(request, "logout", {});
-  await post(request, "cart", { variantId: v.id, quantity: 1 });
+  expect((await post(request, "cart", { variantId: v.id, quantity: 1 })).status).toBe(401);
+  const legacyAgain = await (await request.get("/api/cart")).json();
+  await db.cartItem.create({ data: { cartId: legacyAgain.id, variantId: v.id, quantity: 1 } });
   await post(request, "login", { email, password });
   expect(
     (await (await request.get("/api/cart")).json()).items[0].quantity,
@@ -710,67 +839,72 @@ test("27 safe uploads and server validation", async ({ request }) => {
     },
   });
   expect(bad.status()).toBe(400);
-  const png = readFileSync("public/images/hero.png");
+  const webp = await sharp({
+    create: { width: 48, height: 64, channels: 3, background: "#b5a18b" },
+  }).webp().toBuffer();
   const good = await request.post("/api/admin/upload", {
     multipart: {
-      file: { name: "campaign.png", mimeType: "image/png", buffer: png },
+      file: { name: "campaign.webp", mimeType: "image/webp", buffer: webp },
     },
   });
   expect(good.status()).toBe(200);
-  const path = (await good.json()).url;
-  expect(path).toMatch(/^\/uploads\/[a-f0-9]+\.webp$/);
-  expect((await request.get(path)).headers()["content-type"]).toContain(
-    "image/webp",
-  );
-  expect((await request.get(path)).status()).toBe(200);
+  const { url } = z.object({ url: z.string().regex(/^\/uploads\/[a-f0-9]+\.webp$/) }).parse(await good.json());
+  try {
+    const uploaded = await request.get(url);
+    expect(uploaded.headers()["content-type"]).toContain("image/webp");
+    expect(uploaded.status()).toBe(200);
+    expect((await sharp(await uploaded.body()).metadata())).toMatchObject({
+      format: "webp", width: 48, height: 64,
+    });
+  } finally {
+    await unlink("public" + url);
+  }
 });
 test("28 password reset token is one-use and invalidates sessions", async ({
   request,
 }) => {
   const { readdirSync } = await import("node:fs");
-  const email = "reset-flow@hanhi.test";
-  const password = "Original-password-123";
-  await post(request, "register", {
-    ...customer,
+  const email = `reset-flow-${crypto.randomUUID()}@hanhi.test`;
+  const password = `Original-${crypto.randomUUID()}`;
+  expect((await post(request, "register", {
+    name: customer.name,
+    phone: customer.phone,
     email,
     password,
     confirmPassword: password,
-  });
-  await post(request, "forgot", { email });
-  const files = readdirSync(".local-mail")
-    .sort()
-    .reverse()
-    .map((f) => readFileSync(".local-mail/" + f, "utf8"));
-  const mail = files.find((s) => s.includes(email));
-  expect(mail).toBeTruthy();
-  const resetToken = mail!.match(/token=([a-f0-9]{64})/)![1];
-  const next = "Replacement-password-123";
-  expect(
-    (await post(request, "reset", { resetToken, password: next })).status,
-  ).toBe(200);
-  expect(
-    (await post(request, "reset", { resetToken, password: next })).status,
-  ).toBe(400);
-  expect((await post(request, "login", { email, password })).status).toBe(400);
-  expect((await post(request, "login", { email, password: next })).status).toBe(
-    200,
+  })).status).toBe(200);
+  expect((await post(request, "forgot", { email })).status).toBe(200);
+  const mailFile = readdirSync(".local-mail").find((file) =>
+    readFileSync(".local-mail/" + file, "utf8").includes(email),
   );
+  expect(mailFile).toBeTruthy();
+  try {
+    const mail = readFileSync(".local-mail/" + mailFile, "utf8");
+    const match = mail.match(/token=([a-f0-9]{64})/);
+    expect(match).not.toBeNull();
+    const resetToken = match![1];
+    const next = `Replacement-${crypto.randomUUID()}`;
+    expect(
+      (await post(request, "reset", { resetToken, password: next })).status,
+    ).toBe(200);
+    expect((await (await request.get("/api/session")).json()).user).toBeNull();
+    expect(
+      (await post(request, "reset", { resetToken, password: next })).status,
+    ).toBe(400);
+    expect((await post(request, "login", { email, password })).status).toBe(400);
+    expect((await post(request, "login", { email, password: next })).status).toBe(200);
+  } finally {
+    await unlink(".local-mail/" + mailFile);
+  }
 });
 
-test("29 approved logo and aligned product prices", async ({ page }) => {
+test("29 aligned product prices", async ({ page }) => {
   for (const width of [375, 768, 1440]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto("/");
     await page.evaluate(() => document.fonts.ready);
-    const logo = page.locator(".header-brand-group .brand-logo img");
-    await expect(logo).toHaveAttribute("src", "/images/brand-original.png");
-    expect(
-      await logo.evaluate(
-        (img: HTMLImageElement) => img.complete && img.naturalWidth === 1536,
-      ),
-    ).toBeTruthy();
     const rows = await page
-      .locator(".product-section")
+      .locator(".fashion-product-section")
       .first()
       .locator(".product-card")
       .evaluateAll((cards) =>
@@ -779,6 +913,7 @@ test("29 approved logo and aligned product prices", async ({ page }) => {
           price: c.querySelector(".price")!.getBoundingClientRect().top,
         })),
       );
+    expect(rows.length).toBeGreaterThan(0);
     const groups = new Map<number, number[]>();
     for (const row of rows) {
       const key = Math.round(row.top);
@@ -793,8 +928,8 @@ test("29 approved logo and aligned product prices", async ({ page }) => {
     ).toBeTruthy();
   }
 });
-test("30 hierarchical filtering and official contact persistence", async ({
-  request,
+test("30 hierarchical filtering and configured contact persistence", async ({
+  request, page,
 }) => {
   const roots = await db.category.findMany({
     where: {
@@ -820,57 +955,200 @@ test("30 hierarchical filtering and official contact persistence", async ({
     where: { subcategoryId: { not: null } },
     include: { subcategory: true, category: true },
   });
-  const r = await (
+  const r = searchResults.parse(await (
     await request.get(
       "/api/search?category=" +
         product.category.slug +
         "&subcategory=" +
         product.subcategory!.slug,
     )
-  ).json();
+  ).json());
   expect(r.count).toBeGreaterThan(0);
-  expect(
-    r.products.every((p: any) => p.subcategoryId === product.subcategoryId),
-  ).toBeTruthy();
+  expect(r.products.length).toBeGreaterThan(0);
+  const matchingProducts = await db.product.findMany({
+    where: { id: { in: r.products.map((p) => p.id) } },
+    select: { subcategoryId: true },
+  });
+  expect(matchingProducts).toHaveLength(r.products.length);
+  expect(matchingProducts.every((p) => p.subcategoryId === product.subcategoryId)).toBe(true);
+  const inquiryEmail = `inquiry-${crypto.randomUUID()}@hanhi.test`;
   const contact = await post(request, "contact", {
     name: "Khách liên hệ QA",
-    email: "inquiry@hanhi.test",
+    email: inquiryEmail,
     phone: "0912345678",
     subject: "Tư vấn kích cỡ",
     message: "Tôi muốn được tư vấn kích cỡ phù hợp.",
   });
-  expect(contact.status).toBe(200);
-  expect(
-    await db.inquiry.count({ where: { email: "inquiry@hanhi.test" } }),
-  ).toBe(1);
-  const html = await (await request.get("/lien-he")).text();
-  expect(html).toContain("hanhifashion@gmail.com");
-  expect(html).toContain(
-    "https://www.facebook.com/share/19MKdV11Hu/?mibextid=wwXIfr",
-  );
-  await login(request);
-  expect((await request.get("/admin/lien-he")).status()).toBe(200);
-  const inquiry = await db.inquiry.findFirstOrThrow({
-    where: { email: "inquiry@hanhi.test" },
-  });
-  expect(
-    (
-      await post(request, "admin/inquiry", {
-        id: inquiry.id,
-        status: "RESOLVED",
-      })
-    ).status,
-  ).toBe(200);
+  try {
+    expect(contact.status).toBe(200);
+    expect(await db.inquiry.count({ where: { email: inquiryEmail } })).toBe(1);
+    const contactPhone = await db.storeSetting.findUniqueOrThrow({ where: { key: "contactPhone" } });
+    await page.goto("/lien-he");
+    await expect(page.locator(`.contact-links a[href="tel:${contactPhone.value}"]`).first()).toBeVisible();
+    await login(request);
+    expect((await request.get("/admin/lien-he")).status()).toBe(200);
+    const inquiry = await db.inquiry.findFirstOrThrow({ where: { email: inquiryEmail } });
+    expect((await post(request, "admin/inquiry", {
+      id: inquiry.id, status: "RESOLVED",
+    })).status).toBe(200);
+    expect((await db.inquiry.findUniqueOrThrow({ where: { id: inquiry.id } })).status).toBe("RESOLVED");
+  } finally {
+    await db.inquiry.deleteMany({ where: { email: inquiryEmail } });
+  }
 });
 
-test("31 lookbook tabs and collection navigation", async ({ page }) => {
+test("31 actual collections remain reachable from navigation and collection cards", async ({ page }) => {
+  const collections = await db.collection.findMany({ orderBy: { createdAt: "asc" } });
+  expect(collections.length).toBeGreaterThan(0);
   await page.goto("/");
-  const tabs = page.getByRole("tablist", { name: "Khám phá phối đồ" });
-  await expect(tabs).toBeVisible();
-  await page.getByRole("tab", { name: "Theo danh mục", exact: true }).click();
-  await expect(
-    page.getByRole("tab", { name: "Theo danh mục", exact: true }),
-  ).toHaveAttribute("aria-selected", "true");
-  await page.locator(".lookbook-item").first().click();
-  await expect(page).toHaveURL(/ao-so-mi/);
+  await page.getByRole("button", { name: "Mở menu", exact: true }).click();
+  await page.locator(".drawer summary").filter({ hasText: "Cảm hứng phối đồ" }).click();
+  for (const collection of collections)
+    await expect(page.locator(".drawer").getByRole("link", { name: collection.name, exact: true }))
+      .toHaveAttribute("href", "/bo-suu-tap/" + collection.slug);
+  await page.locator(".drawer").getByRole("link", { name: "Tất cả bộ sưu tập", exact: true }).click();
+  await expect(page).toHaveURL(/\/bo-suu-tap$/);
+  await expect(page.locator(".collections-grid > a")).toHaveCount(collections.length);
+  await page.locator(".collections-grid > a").first().click();
+  await expect(page).toHaveURL(new RegExp("/bo-suu-tap/" + collections[0].slug + "$"));
+  await expect(page.locator("h1")).toHaveText(collections[0].name);
+});
+
+test("32 guests cannot mutate cart or checkout and login resumes the storefront", async ({ page }) => {
+  const v = await variant();
+  const before = await db.order.count();
+  for (const action of ["quote", "checkout"]) {
+    const response = await post(page.request, action, { ...customer, idempotencyKey: crypto.randomUUID() });
+    expect(response.status).toBe(401);
+    expect(response.data.redirect).toContain("/dang-nhap");
+  }
+  await page.goto("/san-pham/" + v.product.slug + "?mau=" + v.colorId);
+  await page.locator(".size-options").getByRole("button", { name: v.size, exact: true }).click();
+  await page.getByRole("button", { name: "THÊM VÀO GIỎ HÀNG", exact: true }).click();
+  await expect(page).toHaveURL(/\/dang-nhap\?returnTo=/);
+  expect((await (await page.request.get("/api/cart")).json()).items).toHaveLength(0);
+  expect(await db.order.count()).toBe(before);
+  const account = await registerCustomer(page.request);
+  await page.request.post("/api/logout", { data: {} });
+  await page.getByLabel("Email hoặc số điện thoại", { exact: true }).fill(account.email);
+  await page.getByLabel("Mật khẩu", { exact: true }).fill(account.password);
+  await page.getByRole("button", { name: "ĐĂNG NHẬP", exact: true }).click();
+  await expect(page).toHaveURL(new RegExp("/san-pham/" + v.product.slug + "$"));
+  expect((await (await page.request.get("/api/session")).json()).user.role).toBe("CUSTOMER");
+});
+
+test("33 returned-order inspection is complete and restocks only sellable units once", async ({ page, request }) => {
+  await registerCustomer(page.request);
+  const v = await variant();
+  expect((await post(page.request, "cart", { variantId: v.id, quantity: 2 })).status).toBe(200);
+  const key = crypto.randomUUID();
+  expect((await post(page.request, "checkout", { ...customer, idempotencyKey: key })).status).toBe(200);
+  const order = await db.order.findUniqueOrThrow({
+    where: { idempotencyKey: key }, include: { items: true },
+  });
+  await login(request);
+  for (const status of ["CONFIRMED", "PROCESSING"])
+    expect((await post(request, "admin/order", { id: order.id, status })).status).toBe(200);
+  expect((await post(request, "admin/order/pack", {
+    id: order.id, eventKey: crypto.randomUUID(), kind: "PACK",
+    reason: "Kiểm đủ hàng chuyển hoàn thử nghiệm",
+    items: order.items.map((item) => ({ id: item.id, quantity: item.quantity, checked: true })),
+  })).status).toBe(200);
+  for (const status of ["SHIPPING", "DELIVERY_FAILED", "RETURNED"])
+    expect((await post(request, "admin/order", {
+      id: order.id, status, reason: "Ghi nhận giao nhận kiểm thử nội bộ", reference: "TEST-RETURN",
+    })).status).toBe(200);
+  const returnedStock = (await db.productVariant.findUniqueOrThrow({ where: { id: v.id } })).stock;
+  expect((await post(request, "admin/order", {
+    id: order.id, status: "CANCELLED", reason: "Thiếu kiểm nhận hàng hoàn",
+  })).status).toBe(400);
+  await login(page.request);
+  await page.goto("/admin/don-hang/" + order.id);
+  await page.getByLabel("Lý do xử lý đơn", { exact: true }).fill("Đã kiểm nhận: một hàng bán lại, một hàng hỏng");
+  const cancel = page.locator(".order-actions").getByRole("button", { name: "Đã hủy", exact: true });
+  await cancel.click();
+  await expect(page.locator(".order-actions [role=alert]")).toBeVisible();
+  expect((await db.order.findUniqueOrThrow({ where: { id: order.id } })).status).toBe("RETURNED");
+  expect((await db.productVariant.findUniqueOrThrow({ where: { id: v.id } })).stock).toBe(returnedStock);
+  await page.locator(".returned-inspection").getByLabel(/^Có thể bán/).fill("1");
+  await page.locator(".returned-inspection").getByLabel(/^Hư hỏng/).fill("1");
+  const committed = page.waitForResponse((response) => response.url().endsWith("/api/admin/order") && response.request().method() === "POST");
+  await cancel.click();
+  expect((await committed).status()).toBe(200);
+  await expect(page.locator(".returned-inspection")).toHaveCount(0);
+  expect(await db.order.findUniqueOrThrow({ where: { id: order.id } })).toMatchObject({ status: "CANCELLED" });
+  expect((await db.productVariant.findUniqueOrThrow({ where: { id: v.id } })).stock).toBe(returnedStock + 1);
+  const movements = await db.inventoryMovement.count({ where: { orderId: order.id } });
+  expect((await post(request, "admin/order", { id: order.id, status: "CANCELLED" })).status).toBe(200);
+  expect((await db.productVariant.findUniqueOrThrow({ where: { id: v.id } })).stock).toBe(returnedStock + 1);
+  expect(await db.inventoryMovement.count({ where: { orderId: order.id } })).toBe(movements);
+  const audit = await db.auditLog.findFirstOrThrow({
+    where: { targetId: order.id, action: "ORDER_STATUS", afterJson: { contains: '"returnedItems"' } },
+  });
+  expect(JSON.parse(audit.afterJson!)).toMatchObject({
+    status: "CANCELLED",
+    returnedItems: [{ orderItemId: order.items[0].id, sellableQuantity: 1, damagedQuantity: 1 }],
+  });
+});
+
+test("34 customer return ownership and ADMIN-only staff evidence and decisions", async ({ page, request, browser, baseURL }) => {
+  await registerCustomer(page.request);
+  const v = await variant();
+  expect((await post(page.request, "cart", { variantId: v.id, quantity: 1 })).status).toBe(200);
+  const key = crypto.randomUUID();
+  expect((await post(page.request, "checkout", { ...customer, idempotencyKey: key })).status).toBe(200);
+  const order = await db.order.findUniqueOrThrow({ where: { idempotencyKey: key }, include: { items: true } });
+  await login(request);
+  for (const status of ["CONFIRMED", "PROCESSING"])
+    expect((await post(request, "admin/order", { id: order.id, status })).status).toBe(200);
+  expect((await post(request, "admin/order/pack", {
+    id: order.id, eventKey: crypto.randomUUID(), kind: "PACK", reason: "Đóng gói đơn kiểm thử đổi trả",
+    items: order.items.map((item) => ({ id: item.id, quantity: item.quantity, checked: true })),
+  })).status).toBe(200);
+  for (const status of ["SHIPPING", "DELIVERED"])
+    expect((await post(request, "admin/order", {
+      id: order.id, status, reason: "Giao nhận nội bộ kiểm thử", reference: "TEST-DELIVERED",
+    })).status).toBe(200);
+  const swatch = await sharp({ create: { width: 40, height: 40, channels: 3, background: "#eeccbb" } }).png().toBuffer();
+  const payload = {
+    orderId: order.id, eventKey: crypto.randomUUID(), claimType: "DEFECT", resolution: "REFUND",
+    reason: "Đường may lỗi trong tình huống kiểm thử",
+    items: [{ orderItemId: order.items[0].id, quantity: 1 }],
+    evidence: [{ data: "data:image/png;base64," + swatch.toString("base64") }],
+  };
+  const created = await post(page.request, "returns", payload);
+  expect(created.status).toBe(200);
+  expect((await post(page.request, "returns", payload)).data.id).toBe(created.data.id);
+  const record = await db.returnRequest.findUniqueOrThrow({ where: { id: created.data.id }, include: { evidence: true } });
+  const evidenceUrl = "/api/returns/evidence/" + record.evidence[0].id;
+  expect((await page.request.get(evidenceUrl)).status()).toBe(200);
+  const stranger = await browser.newContext({ baseURL });
+  try {
+    expect((await stranger.request.get(evidenceUrl)).status()).toBe(403);
+    const seller = await registerCustomer(stranger.request);
+    expect((await stranger.request.get(evidenceUrl)).status()).toBe(404);
+    expect((await post(stranger.request, "returns", { ...payload, eventKey: crypto.randomUUID() })).status).toBe(400);
+    await db.user.update({ where: { email: seller.email }, data: { role: "SELLER", permissionVersion: { increment: 1 } } });
+    expect((await (await stranger.request.get("/api/session")).json()).user).toBeNull();
+    expect((await post(stranger.request, "login", { email: seller.email, password: seller.password })).status).toBe(200);
+    const sellerPage = await stranger.newPage();
+    await sellerPage.goto("/admin/doi-tra/" + record.id);
+    await expect(sellerPage.getByRole("heading", { name: record.reference })).toBeVisible();
+    await expect(sellerPage.locator(".return-evidence")).toHaveCount(0);
+    expect((await stranger.request.get(evidenceUrl)).status()).toBe(404);
+    expect((await post(stranger.request, "admin/returns/status", {
+      id: record.id, status: "UNDER_REVIEW", reason: "Nhân viên bán không có quyền quyết định",
+    })).status).toBe(403);
+    expect((await post(stranger.request, "admin/settings", { announcement: "Không được thay đổi" })).status).toBe(403);
+    expect((await stranger.request.get("/admin/san-pham")).status()).toBe(200);
+  } finally {
+    await stranger.close();
+  }
+  expect((await request.get(evidenceUrl)).status()).toBe(200);
+  await login(page.request);
+  await page.goto("/admin/doi-tra/" + record.id);
+  await expect(page.locator(".return-evidence a")).toHaveCount(1);
+  expect((await post(request, "admin/returns/status", {
+    id: record.id, status: "UNDER_REVIEW", reason: "Quản trị xác minh lỗi được báo",
+  })).status).toBe(200);
 });

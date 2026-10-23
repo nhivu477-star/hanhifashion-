@@ -43,7 +43,7 @@ const fields = {
     }),
 };
 export const storeSettingsInput = z.object(fields).partial();
-export async function saveStoreSettings(input: unknown, actor: { id: string }) {
+export async function saveStoreSettings(input: unknown, actor: { id: string; permissionVersion: number }) {
   // Validate the entire form before performing the first write.
   const values = storeSettingsInput.parse(input);
   return orderTransaction(async (tx) => {

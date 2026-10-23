@@ -1,6 +1,7 @@
 import { adoptPreferences } from "./localization/server";
 import {
   isStaff,
+  accountRoles,
   isAccountRole,
   assertRolePermission,
   Permission,
@@ -8,6 +9,7 @@ import {
 } from "./rbac";
 import { cookies, headers } from "next/headers";
 import { createHash, randomBytes } from "node:crypto";
+import { requireCurrentAccount } from "./authorization";
 import { db } from "./db";
 export const digest = (s: string) =>
   createHash("sha256").update(s).digest("hex");
@@ -41,25 +43,39 @@ export async function requireUser(admin = false) {
   }
   return u;
 }
-export async function createSession(userId: string) {
+export async function createSession(authenticatedUser: {
+  id: string;
+  passwordHash: string;
+  permissionVersion: number;
+}) {
+  const userId = authenticatedUser.id;
   const sessionDays = 30;
   const t = token();
-  await adoptPreferences(userId);
-  const user = await db.user.findUniqueOrThrow({ where: { id: userId } });
-  if (!user.active) throw new Error("Tài khoản đã bị khóa.");
-  if (!isAccountRole(user.role)) throw new AuthorizationError("account.role");
-  await db.session.create({
-    data: {
-      userId,
-      permissionVersion: user.permissionVersion,
-      tokenHash: digest(t),
-      expiresAt: new Date(Date.now() + sessionDays * 86400000),
-    },
+  await db.$transaction(async (tx) => {
+    // Claim the exact credentials/version that passed authentication, not a
+    // newer account snapshot after a concurrent password reset or role change.
+    const current = await tx.user.updateMany({
+      where: {
+        id: userId,
+        active: true,
+        role: { in: [...accountRoles] },
+        passwordHash: authenticatedUser.passwordHash,
+        permissionVersion: authenticatedUser.permissionVersion,
+      },
+      data: { lastLoginAt: new Date() },
+    });
+    if (current.count !== 1)
+      throw Error("Email/số điện thoại hoặc mật khẩu chưa đúng.");
+    await tx.session.create({
+      data: {
+        userId,
+        permissionVersion: authenticatedUser.permissionVersion,
+        tokenHash: digest(t),
+        expiresAt: new Date(Date.now() + sessionDays * 86400000),
+      },
+    });
   });
-  await db.user.update({
-    where: { id: userId },
-    data: { lastLoginAt: new Date() },
-  });
+  await adoptPreferences(authenticatedUser);
   const requestHost = (await headers()).get("host");
   (await cookies()).set("hn_session", t, {
     httpOnly: true,
@@ -73,10 +89,13 @@ export async function getCart() {
   const c = await cookies();
   const u = await currentUser();
   if (u)
-    return db.cart.upsert({
-      where: { userId: u.id },
-      update: {},
-      create: { userId: u.id },
+    return db.$transaction(async (tx) => {
+      await requireCurrentAccount(tx, u);
+      return tx.cart.upsert({
+        where: { userId: u.id },
+        update: {},
+        create: { userId: u.id },
+      });
     });
   let t = c.get("hn_cart")?.value;
   if (!t) {
@@ -111,60 +130,49 @@ export function rateLimit(key: string, max = 15) {
     throw new Error("Quá nhiều yêu cầu. Vui lòng thử lại sau 15 phút.");
 }
 export async function mergeCartAndWishlist(
-  userId: string,
+  actor: { id: string; permissionVersion: number },
   wishlist: string[] = [],
 ) {
   const c = await cookies();
   const guestToken = c.get("hn_cart")?.value;
-  const cart = await db.cart.upsert({
-    where: { userId },
-    update: {},
-    create: { userId },
-  });
-  if (guestToken) {
-    const guest = await db.cart.findUnique({
+  const mergedGuest = await db.$transaction(async (tx) => {
+    await requireCurrentAccount(tx, actor);
+    const cart = await tx.cart.upsert({
+      where: { userId: actor.id }, update: {}, create: { userId: actor.id },
+    });
+    const guest = guestToken ? await tx.cart.findUnique({
       where: { guestToken },
       include: { items: { include: { variant: true } } },
-    });
+    }) : null;
     if (guest) {
-      await db.$transaction(async (tx) => {
-        for (const i of guest.items) {
-          const existing = await tx.cartItem.findUnique({
-            where: {
-              cartId_variantId: { cartId: cart.id, variantId: i.variantId },
-            },
+      for (const item of guest.items) {
+        const existing = await tx.cartItem.findUnique({
+          where: { cartId_variantId: { cartId: cart.id, variantId: item.variantId } },
+        });
+        const quantity = Math.min(item.variant.stock, (existing?.quantity ?? 0) + item.quantity);
+        if (quantity > 0)
+          await tx.cartItem.upsert({
+            where: { cartId_variantId: { cartId: cart.id, variantId: item.variantId } },
+            update: { quantity },
+            create: { cartId: cart.id, variantId: item.variantId, quantity },
           });
-          const quantity = Math.min(
-            i.variant.stock,
-            (existing?.quantity ?? 0) + i.quantity,
-          );
-          if (quantity > 0)
-            await tx.cartItem.upsert({
-              where: {
-                cartId_variantId: { cartId: cart.id, variantId: i.variantId },
-              },
-              update: { quantity },
-              create: { cartId: cart.id, variantId: i.variantId, quantity },
-            });
-        }
-        await tx.cart.delete({ where: { id: guest.id } });
-      });
-      c.delete("hn_cart");
+      }
+      await tx.cart.delete({ where: { id: guest.id } });
     }
-  }
-  const w = await db.wishlist.upsert({
-    where: { userId },
-    update: {},
-    create: { userId },
+    const saved = await tx.wishlist.upsert({
+      where: { userId: actor.id }, update: {}, create: { userId: actor.id },
+    });
+    for (const productId of wishlist.slice(0, 200)) {
+      if (await tx.product.count({ where: { id: productId, active: true } }))
+        await tx.wishlistItem.upsert({
+          where: { wishlistId_productId: { wishlistId: saved.id, productId } },
+          update: {},
+          create: { wishlistId: saved.id, productId },
+        });
+    }
+    return !!guest;
   });
-  for (const productId of wishlist.slice(0, 200)) {
-    if (await db.product.count({ where: { id: productId, active: true } }))
-      await db.wishlistItem.upsert({
-        where: { wishlistId_productId: { wishlistId: w.id, productId } },
-        update: {},
-        create: { wishlistId: w.id, productId },
-      });
-  }
+  if (mergedGuest) c.delete("hn_cart");
 }
 
 export async function requirePermission(p: Permission) {

@@ -226,7 +226,7 @@ async function saveFeature(
 export async function saveCatalogFeature(
   target: string,
   b: any,
-  actor: { id: string },
+  actor: { id: string; permissionVersion: number },
 ) {
   return orderTransaction(async (tx) => {
     await requireActorPermission(tx, actor, "products.update");

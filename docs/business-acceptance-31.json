@@ -714,7 +714,7 @@
           "group": "Quyền",
           "given": "Đơn tồn tại; đúng ownership/quyền",
           "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
-          "then": "orders.read; khách sở hữu; guest capability tối thiểu",
+          "then": "orders.read; khách có phiên sở hữu; capability chỉ đơn guest cũ userId=null, không thay phiên cho đơn tài khoản",
           "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
         },
         {
@@ -741,7 +741,7 @@
       "mappedBusinessFunctions": [
         "ORDER-03"
       ],
-      "applicableScope": "Hủy toàn bộ theo quy tắc hiện hành; hủy một phần bị khóa chờ duyệt chính sách. Đơn đang giao đi theo shipment/return, không hoàn tồn tùy tiện.",
+      "applicableScope": "Hủy toàn bộ theo quy tắc hiện hành; hủy một phần bị khóa. Đang giao theo shipment/return. RETURNED→CANCELLED cần UNPAID, reason và returnedItems đủ mỗi dòng đúng một lần; sellableQuantity/damagedQuantity nguyên không âm, tổng bằng lượng dòng. Chỉ hoàn tồn lượng bán được một lần, hàng hỏng không vào tồn bán, phân loại giữ audit/history vận hành.",
       "requiredEvidence": [
         "order:^06 ",
         "order:^07 ",
@@ -754,7 +754,7 @@
           "id": "UC12-M",
           "group": "Luồng chính",
           "given": "UNPAID; chưa giao hoặc hàng chuyển hoàn đã về",
-          "when": "Cancel → hoàn lượng còn lại → release voucher một lần",
+          "when": "Cancel → hoàn lượng hợp lệ (RETURNED chỉ sellableQuantity đã kiểm) → release voucher một lần",
           "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
           "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
         },
@@ -762,7 +762,7 @@
           "id": "UC12-A",
           "group": "Luồng phụ áp dụng",
           "given": "UNPAID; chưa giao hoặc hàng chuyển hoàn đã về",
-          "when": "Retry CANCELLED no-op; trả về rồi hủy",
+          "when": "Retry CANCELLED no-op; trả về rồi kiểm đủ returnedItems trước hủy",
           "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
           "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
         },
@@ -770,7 +770,7 @@
           "id": "UC12-E",
           "group": "Ngoại lệ",
           "given": "UNPAID; chưa giao hoặc hàng chuyển hoàn đã về",
-          "when": "Đã PAID; đang giao/chưa hoàn về; khách hủy muộn",
+          "when": "Đã PAID; đang giao/chưa hoàn về; khách hủy muộn; RETURNED thiếu/trùng/sai dòng hoặc tổng lượng không bằng quantity dòng",
           "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
           "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
         },
@@ -787,7 +787,7 @@
           "group": "Toàn vẹn và hậu điều kiện",
           "given": "UNPAID; chưa giao hoặc hàng chuyển hoàn đã về",
           "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
-          "then": "Hoàn tồn/coupon/history/audit atomic; paid dùng refund flow",
+          "then": "Chỉ phần bán được hoàn tồn sau chuyển hoàn; stock/movement/coupon/history/audit kiểm hàng atomic; paid dùng refund flow",
           "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
         },
         {
@@ -844,7 +844,7 @@
           "group": "Quyền",
           "given": "Đơn tồn tại; đúng ownership/quyền; Trạng thái đầu hợp lệ; lý do khi hủy/giao nhận",
           "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
-          "then": "orders.read; khách sở hữu; guest capability tối thiểu; orders.manage; orders.cancel cho hủy",
+          "then": "orders.read; khách có phiên sở hữu; capability chỉ đơn guest cũ userId=null; orders.manage; orders.cancel cho hủy; hn_order/accessToken không thay phiên cho đơn tài khoản",
           "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
         },
         {
@@ -1051,7 +1051,7 @@
           "group": "Toàn vẹn và hậu điều kiện",
           "given": "PROCESSING, UNPAID, COD payment khớp; chưa có shipment; Trạng thái shipment đầu hợp lệ; Kiện đang giao; lý do và trạng thái hợp lệ",
           "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
-          "then": "Một shipment/order; không trừ tồn lần hai; Order/shipment/event khớp; giao thành công vẫn UNPAID; Không hoàn tồn tại cả RETURNED và CANCELLED; timeline thật",
+          "then": "Một shipment/order; không trừ tồn lần hai; Order/shipment/event khớp; giao thành công vẫn UNPAID; RETURNED không tự hoàn tồn, CANCELLED sau kiểm từng dòng chỉ hoàn lượng bán được một lần, hàng hỏng không vào tồn bán; timeline thật",
           "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
         },
         {
@@ -1242,7 +1242,7 @@
           "group": "Quyền",
           "given": "Đúng CUSTOMER; phân trang; CUSTOMER; không phải chính tài khoản thao tác; Không tự nâng quyền; actor có grant phù hợp",
           "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
-          "then": "customers.read; quyền riêng để mở đơn/returns/support; customers.manage; staff.* / accounts.manage",
+          "then": "ADMIN với customers.read/customers.manage/accounts.manage và quyền staff.* tương ứng; mở đơn/returns/support vẫn kiểm quyền riêng",
           "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
         },
         {
@@ -1271,7 +1271,7 @@
         "STAFF-02",
         "STAFF-03"
       ],
-      "applicableScope": "Áp dụng các luồng hợp lệ trong module hiện hữu, theo PROJECT_SPEC và RBAC hiện tại.",
+      "applicableScope": "Chỉ ADMIN quản trị tài khoản/quyền và đọc audit toàn hệ thống. SELLER chỉ nhóm vận hành được cấp, đổi trả chỉ đọc; CUSTOMER chỉ dữ liệu của mình. Chỉ ba vai trò chuẩn, không alias hoặc vai trò chuyên biệt.",
       "requiredEvidence": [
         "rbac:^01 ",
         "rbac:^02 ",
@@ -1297,7 +1297,7 @@
           "id": "UC20-A",
           "group": "Luồng phụ áp dụng",
           "given": "Không tự nâng quyền; actor có grant phù hợp; Phiên active/version đúng; quyền tại backend/service; Nhân viên có quyền đọc nhật ký",
-          "when": "Chỉ chấp nhận CUSTOMER, SELLER, ADMIN; vai trò khác bị từ chối; Vai trò chuyên biệt chỉ được nhóm việc tương ứng; Bản ghi cũ thiếu actor được giữ",
+          "when": "Chỉ chấp nhận CUSTOMER, SELLER, ADMIN; vai trò khác bị từ chối; SELLER chỉ nhóm vận hành được cấp và đổi trả chỉ đọc; CUSTOMER chỉ dữ liệu của mình; ADMIN toàn quyền; bản ghi cũ thiếu actor được giữ",
           "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
           "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
         },
@@ -1314,7 +1314,7 @@
           "group": "Quyền",
           "given": "Không tự nâng quyền; actor có grant phù hợp; Phiên active/version đúng; quyền tại backend/service; Nhân viên có quyền đọc nhật ký",
           "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
-          "then": "staff.* / accounts.manage; Mọi role; default deny; audit.read",
+          "then": "ADMIN quản trị accounts.manage/staff.* và audit.read; mọi role bị default deny ngoài quyền đã khai báo",
           "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
         },
         {
@@ -1548,12 +1548,13 @@
         "ORDER-02",
         "ORDER-03"
       ],
-      "applicableScope": "Áp dụng các luồng hợp lệ trong module hiện hữu, theo PROJECT_SPEC và RBAC hiện tại.",
+      "applicableScope": "Theo PROJECT_SPEC và RBAC ba vai trò. RETURNED→CANCELLED cần kiểm đủ từng dòng returnedItems theo UC12/BR-019, chỉ hoàn tồn lượng bán được một lần; hàng hỏng không cộng tồn bán. Hủy trước bàn giao giữ quy tắc hoàn tồn bình thường.",
       "requiredEvidence": [
         "order:^07 ",
         "order:^09 ",
         "order:^10 ",
         "order:^13 ",
+        "order:^16 ",
         "business:^BA-ASSIGN-01",
         "browser:^customer login",
         "browser:^Admin consistency"
@@ -1563,7 +1564,7 @@
           "id": "UC24-M",
           "group": "Luồng chính",
           "given": "Đơn tồn tại; đúng ownership/quyền; Trạng thái đầu hợp lệ; lý do khi hủy/giao nhận; UNPAID; chưa giao hoặc hàng chuyển hoàn đã về",
-          "when": "Tìm mã → xem snapshot/timeline thực; PENDING→CONFIRMED→PROCESSING; từ chối dùng CANCELLED; Cancel → hoàn lượng còn lại → release voucher một lần",
+          "when": "Tìm mã → xem snapshot/timeline thực; PENDING→CONFIRMED→PROCESSING; từ chối dùng CANCELLED; hủy hoàn lượng hợp lệ (RETURNED chỉ sellableQuantity đã kiểm) → release voucher một lần",
           "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
           "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
         },
@@ -1571,7 +1572,7 @@
           "id": "UC24-A",
           "group": "Luồng phụ áp dụng",
           "given": "Đơn tồn tại; đúng ownership/quyền; Trạng thái đầu hợp lệ; lý do khi hủy/giao nhận; UNPAID; chưa giao hoặc hàng chuyển hoàn đã về",
-          "when": "Tra cứu mã+phone chỉ dữ liệu tối thiểu; Đường giao nhận thủ công trước có shipment; Retry CANCELLED no-op; trả về rồi hủy",
+          "when": "Tra cứu mã+phone chỉ dữ liệu tối thiểu; đường giao nhận thủ công trước có shipment; retry CANCELLED no-op; hàng quay về phải kiểm đủ từng dòng bán được/hỏng trước hủy",
           "then": "Đúng hậu điều kiện của module; luồng hợp lệ thành công, luồng sai bị từ chối và không để lại thay đổi nghiệp vụ dở dang.",
           "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
         },
@@ -1588,7 +1589,7 @@
           "group": "Quyền",
           "given": "Đơn tồn tại; đúng ownership/quyền; Trạng thái đầu hợp lệ; lý do khi hủy/giao nhận; UNPAID; chưa giao hoặc hàng chuyển hoàn đã về",
           "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
-          "then": "orders.read; khách sở hữu; guest capability tối thiểu; orders.manage; orders.cancel cho hủy; orders.cancel hoặc owner trước chuẩn bị",
+          "then": "orders.read; khách có phiên sở hữu; capability chỉ đơn guest cũ userId=null; orders.manage; orders.cancel cho hủy; hn_order/accessToken không thay phiên cho đơn tài khoản",
           "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
         },
         {
@@ -1596,7 +1597,7 @@
           "group": "Toàn vẹn và hậu điều kiện",
           "given": "Đơn tồn tại; đúng ownership/quyền; Trạng thái đầu hợp lệ; lý do khi hủy/giao nhận; UNPAID; chưa giao hoặc hàng chuyển hoàn đã về",
           "when": "Thực thi thao tác tương ứng qua UI/API, thử actor khác quyền/chủ sở hữu và đọc snapshot DB sau commit/rollback.",
-          "then": "UI/API/DB khớp tổng tiền/trạng thái; public allowlist; CAS + history + audit; không tự ghi PAID từ status; Hoàn tồn/coupon/history/audit atomic; paid dùng refund flow",
+          "then": "UI/API/DB khớp tổng tiền/trạng thái; public allowlist; CAS + history + audit; không tự ghi PAID từ status; RETURNED chỉ hoàn tồn lượng bán được sau kiểm đủ từng dòng, hàng hỏng không vào tồn bán; movement/coupon/history/audit atomic; paid dùng refund flow",
           "passCriterion": "Mọi assertion của bằng chứng liên kết phải PASS; không có FAIL/SKIP/missing evidence."
         },
         {
@@ -2057,7 +2058,7 @@
         "STAFF-03",
         "SYSTEM-01"
       ],
-      "applicableScope": "Audit quan trọng atomic với dữ liệu DB; upload file được xác minh trước khi đưa vào catalog. Log từ chối chỉ chứa mã an toàn, không raw token/password/SQL.",
+      "applicableScope": "Chỉ ADMIN đọc audit toàn hệ thống. Audit quan trọng atomic với DB; upload được xác minh trước đưa catalog. Log từ chối chỉ mã an toàn, không raw token/password/SQL. Backup/restore file riêng, không công bố credential hoặc dữ liệu cá nhân.",
       "requiredEvidence": [
         "business:^BA-AUDIT-01",
         "business:^BA-PRODUCT-01",

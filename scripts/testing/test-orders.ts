@@ -128,6 +128,7 @@ await run(
     assert.equal(first.order.shipping, 30000);
     assert.equal(first.order.total, 1010000);
     assert.equal(first.order.payments[0].amount, 1010000);
+    assert(!first.client.cookies.has(`hn_order_${first.order.code}`), "Account checkout must not issue a guest order capability");
   },
 );
 await run(
@@ -486,7 +487,7 @@ await run(
 await run(
   "16 returned shipment cancellation / forbidden customer late cancellation",
   async () => {
-    const x = await place(12, new Client("alice"));
+    const x = await place(12, new Client("alice"), 2);
     for (const status of [
       "CONFIRMED",
       "PROCESSING",
@@ -500,14 +501,33 @@ await run(
         .status,
       200,
     );
-    await transition(x.order.id, "CANCELLED");
+    assert.notEqual((await admin.post("admin/order", {
+      id: x.order.id, status: "CANCELLED", reason: "Thiếu kết quả kiểm hàng",
+    })).status, 200);
+    assert.equal((await db.productVariant.findUniqueOrThrow({
+      where: { id: x.v.variantId },
+    })).stock, 8);
+    const returnedItems = x.order.items.map((item) => ({
+      orderItemId: item.id, sellableQuantity: 1, damagedQuantity: 1,
+    }));
+    const cancellation = {
+      id: x.order.id, status: "CANCELLED", reason: "Kiểm hàng: một bán lại, một hỏng",
+      returnedItems,
+    };
+    const outcomes = await Promise.all([1, 2].map(() => admin.post("admin/order", cancellation)));
+    assert(outcomes.every((result) => result.status === 200));
+    const audit = await db.auditLog.findFirstOrThrow({
+      where: { targetId: x.order.id, action: "ORDER_STATUS" },
+      orderBy: { createdAt: "desc" },
+    });
+    assert.deepEqual(JSON.parse(audit.afterJson!).returnedItems, returnedItems);
     assert.equal(
       (
         await db.productVariant.findUniqueOrThrow({
           where: { id: x.v.variantId },
         })
       ).stock,
-      10,
+      9,
     );
     assert.equal(
       (await db.order.findUniqueOrThrow({ where: { id: x.order.id } }))
@@ -533,6 +553,54 @@ await run("17 csrf and foreign checkout idempotency key rejected", async () => {
       .status,
     200,
   );
+});
+await run("18 checkout keeps missing color images honest and historical snapshots immutable", async () => {
+  const product = await db.product.findUniqueOrThrow({
+    where: { id: fixture.fixtures[13].id },
+    include: { images: true },
+  });
+  assert(product.images.length > 0);
+  const color = await db.productColor.create({
+    data: { productId: product.id, name: `No image ${randomUUID()}`, hex: "#123456" },
+  });
+  const variant = await db.productVariant.create({
+    data: {
+      productId: product.id, colorId: color.id, color: color.name,
+      colorHex: color.hex, sku: `NO-IMAGE-${randomUUID()}`, size: "M", stock: 2,
+    },
+  });
+  const client = new Client();
+  assert.equal((await client.post("cart", { variantId: variant.id, quantity: 1 })).status, 200);
+  const key = randomUUID();
+  assert.equal((await client.post("checkout", { ...customer, idempotencyKey: key })).status, 200);
+  const order = await db.order.findUniqueOrThrow({
+    where: { idempotencyKey: key }, include: { items: true },
+  });
+  const line = order.items.find((item) => item.variantId === variant.id)!;
+  assert.equal(line.image, "");
+  const historicalPrice = line.unitPrice;
+  await db.productVariant.update({ where: { id: variant.id }, data: { priceOverride: historicalPrice + 10000 } });
+  await db.colorImage.create({
+    data: { colorId: color.id, url: product.images[0].url, alt: "New catalog image", position: 0 },
+  });
+  const snapshot = await db.orderItem.findUniqueOrThrow({ where: { id: line.id } });
+  assert.equal(snapshot.image, "");
+  assert.equal(snapshot.unitPrice, historicalPrice);
+});
+await run("19 legacy order cookie cannot cancel an account order after logout or account revocation", async () => {
+  const placed = await place(13, new Client());
+  placed.client.cookies.set(`hn_order_${placed.order.code}`, placed.order.accessToken);
+  const stock = (await db.productVariant.findUniqueOrThrow({ where: { id: placed.v.variantId } })).stock;
+  await placed.client.post("logout", {});
+  const input = { id: placed.order.id, code: placed.order.code, reason: "Old browser capability must not authorize an account order" };
+  assert.notEqual((await placed.client.post("order/cancel", input)).status, 200);
+  await db.user.update({
+    where: { id: placed.order.userId! },
+    data: { active: false, permissionVersion: { increment: 1 } },
+  });
+  assert.notEqual((await placed.client.post("order/cancel", input)).status, 200);
+  assert.equal((await db.order.findUniqueOrThrow({ where: { id: placed.order.id } })).status, "PENDING");
+  assert.equal((await db.productVariant.findUniqueOrThrow({ where: { id: placed.v.variantId } })).stock, stock);
 });
 await writeFile(
   "verification/order-results.json",

@@ -1,34 +1,16 @@
 import { LocalizedContent } from "@/components/localization";
 import Link from "next/link";
+import { SafeImage } from "./store";
+import { db } from "@/lib/db";
 
-const selections = [
-  {
-    name: "Đầm Ricci",
-    group: "Trang phục",
-    href: "/san-pham/ls-ricci-dress",
-    image: "/images/lsoul/products/dam-ricci-dress-nguyen-ban-1.webp",
-  },
-  {
-    name: "Loea Sandals",
-    group: "Giày",
-    href: "/giay",
-    image: "/images/lsoul/products/giay-loea-sandals-hong-0.webp",
-  },
-  {
-    name: "Ci Tia Bag",
-    group: "Túi xách",
-    href: "/tui-xach",
-    image: "/images/lsoul/products/tui-xach-ci-tia-bag-en-0.webp",
-  },
-  {
-    name: "C De Sunglasses",
-    group: "Phụ kiện",
-    href: "/phu-kien",
-    image: "/images/lsoul/products/phu-kien-c-de-sunglasses-tim-0.webp",
-  },
-];
 
-export function AboutPage() {
+export async function AboutPage() {
+  const selections = await db.category.findMany({
+    where: { parentId: null, active: true },
+    orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+    select: { slug: true, name: true, image: true },
+    take: 4,
+  });
   return (
     <LocalizedContent>
       {
@@ -48,14 +30,14 @@ export function AboutPage() {
           </header>
           <section
             className="about-selection"
-            aria-label="Bốn lựa chọn trong tủ đồ HÀ NHI"
+            aria-label="Khám phá danh mục sản phẩm"
           >
             {selections.map((item) => (
-              <Link href={item.href} key={item.group}>
+              <Link href={"/" + item.slug} key={item.slug}>
                 <div className="about-product-image">
-                  <img src={item.image} alt={item.name} />
+                  <SafeImage src={item.image || "/images/awaiting-photo.svg"} alt={item.name} />
                 </div>
-                <span>{item.group}</span>
+                <span>{item.name}</span>
               </Link>
             ))}
           </section>

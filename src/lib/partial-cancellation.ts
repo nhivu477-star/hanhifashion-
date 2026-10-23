@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { orderTransaction } from "./order-lifecycle";
-import { operationalAudit, requireActorPermission } from "./authorization";
+import { operationalAudit, requireActorPermission, requireCurrentAccount } from "./authorization";
 import { mutationReceipt } from "./mutation-receipt";
 import { netLineAmounts } from "./returns-rules";
 import { isStaff } from "./rbac";
@@ -36,9 +36,10 @@ export const partialCancellationInput = z
   );
 
 /** Unpaid order amendment: preserve contracted unit prices, allocate existing discount, keep shipping. */
-export async function cancelOrderItems(input: unknown, actor: { id: string }) {
+export async function cancelOrderItems(input: unknown, actor: { id: string; permissionVersion: number }) {
   const d = partialCancellationInput.parse(input);
   return orderTransaction(async (tx) => {
+    const user = await requireCurrentAccount(tx, actor);
     const policy = await tx.storeSetting.findUnique({
       where: { key: "business.partialCancellationPolicy" },
     });
@@ -46,8 +47,6 @@ export async function cancelOrderItems(input: unknown, actor: { id: string }) {
       throw Error(
         "Hủy một phần đang khóa: cần chủ cửa hàng phê duyệt chính sách tài chính trước khi sử dụng.",
       );
-    const user = await tx.user.findUniqueOrThrow({ where: { id: actor.id } });
-    if (!user.active) throw Error("Tài khoản đã bị khóa.");
     const staff = isStaff(user.role);
     if (staff) await requireActorPermission(tx, actor, "orders.cancel");
     const order = await tx.order.findUniqueOrThrow({

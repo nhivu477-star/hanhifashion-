@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     if (Number(req.headers.get("content-length") ?? 0) > 2048) throw Error();
     const user = await currentUser();
     return NextResponse.json(
-      { preference: await savePreferences(await req.json(), user?.id) },
+      { preference: await savePreferences(await req.json(), user ?? undefined) },
       { headers: { "Cache-Control": "no-store" } },
     );
   } catch (error) {

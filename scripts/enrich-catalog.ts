@@ -1,5 +1,4 @@
 import { PrismaClient } from "@prisma/client";
-import { mkdir, writeFile } from "node:fs/promises";
 import { normalize } from "../src/lib/catalog";
 import { sampleChart } from "../src/lib/sizing";
 import { expandedDesigns } from "./catalog-expansion";
@@ -225,88 +224,7 @@ const kindOf = (slug: string) =>
         : slug === "ao-khoac-len"
           ? "knit"
           : "top";
-const esc = (s: string) =>
-  s.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll('"', "&quot;");
-export function drawing(
-  slug: string,
-  title: string,
-  color: string,
-  i: number,
-  view: string,
-) {
-  const outline = "#746f68",
-    stroke = `stroke="${outline}" stroke-width="2" stroke-linejoin="round"`;
-  const pencil = /bút chì|slim/.test(title),
-    wide = /rộng|culottes/.test(title),
-    short = /cropped|dáng ngắn/.test(title),
-    pleat = /ly|nếp/.test(title),
-    bow = /nơ/.test(title),
-    vneck = /cổ V|cổ tim|cổ đổ/.test(title),
-    sleeveless = /sát nách|gile/.test(title),
-    puff = /phồng|bồng/.test(title);
-  let shape = "";
-  const y = short ? 380 : 450,
-    neck = vneck ? 260 : 205;
-  function top(x = 0, scale = 1, blazer = false) {
-    const shortSleeve = /tay ngắn|cánh tiên|tulip/.test(title),
-      halfSleeve = /tay lỡ/.test(title);
-    const left = sleeveless
-      ? "174 270 188 230"
-      : puff
-        ? "97 280 138 332 178 266"
-        : shortSleeve
-          ? "112 280 157 300 182 245"
-          : halfSleeve
-            ? "106 337 153 352 182 267"
-            : "99 401 149 415 182 267";
-    const right = sleeveless
-      ? "324 230 338 270"
-      : puff
-        ? "374 332 415 280"
-        : shortSleeve
-          ? "330 245 355 300 400 280"
-          : halfSleeve
-            ? "359 352 406 337"
-            : "363 415 413 401";
-    const collar = /cổ vuông/.test(title)
-      ? "M221 176V232H291V176"
-      : /cổ thuyền/.test(title)
-        ? "M209 180Q256 208 303 180"
-        : /cổ trụ|cổ tàu|cổ lọ/.test(title)
-          ? "M228 178V163H284V178M228 178Q256 198 284 178"
-          : /cổ đức|cổ nhọn|polo/.test(title)
-            ? "M221 176L256 211 238 235 214 190M291 176L256 211 274 235 298 190"
-            : `M221 176Q256 ${neck + 30} 291 176`;
-    const hem = /peplum/.test(title)
-      ? `176 325 158 ${y}H354L336 325 330 267`
-      : /chiết eo/.test(title)
-        ? `191 326 176 ${y}H336L321 326 330 267`
-        : /vạt lệch|vạt chéo/.test(title)
-          ? `176 ${y}L336 ${y - 28} 330 267`
-          : `176 ${y}H336L330 267`;
-
-    return `<g transform="translate(${x} 0) scale(${scale})"><path d="M188 168L${puff ? 115 : 137} 195 ${left} ${hem} ${right} 375 195 324 168 291 190H221Z" fill="${color}" ${stroke}/><path d="${collar}${/khuy sau/.test(title) ? "" : `M256 ${neck}V${y}`}" fill="none" ${stroke}/>${blazer ? `<path d="M221 178L208 259 250 312 232 349M291 178L304 259 262 312 280 349M195 369H237M275 369H317" fill="none" ${stroke}/>` : ""}${bow ? `<path d="M256 219Q198 178 216 239L256 225 295 239Q314 178 256 219L237 291M256 225L277 291" fill="${color}" ${stroke}/>` : ""}${/khuy sau|nẹp giấu/.test(title) ? "" : Array.from({ length: blazer ? (/hai/.test(title) ? 2 : 1) : 4 }, (_, b) => `<circle cx="${/hai hàng/.test(title) ? 238 : 256}" cy="${blazer ? 330 + b * 40 : 275 + b * 36}" r="3" fill="${outline}"/>${/hai hàng/.test(title) ? `<circle cx="274" cy="${330 + b * 40}" r="3" fill="${outline}"/>` : ""}`).join("")}${pleat ? '<path d="M204 235V402M219 235V402M293 235V402M308 235V402" fill="none" stroke="#746f68" opacity=".4"/>' : ""}${/túi/.test(title) ? '<path d="M285 270H318V315H285Z" fill="none" stroke="#746f68"/>' : ""}</g>`;
-  }
-  function trousers() {
-    return `<path d="M179 150H333L347 270 ${wide ? "363 548H269L256 315 243 548H149" : pencil ? "319 548H268L256 315 244 548H193" : "339 548H270L256 315 242 548H173"}L165 270Z" fill="${color}" ${stroke}/><path d="M179 176H333M256 176V315M193 190L179 246M319 190L333 246" fill="none" ${stroke}/>${pleat ? '<path d="M213 190L204 529M299 190L308 529" fill="none" stroke="#746f68" opacity=".5"/>' : ""}`;
-  }
-  function skirt() {
-    return `<path d="M184 165H328L${pencil ? 342 : 382} 529H${pencil ? 170 : 130}Z" fill="${color}" ${stroke}/><path d="M184 191H328" ${stroke}/>${pleat ? Array.from({ length: 9 }, (_, n) => `<path d="M${190 + n * 16} 195L${146 + n * 28} 517" stroke="#746f68" opacity=".4"/>`).join("") : ""}${/xẻ/.test(title) ? '<path d="M289 529L281 437" stroke="#746f68"/>' : ""}${/vạt chéo/.test(title) ? '<path d="M211 190L343 529" stroke="#746f68"/>' : ""}`;
-  }
-  if (slug === "quan-tay") shape = trousers();
-  else if (slug === "chan-vay") shape = skirt();
-  else if (slug === "dam-cong-so")
-    shape = `<path d="M212 130L170 156 141 253 184 270 204 215 211 303 ${pencil ? "178" : "133"} 547H${pencil ? "334" : "379"}L301 303 308 215 328 270 371 253 342 156 300 130 279 155H233Z" fill="${color}" ${stroke}/><path d="M233 149Q256 ${vneck ? 233 : 196} 279 149M211 303H301" fill="none" ${stroke}/>${pleat ? Array.from({ length: 7 }, (_, n) => `<path d="M${219 + n * 12} 310L${156 + n * 33} 532" stroke="#746f68" opacity=".4"/>`).join("") : ""}${/đai/.test(title) ? '<path d="M211 304H301L277 323H236Z" fill="none" stroke="#746f68"/>' : ""}`;
-  else if (slug === "set-cong-so")
-    shape = `<g transform="translate(-28 30) scale(.66)">${top(0, 1, /blazer/.test(title))}</g><g transform="translate(196 172) scale(.64)">${/váy/.test(title) ? skirt() : /quần/.test(title) ? trousers() : top(0, 1, true)}</g>${/gile và quần/.test(title) && /blazer/.test(title) ? `<g transform="translate(138 5) scale(.36)">${top()}</g>` : ""}`;
-  else shape = top(0, 1, slug === "ao-vest-blazer");
-  const striped = /sọc|kẻ/.test(title),
-    tweed = /tweed/.test(title),
-    knit = slug === "ao-khoac-len";
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${view === "detail" ? "170 150 170 210" : "0 0 512 683"}"><defs><pattern id="texture" width="${striped ? 14 : 8}" height="8" patternUnits="userSpaceOnUse"><path d="${striped ? "M3 0V8" : tweed ? "M0 0L8 8M0 8L8 0" : knit ? "M2 0L6 4 2 8" : "M1 1H2"}" stroke="${outline}" opacity=".16" fill="none"/></pattern><filter id="t"><feFlood flood-color="${outline}" flood-opacity=".04"/><feComposite in2="SourceGraphic" operator="in"/><feMerge><feMergeNode in="SourceGraphic"/><feMergeNode/></feMerge></filter></defs><rect width="512" height="683" fill="#f5f3ef"/><g${view === "back" ? ' transform="translate(512 0) scale(-1 1)"' : ""} filter="url(#t)">${shape}${shape.replaceAll(`fill="${color}"`, 'fill="url(#texture)"')}</g><text visibility="hidden" x="256" y="620" text-anchor="middle" font-family="Arial" font-size="12" fill="#716c64">${esc(title)}</text><text visibility="hidden" x="256" y="644" text-anchor="middle" font-family="Arial" font-size="11" fill="#716c64">${view === "back" ? "GÓC ĐỐI DIỆN" : view === "detail" ? "CHI TIẾT" : "HÌNH MINH HỌA TRANG PHỤC"}</text></svg>`;
-}
 export async function enrichCatalog(db: PrismaClient, refreshOutfits = false) {
-  await mkdir("public/images", { recursive: true });
   let next =
     Math.max(
       100,
@@ -317,7 +235,7 @@ export async function enrichCatalog(db: PrismaClient, refreshOutfits = false) {
         })
       ).map((p) => (/^HN\d+$/.test(p.sku) ? Number(p.sku.slice(2)) : 0)),
     ) + 1;
-  // Seed the original 180 first so fresh test databases preserve the same SKU/asset mapping as upgraded stores.
+  // Seed the original 180 first so fresh databases preserve the upgraded SKU mapping.
   for (const catalogPass of [0, 1]) {
     for (const [slug, fullList] of Object.entries(designs)) {
       const originalCount = fullList.length - expandedDesigns[slug].length;
@@ -494,23 +412,6 @@ export async function enrichCatalog(db: PrismaClient, refreshOutfits = false) {
             update: {},
             create: { productId: p.id, name, hex, position: ci },
           });
-          const images = [];
-          for (const [position, view] of [
-            "front",
-            "back",
-            "detail",
-          ].entries()) {
-            const url = `/images/${sku.toLowerCase()}-${ci}-${view}.svg`;
-            await writeFile(`public${url}`, drawing(slug, title, hex, i, view));
-            images.push({
-              url,
-              alt: `${title} — ${name}, ${view === "front" ? "mặt trước" : view === "back" ? "góc đối diện" : "chi tiết minh họa"}`,
-              position,
-            });
-          }
-          await db.colorImage.createMany({
-            data: images.map((img) => ({ ...img, colorId: c.id })),
-          });
           if (ci < oldNames.length)
             await db.productVariant.updateMany({
               where: { productId: p.id, color: `__migration_${ci}` },
@@ -533,22 +434,6 @@ export async function enrichCatalog(db: PrismaClient, refreshOutfits = false) {
                 stockOrigin: "SAMPLE",
               },
             });
-          if (ci === 0) {
-            const current = await db.productImage.findMany({
-              where: { productId: p.id },
-              orderBy: { position: "asc" },
-            });
-            for (const [position, img] of images.entries())
-              if (current[position])
-                await db.productImage.update({
-                  where: { id: current[position].id },
-                  data: img,
-                });
-              else
-                await db.productImage.create({
-                  data: { ...img, productId: p.id },
-                });
-          }
         }
         // Legacy catalogs originally have two colors. Refuse to drop unexpected extra inventory.
         await db.product.update({
@@ -664,27 +549,6 @@ export async function enrichCatalog(db: PrismaClient, refreshOutfits = false) {
 }
 if (process.argv[1]?.endsWith("enrich-catalog.ts")) {
   const db = new PrismaClient();
-  (process.argv.includes("--assets-only")
-    ? rebuildSampleAssets(db)
-    : enrichCatalog(db, process.argv.includes("--refresh-outfits"))
-  ).finally(() => db.$disconnect());
-}
-
-export async function rebuildSampleAssets(db: PrismaClient) {
-  const products = await db.product.findMany({
-    where: { enrichmentVersion: { gte: 1 } },
-    include: { category: true, colors: { include: { images: true } } },
-  });
-  for (const p of products)
-    for (const c of p.colors)
-      for (const image of c.images) {
-        if (!/^\/images\/hn\d+-\d+-(front|back|detail)\.svg$/.test(image.url))
-          continue;
-        const view = image.url.split("-").at(-1)!.replace(".svg", "");
-        await writeFile(
-          "public" + image.url,
-          drawing(p.category.slug, p.name, c.hex, 0, view),
-        );
-      }
-  console.log("Rebuilt sample SVG assets; database and inventory untouched.");
+  enrichCatalog(db, process.argv.includes("--refresh-outfits"))
+    .finally(() => db.$disconnect());
 }

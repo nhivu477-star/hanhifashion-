@@ -7,8 +7,8 @@ import { operationalAudit, requireActorPermission } from "./authorization";
 import { adminSnapshot } from "./admin-audit";
 
 export async function saveProduct(
-  b: Record<string, any>,
-  actor: { id: string },
+  b: Record<string, unknown>,
+  actor: { id: string; permissionVersion: number },
 ) {
   return orderTransaction(async (db) => {
     await requireActorPermission(
@@ -71,11 +71,21 @@ export async function saveProduct(
       if (!sub || sub.parentId !== root.id)
         throw new Error("Danh mục con phải thuộc danh mục chính đã chọn.");
     }
-    const skuPrefix = productSkuPrefix(root.slug);
-    if (!data.sku)
-      data.sku = nextProductSku(skuPrefix, await db.product.findMany({ where: { sku: { startsWith: skuPrefix } }, select: { sku: true } }));
-    if (!productSkuPattern.test(data.sku) || !data.sku.startsWith(skuPrefix) || data.sku.endsWith("0000"))
-      throw new Error(`Mã sản phẩm phải theo dạng ${skuPrefix}0001 và đúng nhóm danh mục.`);
+    const storedIdentity = b.id
+      ? await db.product.findUnique({
+          where: { id: String(b.id) },
+          select: { sku: true, categoryId: true },
+        })
+      : null;
+    const unchangedIdentity = storedIdentity &&
+      storedIdentity.sku === data.sku && storedIdentity.categoryId === data.categoryId;
+    if (!unchangedIdentity) {
+      const skuPrefix = productSkuPrefix(root.slug);
+      if (!data.sku)
+        data.sku = nextProductSku(skuPrefix, await db.product.findMany({ where: { sku: { startsWith: skuPrefix } }, select: { sku: true } }));
+      if (!productSkuPattern.test(data.sku) || !data.sku.startsWith(skuPrefix) || data.sku.endsWith("0000"))
+        throw new Error(`Mã sản phẩm phải theo dạng ${skuPrefix}0001 và đúng nhóm danh mục.`);
+    }
     const searchText = normalize(Object.values(data).join(" "));
     const image = z
       .string()

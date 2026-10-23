@@ -1,0 +1,55 @@
+name: Verify application
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      DATABASE_URL: file:./ci-build.db
+      STORE_MODE: preview
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Generate Prisma client
+        run: pnpm db:generate
+      - name: Lint
+        run: pnpm lint
+      - name: Typecheck
+        run: pnpm typecheck
+      - name: Unit and boundary tests
+        run: pnpm test
+      - name: Migrate isolated build database
+        run: pnpm db:migrate
+      - name: Production build
+        run: pnpm build
+      - name: Critical business and authorization flows
+        run: pnpm test:critical
+      - name: Install browser
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Browser business flows
+        run: pnpm test:e2e
+      - name: Role and end-to-end acceptance
+        run: pnpm test:uat
+      - name: Dependency security audit
+        run: pnpm audit --audit-level=moderate

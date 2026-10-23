@@ -79,7 +79,7 @@ export function validPromotion(
     subtotal >= coupon.minimum
   );
 }
-export async function savePromotion(input: unknown, actor: { id: string }) {
+export async function savePromotion(input: unknown, actor: { id: string; permissionVersion: number }) {
   const d = promotionInput.parse(input);
   const id = z.object({ id: z.string().optional() }).parse(input).id;
   return orderTransaction(async (tx) => {

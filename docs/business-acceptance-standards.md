@@ -2,6 +2,8 @@
 
 Ngày lập: 19/10/2026, điều chỉnh ngày 20/10/2026. Mốc nghiệm thu hiện hành là `business-acceptance-31.md` (31 Use Case phù hợp HÀ NHI). Phạm vi phân hệ tại `admin-functional-scope.md` và đặc tả hiện tại. Thực thi trong ứng dụng hiện hữu, không tạo dự án khác.
 
+Chỉ mục BA: [BRD](business-requirements.md), [use cases](use-cases.md), [rules](business-rules.md), [quy trình](business-processes.md), [ERD](data-model.md), [test scenarios](test-scenarios.md). Mã `STAFF-*` dưới đây là mã chức năng lịch sử, không phải vai trò. Chỉ CUSTOMER/SELLER/ADMIN; chỉ ADMIN quản trị tài khoản, đọc audit toàn hệ thống và xử lý quyết định/kiểm hàng/đổi trả/tài chính. SELLER chỉ đọc đổi trả để hỗ trợ.
+
 ## Phạm vi và chuẩn quyết định
 
 - Môi trường LOCAL E-COMMERCE DEMO theo PROJECT_SPEC: giao nhận, COD, đối soát và hoàn tiền là ghi nhận/mô phỏng nội bộ. Không phải nghiệm thu vận chuyển hoặc thanh toán thật.
@@ -36,6 +38,7 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 9. Retry SQLite chỉ cho transaction đã rollback, có giới hạn. Không retry tác vụ tiền/stock ngoài transaction. Khôi phục backup phải integrity_check=ok, foreign_key_check=0 và nội dung nghiệp vụ khớp.
 10. Hỗ trợ liên kết theo userId được server xác định khi gửi, không ghép bằng email người dùng nhập. Hồ sơ khách chỉ cho staff có quyền; đơn/returns/support có quyền riêng.
 11. Export CSV và Excel có cùng scope/filter/permission; `.xlsx` thật, số/ngày có kiểu và text bắt đầu '=' không được trở thành formula. Dữ liệu tải về private/no-store; ghi audit export.
+12. RETURNED→CANCELLED cần đơn UNPAID và kiểm đủ mọi dòng qua returnedItems: mỗi OrderItem đúng một lần, sellableQuantity/damagedQuantity nguyên không âm, tổng bằng quantity dòng. Chỉ hoàn tồn lượng bán được đúng một lần; hàng hỏng không vào tồn bán, phân loại giữ audit/history vận hành. Không tạo ReturnInspection hậu mãi; hủy trước bàn giao giữ quy tắc hoàn tồn bình thường. Xem [TS-035](test-scenarios.md).
 
 ## Danh mục use case và kịch bản nghiệm thu
 
@@ -261,7 +264,7 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 
 ### ORDER-01 — Danh sách / chi tiết / tra cứu
 
-- **Actors & RBAC:** orders.read; khách sở hữu; guest capability tối thiểu.
+- **Actors & RBAC:** orders.read; khách có phiên sở hữu; capability chỉ đơn guest cũ userId=null, không thay phiên cho đơn gắn tài khoản.
 - **Given / tiền điều kiện:** Đơn tồn tại; đúng ownership/quyền.
 - **When / main:** Tìm mã → xem snapshot/timeline thực.
 - **Alternative:** Tra cứu mã+phone chỉ dữ liệu tối thiểu.
@@ -284,11 +287,11 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 ### ORDER-03 — Hủy toàn bộ
 
 - **Actors & RBAC:** orders.cancel hoặc owner trước chuẩn bị.
-- **Given / tiền điều kiện:** UNPAID; chưa giao hoặc hàng chuyển hoàn đã về.
-- **When / main:** Cancel → hoàn lượng còn lại → release voucher một lần.
-- **Alternative:** Retry CANCELLED no-op; trả về rồi hủy.
-- **Exception:** Đã PAID; đang giao/chưa hoàn về; khách hủy muộn.
-- **Then / hậu điều kiện & integrity:** Hoàn tồn/coupon/history/audit atomic; paid dùng refund flow.
+- **Given / tiền điều kiện:** UNPAID; chưa giao hoặc hàng chuyển hoàn đã về và có phân loại từng dòng bán được/hỏng hợp lệ.
+- **When / main:** Cancel → hoàn lượng hợp lệ (RETURNED chỉ sellableQuantity đã kiểm) → release voucher một lần.
+- **Alternative:** Retry CANCELLED no-op; trả về rồi kiểm đủ returnedItems trước hủy.
+- **Exception:** Đã PAID; đang giao/chưa hoàn về; khách hủy muộn; RETURNED thiếu/trùng/sai dòng hoặc tổng lượng bán được/hỏng không bằng lượng dòng.
+- **Then / hậu điều kiện & integrity:** Chỉ phần bán được hoàn tồn sau chuyển hoàn; stock/movement/coupon/history/audit kiểm hàng atomic; paid dùng refund flow.
 - **State transitions:** PENDING/CONFIRMED/PROCESSING/RETURNED→CANCELLED.
 - **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
@@ -332,7 +335,7 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 - **When / main:** Failure→retry hoặc returning→returned.
 - **Alternative:** Hủy trước pickup; retry event.
 - **Exception:** Đánh delivered từ returned; hoàn tồn trước hàng về.
-- **Then / hậu điều kiện & integrity:** Không hoàn tồn tại cả RETURNED và CANCELLED; timeline thật.
+- **Then / hậu điều kiện & integrity:** RETURNED không tự hoàn tồn; CANCELLED sau kiểm từng dòng chỉ hoàn lượng bán được đúng một lần, hàng hỏng không cộng tồn bán; timeline thật.
 - **State transitions:** DELIVERY_FAILED / RETURNING / RETURNED.
 - **Bằng chứng kiểm thử cần đối chiếu:** kết quả thực thi của phiên bản đang nghiệm thu.
 
@@ -503,8 +506,8 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 
 ### STAFF-01 — Tạo / sửa / khóa tài khoản
 
-- **Actors & RBAC:** staff.* / accounts.manage.
-- **Given / tiền điều kiện:** Không tự nâng quyền; actor có grant phù hợp.
+- **Actors & RBAC:** ADMIN với accounts.manage và quyền staff.* tương ứng.
+- **Given / tiền điều kiện:** ADMIN hoạt động; không tự đổi role/tự khóa hoặc loại ADMIN hoạt động cuối.
 - **When / main:** Tạo ADMIN/SELLER/CUSTOMER (chỉ ba vai trò chuẩn); sửa, khóa/mở.
 - **Alternative:** Chỉ chấp nhận CUSTOMER, SELLER, ADMIN; vai trò khác bị từ chối.
 - **Exception:** Email trùng, role client không cho phép, khóa chính mình, loại ADMIN cuối.
@@ -517,7 +520,7 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 - **Actors & RBAC:** Mọi role; default deny.
 - **Given / tiền điều kiện:** Phiên active/version đúng; quyền tại backend/service.
 - **When / main:** Menu/form theo quyền; API/service xác minh riêng.
-- **Alternative:** Vai trò chuyên biệt chỉ được nhóm việc tương ứng.
+- **Alternative:** SELLER chỉ nhóm vận hành được cấp, đổi trả chỉ đọc; CUSTOMER chỉ dữ liệu của mình; ADMIN toàn quyền theo ma trận ba vai trò.
 - **Exception:** Ẩn UI nhưng gọi API trực tiếp; role giả; hết phiên; sửa ID ngoài scope.
 - **Then / hậu điều kiện & integrity:** Không thay dữ liệu khi denied; denial audit không chứa bí mật.
 - **State transitions:** Authorized / Denied.
@@ -525,8 +528,8 @@ Mọi thao tác tài chính dùng VND nguyên không âm, trong phạm vi cột 
 
 ### STAFF-03 — Nhật ký thao tác
 
-- **Actors & RBAC:** audit.read.
-- **Given / tiền điều kiện:** Nhân viên có quyền đọc nhật ký.
+- **Actors & RBAC:** ADMIN với audit.read.
+- **Given / tiền điều kiện:** ADMIN có phiên hợp lệ để đọc nhật ký toàn hệ thống.
 - **When / main:** Lọc/xem audit theo actor/resource/result.
 - **Alternative:** Bản ghi cũ thiếu actor được giữ.
 - **Exception:** Không có API sửa/xóa audit; token/password/PII nhạy cảm phải loại.

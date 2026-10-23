@@ -1,7 +1,7 @@
 import { LocalizedContent } from "@/components/localization";
 import Link from "next/link";
 import { policyLinks, type ContentEntry } from "@/lib/content";
-import { officialContacts } from "@/lib/taxonomy";
+import { ContactLinks } from "./contact-links";
 export function PolicyPage({
   slug,
   entry,
@@ -72,22 +72,7 @@ export function PolicyPage({
                   trợ đơn hàng, vui lòng cung cấp mã đơn để thuận tiện đối
                   chiếu.
                 </p>
-                <div>
-                  <a
-                    className="text-link"
-                    href={officialContacts.instagramMessageUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Nhắn tin với HÀ NHI →
-                  </a>
-                  <a href={"mailto:" + officialContacts.contactEmail}>
-                    {officialContacts.contactEmail}
-                  </a>
-                  <a href={"tel:" + officialContacts.contactPhone}>
-                    {officialContacts.contactPhone}
-                  </a>
-                </div>
+                <ContactLinks />
               </section>
               <nav className="policy-related" aria-label="Chính sách liên quan">
                 {policyLinks

@@ -1,27 +1,26 @@
 import { createServer } from "node:net";
 import { spawn, execFileSync } from "node:child_process";
-import { mkdir, open, readFile, writeFile } from "node:fs/promises";
+import { mkdir, open, readFile, realpath, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { randomUUID } from "node:crypto";
 await new Promise<void>((resolve, reject) => {
   const p = createServer();
   p.once("error", () => reject(Error("UAT port 3102 already occupied")));
   p.listen(3102, "127.0.0.1", () => p.close(() => resolve()));
 });
+if (await realpath("prisma") !== path.resolve("prisma"))
+  throw Error("UAT database directory must not contain symbolic links.");
 const name = `final-uat-browser-${Date.now()}.db`;
 const file = await open("prisma/" + name, "wx", 0o600);
 await file.close();
-execFileSync("python3", [
-  "-c",
-  "import sqlite3,sys; s=sqlite3.connect('file:'+sys.argv[1]+'?mode=ro',uri=True); d=sqlite3.connect(sys.argv[2]); s.backup(d); d.close(); s.close()",
-  path.resolve("prisma/dev.db"),
-  path.resolve("prisma/" + name),
-]);
+const imageName = `uat-${randomUUID()}.webp`;
 const env = {
   ...process.env,
   DATABASE_URL: "file:./" + name,
   STORE_MODE: "preview",
   NEXT_DIST_DIR: ".next-production",
   NEXT_TELEMETRY_DISABLED: "1",
+  UAT_IMAGE_NAME: imageName,
 };
 await mkdir("verification/final-uat", { recursive: true });
 const original = await readFile("next-env.d.ts", "utf8");
@@ -91,4 +90,5 @@ try {
     else server.once("exit", () => r());
   });
   await writeFile("next-env.d.ts", original);
+  await unlink(path.join("public/uploads", imageName));
 }

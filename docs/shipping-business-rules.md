@@ -8,7 +8,7 @@ Chỉ LOCAL_MANUAL, không tích hợp hãng hoặc giữ adapter có thể bậ
 - Phí giao thực tế trên shipment tách Order.shipping khách đã đồng ý; không sửa giá lịch sử.
 - Snapshot địa chỉ lấy từ order ở server; expectedCOD lấy từ Payment.amount. Khách không được gửi tổng COD hay snapshot thay thế.
 - Trạng thái shipment chi tiết riêng; đồng bộ trạng thái đơn thô qua validator nghiệp vụ trong cùng transaction. Đơn đã có shipment phải dùng module shipping để ghi nhận giao/thu COD, tránh hai nguồn dữ liệu lệch nhau.
-- Giao thất bại và RETURNING/RETURNED không tự hoàn tồn; RETURNED rồi hủy đơn mới hoàn tồn một lần theo nghiệp vụ. Hủy trước bàn giao đồng thời hủy shipment. Không hủy kiện đang lưu chuyển.
+- Giao thất bại và RETURNING/RETURNED không tự hoàn tồn. Trước hủy đơn RETURNED + UNPAID, vận hành phải kiểm đủ từng dòng `{orderItemId, sellableQuantity, damagedQuantity}`: không âm/trùng/thiếu, tổng bằng lượng dòng. Chỉ lượng bán được hoàn tồn một lần cùng transaction CANCELLED, movement, audit phân loại và history; hàng hỏng không cộng tồn bán. Đây không phải ReturnInspection hậu mãi. Hủy trước bàn giao đồng thời hủy shipment và giữ quy tắc hoàn tồn bình thường. Không hủy kiện đang lưu chuyển.
 - Mọi event có from/to/time/actor/source=LOCAL_MANUAL. Failure reason bắt buộc thuộc nhóm lý do rõ ràng; không có webhook/carrier thật.
 - Ghi nhận tài chính append-only, idempotency key và reference unique. Sửa sai bằng bản ghi correction có liên kết bản gốc và audit, không ghi đè lịch sử.
 - Không đưa chứng từ/ghi chú đối soát nội bộ vào giao diện/API khách.

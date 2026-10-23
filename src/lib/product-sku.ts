@@ -1,6 +1,24 @@
 export const productSkuPattern = /^HN-(TP|G|T|PK)-\d{4}$/;
+const skuGroups: Readonly<Record<string, string>> = {
+  "trang-phuc": "TP",
+  ao: "TP",
+  dam: "TP",
+  "quan-vay": "TP",
+  "bo-trang-phuc": "TP",
+  "ao-so-mi": "TP",
+  "ao-kieu": "TP",
+  "ao-vest-blazer": "TP",
+  "quan-tay": "TP",
+  "chan-vay": "TP",
+  "dam-cong-so": "TP",
+  "set-cong-so": "TP",
+  "ao-khoac-len": "TP",
+  giay: "G",
+  "tui-xach": "T",
+  "phu-kien": "PK",
+};
 export function productSkuPrefix(categorySlug: string) {
-  const group = ({'trang-phuc': 'TP', ao: 'TP', dam: 'TP', 'quan-vay': 'TP', 'bo-trang-phuc': 'TP', giay: 'G', 'tui-xach': 'T', 'phu-kien': 'PK'} as Record<string, string>)[categorySlug];
+  const group = Object.hasOwn(skuGroups, categorySlug) ? skuGroups[categorySlug] : undefined;
   if (!group) throw new Error('Danh mục chưa có nhóm mã sản phẩm.');
   return `HN-${group}-`;
 }

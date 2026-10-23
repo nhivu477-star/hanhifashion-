@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs";
+import type { Prisma } from "@prisma/client";
 import {
   ProductReviews,
   OrderReviewForms,
@@ -39,18 +41,17 @@ import {
   ArrowUpRight,
   Check,
   Package,
-  Heart,
   UserRound,
   MapPin,
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { currentUser } from "@/lib/auth";
 import { catalogQuery, PAGE_SIZE, Params, scalar } from "@/lib/queries";
-import { categories, money, statusLabels, sizeGuide } from "@/lib/catalog";
+import { categories, money, statusLabels } from "@/lib/catalog";
 import {
   ProductCard,
   ProductPurchase,
-  Gallery,
+  SafeImage,
   SimpleForm,
   ActionButton,
   WishlistPage,
@@ -72,8 +73,14 @@ export async function generateMetadata({
   const t = (text: string) => translateText(text, language);
   if (path[0] === "san-pham") {
     const alias = await productAlias(path[1]);
-    const p = await db.product.findUnique({
-      where: { slug: alias?.split("/").pop() ?? path[1] },
+    const p = await db.product.findFirst({
+      where: {
+        slug: alias?.split("/").pop() ?? path[1],
+        active: true,
+        ...publicationFilter(),
+        category: { active: true },
+      },
+      select: { name: true, description: true },
     });
     return {
       title: t(p?.name ?? "Sản phẩm"),
@@ -231,11 +238,26 @@ async function Home() {
       }),
     })),
   );
+  const hasPhotography =
+    existsSync(process.cwd() + "/public/images/lsoul/banner-awak-1.webp") &&
+    (await db.product.count({
+      where: {
+        slug: {
+          in: [
+            "ls-awak-jacket", "ls-charli-set", "ls-erros-top",
+            "ls-ers-jeans", "ls-magna-dress", "ls-moore-dress",
+          ],
+        },
+        active: true,
+        ...publicationFilter(),
+        category: { active: true },
+      },
+    })) === 6;
   return (
     <LocalizedContent>
       {
         <main className="fashion-home">
-          <FashionCampaign />
+          <FashionCampaign hasPhotography={hasPhotography} />
           <section className="fashion-product-section">
             <div className="fashion-section-title">
               <h2>Thiết kế mới</h2>
@@ -291,43 +313,40 @@ async function Catalog({
   const result = emptySearch
     ? { products: [], count: 0, page: 1, filterError: null }
     : await catalogQuery(effective, cat?.slug, col?.slug);
-  const filterProducts = await db.product.findMany({
-    where: {
-      active: true,
-      ...publicationFilter(),
-      category: { active: true },
-      ...(cat
-        ? cat.parentId
-          ? { subcategoryId: cat.id }
-          : { categoryId: cat.id }
-        : {}),
-      ...(col ? { collections: { some: { collectionId: col.id } } } : {}),
-    },
-    select: {
-      material: true,
-      fit: true,
-      occasion: true,
-      colors: {
-        where: { active: true },
-        select: { name: true, variants: { select: { size: true } } },
+  const filterWhere: Prisma.ProductWhereInput = {
+    active: true,
+    ...publicationFilter(),
+    category: { active: true },
+    ...(cat
+      ? cat.parentId
+        ? { subcategoryId: cat.id }
+        : { categoryId: cat.id }
+      : {}),
+    ...(col ? { collections: { some: { collectionId: col.id } } } : {}),
+  };
+  // Ask SQLite for facet values instead of loading every product and variant.
+  const [attributes, variants] = await Promise.all([
+    db.product.groupBy({
+      by: ["material", "fit", "occasion"],
+      where: filterWhere,
+    }),
+    db.productVariant.groupBy({
+      by: ["size", "color"],
+      where: {
+        product: filterWhere,
+        OR: [{ colorId: null }, { colorRecord: { active: true } }],
       },
-    },
-  });
+    }),
+  ]);
   const uniqueOptions = (items: string[]) => [
     ...new Set(items.filter(Boolean)),
   ];
   const filterOptions = {
-    sizes: uniqueOptions(
-      filterProducts.flatMap((p) =>
-        p.colors.flatMap((c) => c.variants.map((v) => v.size)),
-      ),
-    ),
-    colors: uniqueOptions(
-      filterProducts.flatMap((p) => p.colors.map((c) => c.name)),
-    ),
-    materials: uniqueOptions(filterProducts.map((p) => p.material)),
-    fits: uniqueOptions(filterProducts.map((p) => p.fit)),
-    occasions: uniqueOptions(filterProducts.map((p) => p.occasion)),
+    sizes: uniqueOptions(variants.map((v) => v.size)),
+    colors: uniqueOptions(variants.map((v) => v.color)),
+    materials: uniqueOptions(attributes.map((p) => p.material)),
+    fits: uniqueOptions(attributes.map((p) => p.fit)),
+    occasions: uniqueOptions(attributes.map((p) => p.occasion)),
   };
   const title =
     col?.name ??
@@ -360,6 +379,7 @@ async function Catalog({
               categories={await db.category.findMany({
                 where: { active: true },
                 orderBy: { sortOrder: "asc" },
+                select: { id: true, name: true, slug: true, parentId: true },
               })}
             />
             <div className="catalog-results">
@@ -417,8 +437,8 @@ async function Catalog({
               </nav>
               {params.sort === "popular" && (
                 <p className="small muted">
-                  Sắp xếp theo số dòng đơn hàng trong cơ sở dữ liệu, không phải
-                  doanh số thực tế.
+                  Sắp xếp theo số lượng sản phẩm trong các đơn đã giao hoặc hoàn
+                  tất trên dữ liệu local, không phải doanh số thực tế.
                 </p>
               )}
             </div>
@@ -480,13 +500,14 @@ async function Product({ slug, colorId }: { slug: string; colorId?: string }) {
     !p ||
     (commercialMode() &&
       (p.publicationStatus !== "READY" || !p.merchandiseVerified)) ||
-    !p.active
+    !p.active ||
+    !p.category.active
   )
     notFound();
   return (
     <LocalizedContent>
       {
-        <main className="container">
+        <main className="container product-page">
           <Breadcrumb label={p.name} />
           <ProductSelection
             key={p.id + colorId}
@@ -505,24 +526,30 @@ async function Product({ slug, colorId }: { slug: string; colorId?: string }) {
                 <p className="product-short-description">{p.description}</p>
                 <ProductPurchase product={p} />
                 <div className="product-accordions">
-                  <details open>
+                  <details>
                     <summary>Chi tiết thiết kế</summary>
-                    <p style={{ whiteSpace: "pre-line" }}>
-                      {p.details || p.description}
-                    </p>
-                    <p>
-                      Chất liệu: {p.material}
-                      <br />
-                      Phom dáng: {p.fit}
-                      <br />
-                      Kiểu tay: {p.sleeveType || "Theo thiết kế"}
-                      <br />
-                      Chiều dài: {p.length || "Theo thiết kế"}
-                      <br />
-                      Phong cách bổ sung: {p.styleTags || p.style}
-                      <br />
-                      Phong cách: {p.style}
-                    </p>
+                    {p.details && p.details !== p.description && (
+                      <p style={{ whiteSpace: "pre-line" }}>{p.details}</p>
+                    )}
+                    <dl className="product-specs">
+                      {[
+                        ["Chất liệu", p.material],
+                        ["Phom dáng", p.fit],
+                        ["Kiểu tay", p.sleeveType],
+                        ["Chiều dài", p.length],
+                        ["Phong cách", p.styleTags || p.style],
+                      ]
+                        .filter(([, value]) =>
+                          value && !["Theo thiết kế", "Thời trang nữ"].includes(value),
+                        )
+                        .map(([label, value]) => (
+                          <div key={label}>
+                            <dt>{label}</dt>
+                            <dd>{value}</dd>
+                          </div>
+                        ))}
+                    </dl>
+                    {p.styling && <p>{p.styling}</p>}
                   </details>
                   <details>
                     <summary>Chăm sóc trang phục</summary>
@@ -550,10 +577,8 @@ async function Product({ slug, colorId }: { slug: string; colorId?: string }) {
                 </div>
               </section>
             </div>
-            <p className="product-styling-copy">{p.styling}</p>
             <OutfitSuggestions product={p} />
           </ProductSelection>
-          <ProductReviews productId={p.id} />
           <ProductSection
             title="Có thể nàng sẽ thích"
             subtitle="Thêm những lựa chọn cho phong cách của nàng"
@@ -569,6 +594,7 @@ async function Product({ slug, colorId }: { slug: string; colorId?: string }) {
               include,
             })}
           />
+          <ProductReviews productId={p.id} />
         </main>
       }
     </LocalizedContent>
@@ -596,9 +622,9 @@ async function OrderDetail({
   if (!order) notFound();
   const access = (await cookies()).get("hn_order_" + order.code)?.value;
   if (!(
-    u?.id === order.userId ||
+    (u && u.id === order.userId) ||
     (u && can(u.role, "orders.read")) ||
-    (code && access === order.accessToken)
+    (order.userId === null && code && access === order.accessToken)
   ))
     notFound();
   return (
@@ -628,7 +654,7 @@ async function OrderDetail({
             <div>
               {order.items.map((i) => (
                 <div className="cart-item" key={i.id}>
-                  <img src={i.image} alt={i.name} />
+                  <SafeImage src={i.image} alt={i.name} />
                   <div>
                     <Link href={"/san-pham/" + i.product.slug}>{i.name}</Link>
                     <p>
@@ -1043,9 +1069,6 @@ export default async function Page({
         </LocalizedContent>
       );
     const collections = await db.collection.findMany({
-      where: {
-        slug: { in: ["new-season", "statement", "essentials"] },
-      },
       orderBy: { createdAt: "asc" },
     });
     return (
@@ -1060,7 +1083,7 @@ export default async function Page({
             <div className="collections-grid">
               {collections.map((c) => (
                 <Link key={c.id} href={"/bo-suu-tap/" + c.slug}>
-                  <img src={c.image} alt={"Minh họa " + c.name} />
+                  <SafeImage src={c.image} alt={"Minh họa " + c.name} />
                   <h2>
                     {c.name} <ArrowUpRight size={24} />
                   </h2>
@@ -1135,12 +1158,9 @@ export default async function Page({
       <LocalizedContent>
         {
           <main className="auth-page">
-            <div className="auth-art">
-              <img
-                src="/images/auth-awak-user.png"
-                alt="Bộ ảnh Awak được chọn cho HÀ NHI FASHION"
-              />
+            <div className="auth-brand">
               <div>
+                <p className="eyebrow">HÀ NHI FASHION</p>
                 <h2>
                   Thanh lịch mỗi ngày.
                   <br />

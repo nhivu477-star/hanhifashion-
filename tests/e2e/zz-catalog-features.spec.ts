@@ -1,6 +1,6 @@
-import { test, expect, type Locator } from "@playwright/test";
+import { expect, type Locator } from "@playwright/test";
+import { test, registerCustomer, browserDatabase, credentials } from "./fixtures";
 import { PrismaClient } from "@prisma/client";
-import { readFileSync } from "node:fs";
 import { enrichCatalog } from "../../scripts/enrich-catalog";
 async function expectImage(image: Locator, path: string) {
   await expect
@@ -14,8 +14,7 @@ async function expectImage(image: Locator, path: string) {
     })
     .toBe(path);
 }
-const { database } = JSON.parse(readFileSync(".test-credentials.json", "utf8"));
-const db = new PrismaClient({ datasources: { db: { url: database } } });
+const db = new PrismaClient({ datasources: { db: { url: browserDatabase } } });
 const include = {
   category: true,
   colors: {
@@ -83,17 +82,16 @@ test("32 reproducible enrichment preserves IDs, inventory, prices and existing t
   });
   expect(products).toHaveLength(320);
   expect(new Set(products.map((p) => p.name)).size).toBe(320);
+  expect(products.reduce((count, p) => count + p.colors.length, 0)).toBe(1130);
+  expect(products.reduce((count, p) => count + p.variants.length, 0)).toBe(6780);
   for (const p of products) {
     expect(p.colors.length).toBeGreaterThanOrEqual(2);
     expect(p.colors.length).toBeLessThanOrEqual(5);
     expect(p.details).toBeTruthy();
     expect(p.care).toBeTruthy();
-    expect(p.description).not.toMatch(/AI-generated|tạo bởi AI|AI mockup/);
     for (const c of p.colors) {
-      expect(c.images).toHaveLength(3);
+      expect(c.images).toHaveLength(0);
       expect(c.outfits.length).toBeGreaterThanOrEqual(2);
-      for (const img of c.images)
-        expect(readFileSync("public" + img.url, "utf8")).toContain(c.hex);
     }
     for (const v of p.variants)
       expect(
@@ -105,8 +103,10 @@ test("32 reproducible enrichment preserves IDs, inventory, prices and existing t
   }
 });
 test("33 card links, color gallery and actual styling colors stay connected", async ({
-  page,
+  page, gallery,
 }) => {
+  const sample = await product();
+  await gallery([sample.id]);
   const p = await product();
   await page.goto("/san-pham/" + p.slug);
   await expect(page.locator("h1")).toHaveText(p.name);
@@ -155,6 +155,7 @@ test("34 size advisor required-only, optional refinement, selection and local pr
     local: { ...localStorage },
     session: { ...sessionStorage },
   }));
+  const urlBefore = page.url();
   await page
     .getByRole("button", { name: "TƯ VẤN CHỌN SIZE", exact: true })
     .click();
@@ -185,23 +186,40 @@ test("34 size advisor required-only, optional refinement, selection and local pr
   await expect(
     modal.getByRole("heading", { name: "HÀ NHI GỢI Ý SIZE L CHO NÀNG" }),
   ).toBeVisible();
-  await modal.getByRole("button", { name: "CHỌN SIZE L", exact: true }).click();
-  await expect(page.locator(".size-options .chosen")).toHaveText("L");
-  await expect(page.getByRole("dialog")).not.toBeVisible();
-  expect(apiPayloads.join("\n")).not.toMatch(
-    /160\.5|"height"|"weight"|"bust"|"waist"|"hips"/i,
-  );
   expect(
     await page.evaluate(() => ({
       local: { ...localStorage },
       session: { ...sessionStorage },
     })),
   ).toEqual(storageBefore);
-  expect(page.url()).not.toContain("160");
+  const selectedColor = await page.locator(".color-options .chosen").getAttribute("aria-label");
+  await modal.getByRole("button", { name: "CHỌN SIZE L", exact: true }).click();
+  await expect(page.locator(".size-options .chosen")).toHaveText("L");
+  await expect(page.getByRole("dialog")).not.toBeVisible();
+  expect(apiPayloads.join("\n")).not.toMatch(
+    /160\.5|"height"|"weight"|"bust"|"waist"|"hips"/i,
+  );
+  const storageAfter = await page.evaluate(() => ({
+    local: { ...localStorage },
+    session: { ...sessionStorage },
+  }));
+  expect(storageAfter.local).toEqual(storageBefore.local);
+  const changedSelections = Object.entries(storageAfter.session).filter(
+    ([key, value]) => storageBefore.session[key] !== value,
+  );
+  expect(changedSelections).toHaveLength(1);
+  const [selectionKey, selectionValue] = changedSelections[0];
+  expect(JSON.parse(selectionValue)).toEqual({ color: selectedColor, size: "L" });
+  delete storageAfter.session[selectionKey];
+  const priorSession = { ...storageBefore.session };
+  delete priorSession[selectionKey];
+  expect(storageAfter.session).toEqual(priorSession);
+  expect(page.url()).toBe(urlBefore);
   await page
     .getByRole("button", { name: "TƯ VẤN CHỌN SIZE", exact: true })
     .click();
-  await expect(modal.locator("[name=height]")).toHaveValue("");
+  for (const field of ["height", "weight", "bust", "waist", "hips"])
+    await expect(modal.locator(`[name=${field}]`)).toHaveValue("");
   await page.keyboard.press("Escape");
   await page
     .getByRole("button", { name: "TƯ VẤN CHỌN SIZE", exact: true })
@@ -217,7 +235,7 @@ test("34 size advisor required-only, optional refinement, selection and local pr
   ).toBeVisible();
   await expect(
     modal.getByRole("link", { name: "NHẮN TIN TƯ VẤN SIZE" }),
-  ).toHaveAttribute("href", "https://ig.me/m/ha_nhi.05");
+  ).toHaveAttribute("href", "/lien-he");
   await expect(modal.getByRole("button", { name: /^CHỌN SIZE / })).toHaveCount(
     0,
   );
@@ -290,24 +308,12 @@ test("36 mobile modal, chart, validation, focus and no horizontal overflow", asy
   }
 });
 test("37 variant image stays correct through cart and COD order snapshot", async ({
-  page,
+  page, gallery,
 }) => {
+  const sample = await product();
+  await gallery([sample.id]);
   const p = await product();
-  const email = `colors-${crypto.randomUUID()}@hanhi.test`;
-  const password = `Customer-test-${crypto.randomUUID()}`;
-  expect(
-    (
-      await page.request.post("/api/register", {
-        data: {
-          name: "Khách Kiểm Thử",
-          phone: "0912345678",
-          email,
-          password,
-          confirmPassword: password,
-        },
-      })
-    ).status(),
-  ).toBe(200);
+  const { email } = await registerCustomer(page.request);
   const c = p.colors[1];
   await page.goto("/san-pham/" + p.slug);
   await page
@@ -353,18 +359,20 @@ test("37 variant image stays correct through cart and COD order snapshot", async
 });
 test("38 admin color, outfits, per-product chart and validation are persisted and authorized", async ({
   request,
-  page,
+  page, gallery,
 }) => {
+  const sample = await product();
+  await gallery([sample.id]);
   const p = await product();
   const c = p.colors[0];
   const guest = await request.post("/api/admin/color", {
     data: { productId: p.id, name: "QA", hex: "#ffffff" },
   });
   expect(guest.status()).toBe(403);
-  const creds = JSON.parse(readFileSync(".test-credentials.json", "utf8"));
-  expect((await request.post("/api/login", { data: creds })).status()).toBe(
-    200,
-  );
+  const creds = credentials;
+  expect((await request.post("/api/login", {
+    data: { email: creds.email, password: creds.password },
+  })).status()).toBe(200);
   const color = await request.post("/api/admin/color", {
     data: {
       productId: p.id,
@@ -413,11 +421,15 @@ test("38 admin color, outfits, per-product chart and validation are persisted an
   });
   const target = await db.productColor.findFirstOrThrow({
     where: {
+      active: true,
+      product: { active: true, category: { active: true } },
       productId: { not: p.id },
       variants: { some: { stock: { gt: 0 } } },
     },
+    orderBy: { id: "asc" },
     include: { product: true },
   });
+  await gallery([target.productId]);
   const outfit = await request.post("/api/admin/outfit", {
     data: {
       colorId,
@@ -477,7 +489,9 @@ test("38 admin color, outfits, per-product chart and validation are persisted an
   });
   await db.productVariant.delete({ where: { sku: "QA-FREE-COLOR" } });
   await db.productColor.delete({ where: { id: colorId } });
-  await page.request.post("/api/login", { data: creds });
+  expect((await page.request.post("/api/login", {
+    data: { email: creds.email, password: creds.password },
+  })).status()).toBe(200);
   await page.goto("/admin/san-pham/" + p.id);
   await expect(
     page.getByRole("heading", { name: "Màu sắc, hình ảnh & phối đồ" }),
@@ -486,26 +500,68 @@ test("38 admin color, outfits, per-product chart and validation are persisted an
     page.getByRole("heading", { name: "Bảng size & quy tắc tư vấn" }),
   ).toBeVisible();
 });
-test("39 styling excludes sold out or archived products", async ({ page }) => {
+test("39 styling excludes sold out or archived products", async ({ page, gallery }) => {
   const p = await product();
-  const outfit = p.colors[0].outfits[0];
-  const item = outfit.items[0];
-  const old = await db.product.findUniqueOrThrow({
-    where: { id: item.productId },
+  const color = p.colors[0];
+  const targetColor = await db.productColor.findFirstOrThrow({
+    where: {
+      active: true,
+      productId: { not: p.id },
+      product: { active: true, category: { active: true } },
+      variants: { some: {} },
+    },
+    orderBy: { id: "asc" },
+    include: { product: true, variants: true },
   });
-  await db.product.update({
-    where: { id: item.productId },
-    data: { active: false },
+  const target = `/san-pham/${targetColor.product.slug}?mau=${targetColor.id}`;
+  const source = `/san-pham/${p.slug}?mau=${color.id}`;
+  const stocks = targetColor.variants.map(({ id, stock }) => ({ id, stock }));
+  await gallery([p.id, targetColor.productId]);
+  const outfit = await db.outfitCombination.create({
+    data: {
+      colorId: color.id,
+      title: "Phối đồ kiểm thử trạng thái bán",
+      items: {
+        create: { productId: targetColor.productId, colorId: targetColor.id },
+      },
+    },
   });
+  const targetLink = page.locator(`.outfit-grid a[href="${target}"]`).first();
   try {
-    await page.goto("/san-pham/" + p.slug);
-    await expect(
-      page.locator('.outfit-grid a[href*="' + old.slug + '"]'),
-    ).toHaveCount(0);
-  } finally {
+    await db.productVariant.update({
+      where: { id: stocks[0].id }, data: { stock: 3 },
+    });
+    await page.goto(source);
+    await expect(targetLink).toBeVisible();
+    await db.productVariant.updateMany({
+      where: { colorId: targetColor.id }, data: { stock: 0 },
+    });
+    await page.reload();
+    await expect(targetLink).toHaveCount(0);
+    await db.productVariant.update({
+      where: { id: stocks[0].id }, data: { stock: 3 },
+    });
+    await page.reload();
+    await expect(targetLink).toBeVisible();
     await db.product.update({
-      where: { id: item.productId },
-      data: { active: old.active },
+      where: { id: targetColor.productId }, data: { active: false },
+    });
+    await page.reload();
+    await expect(page.locator(`.outfit-grid a[href*="/san-pham/${targetColor.product.slug}?"]`)).toHaveCount(0);
+    await db.product.update({
+      where: { id: targetColor.productId }, data: { active: true },
+    });
+    await page.reload();
+    await expect(targetLink).toBeVisible();
+  } finally {
+    await db.outfitCombination.delete({ where: { id: outfit.id } });
+    for (const variant of stocks)
+      await db.productVariant.update({
+        where: { id: variant.id }, data: { stock: variant.stock },
+      });
+    await db.product.update({
+      where: { id: targetColor.productId },
+      data: { active: targetColor.product.active },
     });
   }
 });

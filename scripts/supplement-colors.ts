@@ -1,7 +1,5 @@
 import type { PrismaClient } from "@prisma/client";
-import { writeFile } from "node:fs/promises";
 import { expandedDesigns } from "./catalog-expansion";
-import { drawing } from "./enrich-catalog";
 import { fashionColors } from "../src/lib/fashion-colors";
 export async function supplementColors(db: PrismaClient) {
   for (const [slug, designs] of Object.entries(expandedDesigns)) {
@@ -18,13 +16,6 @@ export async function supplementColors(db: PrismaClient) {
       const c = await db.productColor.create({
         data: { productId: p.id, name, hex, position: p.colors.length },
       });
-      for (const [position, view] of ["front", "back", "detail"].entries()) {
-        const url = `/images/${p.sku.toLowerCase()}-${17 + i}-${view}.svg`;
-        await writeFile("public" + url, drawing(slug, p.name, hex, i, view));
-        await db.colorImage.create({
-          data: { colorId: c.id, url, alt: `${p.name} — ${name}`, position },
-        });
-      }
       for (const [index, size] of ["XS", "S", "M", "L", "XL", "XXL"].entries())
         await db.productVariant.create({
           data: {

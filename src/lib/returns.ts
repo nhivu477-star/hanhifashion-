@@ -1,4 +1,4 @@
-import { actorPermission } from "./authorization";
+import { requireActorPermission, requireCurrentAccount } from "./authorization";
 import { Prisma } from "@prisma/client";
 import { createHash, randomUUID } from "node:crypto";
 import { db } from "./db";
@@ -78,8 +78,8 @@ export async function createReturn(input: ReturnInput, actor: OrderActor) {
   };
   const payloadHash = fingerprint(canonical);
   return orderTransaction(async (tx) => {
-    const customer = await tx.user.findUnique({ where: { id: actor.id } });
-    if (!customer?.active || customer.role !== "CUSTOMER")
+    const customer = await requireCurrentAccount(tx, actor);
+    if (customer.role !== "CUSTOMER")
       throw Error("Tài khoản không đủ điều kiện gửi yêu cầu đổi trả.");
     const order = await tx.order.findUniqueOrThrow({
       where: { id: input.orderId },
@@ -238,11 +238,10 @@ export async function changeReturn(
   reason: string,
   a: OrderActor,
 ) {
-  await actorPermission(
-    a,
-    to === "RECEIVED" ? "returns.inspect" : "returns.review",
-  );
   return orderTransaction(async (tx) => {
+    await requireActorPermission(
+      tx, a, to === "RECEIVED" ? "returns.inspect" : "returns.review",
+    );
     const r = await load(tx, id);
     if (r.status === to) return r;
     if (to === "CLOSED" && r.status === "REFUND_PENDING")
@@ -275,9 +274,10 @@ export async function inspectReturn(
   evidence: string,
   a: OrderActor,
 ) {
-  await actorPermission(a, "returns.inspect");
-  if (condition === "SELLABLE") await actorPermission(a, "inventory.adjust");
   return orderTransaction(async (tx) => {
+    await requireActorPermission(tx, a, "returns.inspect");
+    if (condition === "SELLABLE")
+      await requireActorPermission(tx, a, "inventory.adjust");
     const r = await load(tx, id),
       i = r.items.find((i) => i.id === itemId);
     if (!i) throw Error("Dòng hàng không thuộc hồ sơ.");
@@ -346,8 +346,8 @@ export async function allocateExchange(
   reason: string,
   a: OrderActor,
 ) {
-  await actorPermission(a, "returns.exchange");
   return orderTransaction(async (tx) => {
+    await requireActorPermission(tx, a, "returns.exchange");
     const r = await load(tx, id);
     if (r.resolution !== "EXCHANGE")
       throw Error("Khách chưa chọn phương án đổi hàng.");
@@ -380,9 +380,9 @@ export async function allocateExchange(
       if (!chosen) throw Error("Thiếu dòng thay thế.");
       const v = await tx.productVariant.findUniqueOrThrow({
         where: { id: chosen.variantId },
-        include: { product: true, colorRecord: true },
+        include: { product: { include: { category: true } }, colorRecord: true },
       });
-      if (!v.product.active || (v.colorRecord && !v.colorRecord.active))
+      if (!v.product.active || !v.product.category.active || v.colorRecord?.active === false)
         throw Error("SKU thay thế không còn hoạt động.");
       const price = v.priceOverride ?? effectivePrice(v.product);
       if (price !== i.orderItem.unitPrice)
@@ -429,11 +429,11 @@ export async function exchangeStatus(
   reason: string,
   a: OrderActor,
 ) {
-  await actorPermission(a, "returns.exchange");
-  await actorPermission(a, "shipping.update");
-  if (["DELIVERY_FAILED", "RETURNING", "RETURNED"].includes(status))
-    await actorPermission(a, "shipping.failures.manage");
   return orderTransaction(async (tx) => {
+    await requireActorPermission(tx, a, "returns.exchange");
+    await requireActorPermission(tx, a, "shipping.update");
+    if (["DELIVERY_FAILED", "RETURNING", "RETURNED"].includes(status))
+      await requireActorPermission(tx, a, "shipping.failures.manage");
     const r = await load(tx, id),
       i = r.items.find((i) => i.exchange?.id === exchangeId),
       e = i?.exchange;
@@ -512,8 +512,8 @@ export async function prepareRefund(
   reason: string,
   a: OrderActor,
 ) {
-  await actorPermission(a, "refunds.approve");
   return orderTransaction(async (tx) => {
+    await requireActorPermission(tx, a, "refunds.approve");
     const r = await load(tx, id);
     if (r.refund) {
       if (r.refund.shippingAmount !== (shipping ? r.order.shipping : 0))
@@ -565,11 +565,10 @@ export async function changeRefund(
   reason: string,
   a: OrderActor,
 ) {
-  await actorPermission(
-    a,
-    to === "SIMULATED_COMPLETED" ? "refunds.execute" : "refunds.approve",
-  );
   return orderTransaction(async (tx) => {
+    await requireActorPermission(
+      tx, a, to === "SIMULATED_COMPLETED" ? "refunds.execute" : "refunds.approve",
+    );
     const r = await load(tx, id),
       refund = r.refund;
     if (!refund) throw Error("Chưa có khoản hoàn.");

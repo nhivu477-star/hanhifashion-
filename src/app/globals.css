@@ -772,12 +772,6 @@ summary:focus-visible {
 .footer-brand p {
   color: var(--secondary);
 }
-.brand-seal {
-  width: 92px;
-  height: 62px;
-  object-fit: cover;
-  margin-left: -5px;
-}
 .footer-bottom {
   display: flex;
   justify-content: space-between;
@@ -918,18 +912,32 @@ summary:focus-visible {
 .mobile-filter {
   display: none;
 }
+.container.product-page {
+  max-width: 1160px;
+  padding-inline: 24px;
+}
 .product-detail {
   display: grid;
-  grid-template-columns: 1.15fr 1fr;
-  gap: 70px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 28px;
+  align-items: start;
   padding-top: 8px;
+}
+.gallery {
+  min-width: 0;
 }
 .gallery-main {
   aspect-ratio: 3/4;
+  width: 100%;
+  max-height: clamp(160px, calc(100svh - 300px), 640px);
+  min-height: 0;
+  overflow: hidden;
   position: relative;
-  background: var(--cream);
+  background: var(--white);
 }
 .gallery-zoom {
+  display: block;
+  min-height: 0;
   padding: 0;
   width: 100%;
   height: 100%;
@@ -938,6 +946,7 @@ summary:focus-visible {
 .gallery-zoom img {
   width: 100%;
   height: 100%;
+  object-fit: contain;
 }
 .gallery-prev,
 .gallery-next {
@@ -971,6 +980,7 @@ summary:focus-visible {
 .thumbnails img {
   width: 100%;
   aspect-ratio: 3/4;
+  object-fit: contain;
 }
 .zoom-dialog {
   border: 0;
@@ -985,7 +995,9 @@ summary:focus-visible {
   object-fit: contain;
 }
 .product-info {
-  padding: 10px 0;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
 }
 .product-info > a {
   font-size: 11px;
@@ -993,11 +1005,11 @@ summary:focus-visible {
 .product-info h1 {
   font-size: 38px;
   line-height: 1.15;
-  margin: 15px 0;
+  margin: 8px 0;
 }
 .detail-price {
   font-size: 24px;
-  margin: 20px 0 26px;
+  margin: 12px 0 16px;
 }
 .detail-price del {
   font-family: var(--body);
@@ -1007,16 +1019,22 @@ summary:focus-visible {
 }
 .purchase {
   border-top: 1px solid var(--border);
-  padding-top: 24px;
+  padding-top: 16px;
 }
 .purchase p {
   font-size: 12px;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
+}
+.product-page .size-help {
+  margin: 12px 0;
+}
+.product-page .quantity {
+  width: 108px;
 }
 .color-options {
   display: flex;
-  gap: 12px;
-  margin-bottom: 25px;
+  gap: 10px;
+  margin-bottom: 12px;
 }
 .color-options button {
   width: 26px;
@@ -1044,7 +1062,7 @@ summary:focus-visible {
   width: 120px;
   justify-content: space-between;
   min-height: 40px;
-  margin: 18px 0;
+  margin: 12px 0;
 }
 .quantity .icon-button {
   min-width: 34px;
@@ -1052,7 +1070,73 @@ summary:focus-visible {
   padding: 7px;
 }
 .product-accordions {
-  margin-top: 28px;
+  margin-top: 16px;
+}
+.purchase-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.purchase-actions .button.full {
+  min-height: 44px;
+  margin-top: 0;
+  padding: 10px 12px;
+  gap: 8px;
+  font-size: 12px;
+  letter-spacing: 0;
+}
+@media (max-width: 1023px) {
+  .purchase-actions {
+    grid-template-columns: 1fr;
+  }
+}
+.product-page .product-accordions p {
+  font-size: 14px;
+}
+.product-specs {
+  margin: 16px 0;
+}
+.product-specs > div {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.product-specs dt {
+  color: var(--secondary);
+}
+.product-specs dd {
+  margin: 0;
+}
+.product-page .product-accordions details {
+  padding: 12px 0;
+}
+.product-page > .product-section,
+.product-page > .product-reviews {
+  padding: 32px 0;
+  margin: 0;
+}
+.fashion-store .product-page :is(.outfit-suggestions, .product-section, .product-reviews) h2 {
+  margin: 0 0 10px;
+  font-family: var(--body);
+  font-size: 22px;
+  line-height: 1.4;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+.fashion-store .product-page :is(.outfit-suggestions, .product-section, .product-reviews) p {
+  font-size: 14px;
+  line-height: 1.7;
+}
+.product-page .outfit-suggestions {
+  margin: 32px 0 0;
+}
+.product-page .section-heading {
+  align-items: center;
+  margin-bottom: 20px;
+}
+.product-page .section-heading p {
+  margin: 0;
 }
 details {
   border-bottom: 1px solid var(--border);
@@ -1067,10 +1151,6 @@ details p {
   font-size: 13px;
   line-height: 1.9;
   margin-top: 16px;
-}
-.product-detail + .product-section {
-  padding-left: 0;
-  padding-right: 0;
 }
 .empty {
   display: flex;
@@ -1278,24 +1358,17 @@ details p {
   grid-template-columns: 1fr 1fr;
   min-height: 670px;
 }
-.auth-art {
-  position: relative;
-  overflow: hidden;
+.auth-brand {
   display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
+  align-items: center;
+  justify-items: center;
+  text-align: center;
   background: #fafafa;
 }
-.auth-art > img {
-  display: block;
-  width: 100%;
-  height: 560px;
-  object-fit: contain;
-  object-position: center;
-}
-.auth-art > div {
+.auth-brand > div {
   padding: 24px 45px 32px;
 }
-.auth-art h2 {
+.auth-brand h2 {
   margin: 0;
   font-size: 32px;
   line-height: 1.3;
@@ -2226,9 +2299,6 @@ th {
   .footer-brand p {
     margin-bottom: 12px;
   }
-  .brand-seal {
-    display: none;
-  }
   .footer-top > div:last-child {
     grid-column: 1/-1;
   }
@@ -2316,12 +2386,15 @@ th {
     font-size: 11px;
     padding: 5px 10px;
   }
+  .container.product-page {
+    padding-inline: 16px;
+  }
   .product-detail {
     grid-template-columns: 1fr;
-    gap: 30px;
+    gap: 20px;
   }
   .product-info {
-    padding: 0;
+    padding: 16px;
   }
   .product-info h1 {
     font-size: 35px;
@@ -2332,14 +2405,15 @@ th {
   .size-options button {
     min-width: 44px;
   }
-  .product-detail + .product-section {
-    padding-top: 50px;
+  .product-page > .product-section,
+  .product-page > .product-reviews {
+    padding-block: 24px;
+  }
+  .fashion-store .product-page :is(.outfit-suggestions, .product-section, .product-reviews) h2 {
+    font-size: 20px;
   }
   .product-accordions details p {
-    font-size: 12px;
-  }
-  .gallery-main {
-    aspect-ratio: 3/4;
+    font-size: 14px;
   }
   .cart-layout {
     grid-template-columns: 1fr;
@@ -2399,7 +2473,7 @@ th {
     grid-template-columns: 1fr;
     min-height: 0;
   }
-  .auth-art {
+  .auth-brand {
     display: none;
   }
   .auth-form {
@@ -3197,7 +3271,6 @@ body {
   max-width: 390px;
   justify-self: center;
 }
-/* Preserve the supplied artwork: no retyped letters, stretching or recolouring. */
 .brand-logo {
   display: block;
   position: relative;
@@ -3230,9 +3303,6 @@ body {
 .footer-brand .brand-logo {
   width: 150px;
   height: 125px;
-}
-.footer-brand .brand-seal {
-  display: none;
 }
 @media (max-width: 767px) {
   .header-brand-group .brand-logo {
@@ -3585,16 +3655,11 @@ h2 {
   }
 }
 .product-short-description {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 500;
   line-height: 1.75;
   color: var(--description);
-  margin: 20px 0;
-}
-@media (max-width: 767px) {
-  .product-short-description {
-    font-size: 14px;
-  }
+  margin: 12px 0 16px;
 }
 /* Retail homepage composition: campaign, centred product edit, lookbook rail, service footer. */
 .retail-home {
@@ -4248,10 +4313,6 @@ h2 {
   font-size: 14px;
   font-weight: 500;
 }
-.product-styling-copy {
-  margin-top: 30px;
-  font-size: 14px;
-}
 .catalog-admin-feature {
   margin: 32px 0;
 }
@@ -4379,15 +4440,6 @@ html {
   .catalog-search .button {
     width: 100%;
   }
-}
-/* A gallery trigger is a block, so its inline baseline cannot enlarge the 3:4 frame. */
-.gallery-zoom {
-  display: block;
-  min-height: 0;
-}
-.gallery-main {
-  min-height: 0;
-  overflow: hidden;
 }
 .photo-brand-caption {
   margin: 12px 0;
@@ -4875,9 +4927,6 @@ html {
 .fashion-store .footer a {
   font-size: 11px;
 }
-.fashion-store .brand-seal {
-  display: none;
-}
 .fashion-store .catalog-page {
   max-width: none;
   padding: 30px 20px 60px;
@@ -4922,6 +4971,18 @@ html {
 .fashion-model-campaign {
   position: relative;
   background: #fff;
+}
+.fashion-campaign-placeholder {
+  padding: clamp(48px, 8vw, 100px) 24px;
+  text-align: center;
+  background: var(--ivory);
+}
+.fashion-campaign-placeholder h1 {
+  font-size: clamp(28px, 4vw, 48px);
+}
+.fashion-campaign-placeholder p {
+  max-width: 580px;
+  margin-inline: auto;
 }
 .fashion-model-rail {
   display: flex;
@@ -5109,30 +5170,30 @@ html {
   letter-spacing: 0.5px;
 }
 .fashion-store .product-info h1 {
-  font-size: 26px;
-  line-height: 32px;
+  font-size: 24px;
+  line-height: 30px;
   font-weight: 500;
   letter-spacing: 0.5px;
 }
 .fashion-store .detail-price {
-  font-size: 16px;
-  line-height: 22px;
+  font-size: 20px;
+  line-height: 28px;
   font-weight: 500;
   letter-spacing: 0.25px;
 }
 .fashion-store .product-info,
 .fashion-store .product-accordions,
 .fashion-store .purchase {
-  font-size: 13px;
-  line-height: 20px;
+  font-size: 14px;
+  line-height: 22px;
 }
 .fashion-store .product-info .small {
-  font-size: 11px;
-  line-height: 17px;
-}
-.fashion-store .product-accordions summary {
   font-size: 12px;
   line-height: 18px;
+}
+.fashion-store .product-accordions summary {
+  font-size: 14px;
+  line-height: 20px;
   font-weight: 500;
   letter-spacing: 0.5px;
 }
@@ -6028,6 +6089,30 @@ body:has(.admin-redesign) > .footer { display: none; }
 .admin-redesign .stocktake-panel fieldset legend { padding:0 6px; font-size:12px; color:#6B7280; }
 .admin-redesign .stocktake-panel fieldset label { display:grid; gap:6px; min-width:0; }
 .admin-redesign .stocktake-panel fieldset input { width:100%; }
+.returned-inspection {
+  min-width: 0;
+  margin: 20px 0;
+  padding: 20px;
+  border: 1px solid var(--border);
+}
+.returned-inspection legend {
+  padding-inline: 8px;
+  font-weight: 500;
+}
+.returned-inspection-line {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding-block: 12px;
+  border-top: 1px solid var(--border);
+}
+.returned-inspection-line strong {
+  grid-column: 1 / -1;
+}
+.returned-inspection-line label {
+  display: grid;
+  gap: 6px;
+}
 .report-export-options { display:inline-flex; flex-wrap:wrap; gap:6px; }
 .product-reviews { margin-block:48px; }
 .product-reviews > article { padding:20px 0; border-bottom:1px solid #E5E7EB; }
@@ -6035,7 +6120,7 @@ body:has(.admin-redesign) > .footer { display: none; }
 @media(max-width:767px){.admin-redesign .stocktake-panel form.form fieldset{grid-template-columns:minmax(0,1fr);}.admin-redesign .customer-profile,.admin-redesign .packing-checklist{padding:16px;}.product-reviews{margin-block:32px;}}
 
 /* Product category remains readable above the product title. */
-.product-info > a.muted { font-size:16px; line-height:1.5; }
+.product-page .product-info > a.muted { font-size:14px; line-height:1.5; }
 
 .fashion-model-slide-charli .fashion-model-trio > a:first-child img { transform:none; }
 

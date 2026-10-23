@@ -30,7 +30,7 @@ import {
   optimizeUploadedImage,
 } from "@/lib/local-images";
 import { deleteMediaAsset } from "@/lib/media";
-import { operationalAudit, requireActorPermission } from "@/lib/authorization";
+import { operationalAudit, requireActorPermission, requireCurrentAccount } from "@/lib/authorization";
 import { adminSnapshot } from "@/lib/admin-audit";
 import { createStaff, updateStaff } from "@/lib/staff";
 import { manageAccount } from "@/lib/managed-accounts";
@@ -83,8 +83,16 @@ import {
 } from "@/lib/auth";
 import { effectivePrice, calculateTotals, normalize } from "@/lib/catalog";
 import { catalogQuery } from "@/lib/queries";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, open, realpath, unlink, writeFile } from "node:fs/promises";
+import path from "node:path";
 const customer = customerAddressSchema;
+const returnedItems = z.array(
+  z.object({
+    orderItemId: z.string().min(1),
+    sellableQuantity: z.number().int().nonnegative(),
+    damagedQuantity: z.number().int().nonnegative(),
+  }).strict(),
+).max(100);
 function checkOrigin(req: NextRequest) {
   const origin = req.headers.get("origin");
   if (
@@ -259,19 +267,38 @@ export async function POST(
       if (!ext) throw new Error("Định dạng ảnh không hợp lệ.");
       const filename = `${token()}.webp`;
       const optimized = await optimizeUploadedImage(bytes);
-      await mkdir("public/uploads", { recursive: true });
-      await writeFile(`public/uploads/${filename}`, optimized, {
-        flag: "wx",
-        mode: 0o600,
-      });
-      await db.auditLog.create({
-        data: {
-          actorId: user.id,
-          action: "UPLOAD",
-          targetId: filename,
-          detail: "Local raster upload",
-        },
-      });
+      const publicRoot = await realpath("public");
+      const uploadRoot = path.join(publicRoot, "uploads");
+      await mkdir(uploadRoot, { recursive: true });
+      if (await realpath(uploadRoot) !== uploadRoot)
+        throw Error("Thư mục tải ảnh không được là liên kết tượng trưng.");
+      const uploadedFile = path.join(uploadRoot, filename);
+      let created = false;
+      try {
+        // Filesystem writes are not retryable; roll back the owned file if audit/commit fails.
+        await db.$transaction(async (tx) => {
+          const current = await requireCurrentAccount(tx, user);
+          await authorizeAdminAction(current.role, action, {});
+          const handle = await open(uploadedFile, "wx", 0o600);
+          created = true;
+          try {
+            await handle.writeFile(optimized);
+          } finally {
+            await handle.close();
+          }
+          await tx.auditLog.create({
+            data: {
+              actorId: current.id,
+              action: "UPLOAD",
+              targetId: filename,
+              detail: "Local raster upload",
+            },
+          });
+        });
+      } catch (error) {
+        if (created) await unlink(uploadedFile);
+        throw error;
+      }
       return ok({ url: `/uploads/${filename}` });
     }
     if (
@@ -356,7 +383,7 @@ export async function POST(
       }
       const r = await createReturn(
         { ...d, evidence },
-        { id: user.id, label: user.email, role: user.role as "CUSTOMER" },
+        { id: user.id, label: user.email, role: user.role, permissionVersion: user.permissionVersion },
       );
       await refreshOrderViews(r.orderId);
       revalidatePath("/admin/doi-tra");
@@ -369,7 +396,7 @@ export async function POST(
       const result = await manageAccount(
         b,
         action.slice("admin/accounts/".length),
-        { id: user.id, role: user.role, label: user.email },
+        { id: user.id, role: user.role, label: user.email, permissionVersion: user.permissionVersion },
       );
       revalidatePath("/admin/tai-khoan");
       revalidatePath("/admin/nhan-vien");
@@ -380,7 +407,7 @@ export async function POST(
     }
     if (action.startsWith("admin/staff/")) {
       const user = await requireUser(true),
-        actor = { id: user.id, label: user.email, role: user.role };
+        actor = { id: user.id, label: user.email, role: user.role, permissionVersion: user.permissionVersion };
       const operation = action.slice("admin/staff/".length);
       const result =
         operation === "create"
@@ -395,7 +422,7 @@ export async function POST(
     }
     if (action.startsWith("admin/returns/")) {
       const user = await requireUser(true),
-        actor = { id: user.id, label: user.email, role: user.role };
+        actor = { id: user.id, label: user.email, role: user.role, permissionVersion: user.permissionVersion };
       const common = {
         id: z.string(),
         reason: z.string().trim().min(3).max(2000),
@@ -522,9 +549,9 @@ export async function POST(
         );
         return created;
       });
-      await createSession(user.id);
+      await createSession(user);
       await mergeCartAndWishlist(
-        user.id,
+        user,
         Array.isArray(b.wishlist) ? b.wishlist : [],
       );
       return ok({ redirect: accountLoginDestination(user.role, b.returnTo) });
@@ -545,9 +572,9 @@ export async function POST(
       )
         throw new Error("Email/số điện thoại hoặc mật khẩu chưa đúng.");
       clearRateLimit("login:" + identity);
-      await createSession(user.id);
+      await createSession(user);
       await mergeCartAndWishlist(
-        user.id,
+        user,
         Array.isArray(b.wishlist) ? b.wishlist : [],
       );
       return ok({
@@ -603,6 +630,7 @@ export async function POST(
       });
       if (!r || r.used || r.expiresAt < new Date())
         throw new Error("Liên kết đã hết hạn.");
+      const passwordHash = await hash(password, 12);
       await orderTransaction(async (tx) => {
         const claimed = await tx.passwordReset.updateMany({
           where: { id: r.id, used: false, expiresAt: { gt: new Date() } },
@@ -611,9 +639,16 @@ export async function POST(
         if (!claimed.count) throw new Error("Liên kết đã được sử dụng.");
         const user = await tx.user.update({
           where: { email: r.email },
-          data: { passwordHash: await hash(password, 12) },
+          data: {
+            passwordHash,
+            permissionVersion: { increment: 1 },
+          },
         });
         await tx.session.deleteMany({ where: { userId: user.id } });
+        await tx.passwordReset.updateMany({
+          where: { email: user.email, used: false },
+          data: { used: true },
+        });
         await operationalAudit(
           tx,
           user.id,
@@ -672,12 +707,21 @@ export async function POST(
       const passwordHash = await hash(password, 12);
       await orderTransaction(async (tx) => {
         const changed = await tx.user.updateMany({
-          where: { id: user.id, active: true, passwordHash: user.passwordHash },
+          where: {
+            id: user.id,
+            active: true,
+            passwordHash: user.passwordHash,
+            permissionVersion: user.permissionVersion,
+          },
           data: { passwordHash, permissionVersion: { increment: 1 } },
         });
         if (!changed.count)
           throw Error("Tài khoản vừa thay đổi. Vui lòng đăng nhập lại.");
         await tx.session.deleteMany({ where: { userId: user.id } });
+        await tx.passwordReset.updateMany({
+          where: { email: user.email, used: false },
+          data: { used: true },
+        });
         await operationalAudit(
           tx,
           user.id,
@@ -700,26 +744,26 @@ export async function POST(
     if (action === "wishlist") {
       const user = await requireUser();
       const productId = z.string().parse(b.productId);
-      if (
-        !b.remove &&
-        !(await db.product.count({ where: { id: productId, active: true } }))
-      )
-        throw new Error("Sản phẩm không khả dụng.");
-      const w = await db.wishlist.upsert({
-        where: { userId: user.id },
-        update: {},
-        create: { userId: user.id },
+      await orderTransaction(async (tx) => {
+        await requireCurrentAccount(tx, user);
+        if (
+          !b.remove &&
+          !(await tx.product.count({ where: { id: productId, active: true } }))
+        )
+          throw new Error("Sản phẩm không khả dụng.");
+        const saved = await tx.wishlist.upsert({
+          where: { userId: user.id }, update: {}, create: { userId: user.id },
+        });
+        if (b.remove)
+          await tx.wishlistItem.deleteMany({
+            where: { wishlistId: saved.id, productId },
+          });
+        else
+          await tx.wishlistItem.upsert({
+            where: { wishlistId_productId: { wishlistId: saved.id, productId } },
+            update: {}, create: { wishlistId: saved.id, productId },
+          });
       });
-      if (b.remove)
-        await db.wishlistItem.deleteMany({
-          where: { wishlistId: w.id, productId },
-        });
-      else
-        await db.wishlistItem.upsert({
-          where: { wishlistId_productId: { wishlistId: w.id, productId } },
-          update: {},
-          create: { wishlistId: w.id, productId },
-        });
       return ok({ success: true });
     }
     if (action === "cart/clear") {
@@ -727,6 +771,7 @@ export async function POST(
       const eventKey = z.string().uuid().parse(b.eventKey);
       const cart = await getCart();
       await orderTransaction(async (tx) => {
+        await requireCurrentAccount(tx, user);
         const receipt = await mutationReceipt(
           tx,
           "CART_CLEARED",
@@ -783,6 +828,7 @@ export async function POST(
         })
         .parse(b);
       await orderTransaction(async (tx) => {
+        await requireCurrentAccount(tx, actor);
         const receipt = await mutationReceipt(
           tx,
           "CART_UPDATED",
@@ -887,12 +933,14 @@ export async function POST(
         z.string().uuid().parse(b.idempotencyKey);
       }
       const result = await orderTransaction(async (tx) => {
+        await requireCurrentAccount(tx, user);
         if (action === "checkout") {
           const existing = await tx.order.findUnique({
             where: { idempotencyKey: b.idempotencyKey },
           });
           if (existing) {
             if (
+              existing.userId !== user.id ||
               existing.accessToken !== digest(`${cart.id}:${b.idempotencyKey}`)
             )
               throw new Error("Yêu cầu trùng không hợp lệ.");
@@ -1014,10 +1062,9 @@ export async function POST(
                 sku: i.variant.sku,
                 size: i.variant.size,
                 color: i.variant.color,
-                image:
-                  i.variant.colorRecord?.images[0]?.url ??
-                  i.variant.product.images[0]?.url ??
-                  "",
+                image: i.variant.colorRecord
+                  ? (i.variant.colorRecord.images[0]?.url ?? "")
+                  : (i.variant.product.images[0]?.url ?? ""),
                 quantity: i.quantity,
                 unitPrice: effectivePrice(i.variant.product, i.variant),
               })),
@@ -1073,12 +1120,6 @@ export async function POST(
       });
       if ("order" in result) {
         const order = result.order!;
-        (await cookies()).set(`hn_order_${order.code}`, order.accessToken, {
-          httpOnly: true,
-          sameSite: "lax",
-          path: "/",
-          maxAge: 30 * 86400,
-        });
         return ok({ redirect: `/dat-hang-thanh-cong/${order.code}` });
       }
       return ok(result);
@@ -1098,6 +1139,7 @@ export async function POST(
           id: z.string(),
           reason: z.string().trim().min(3).max(1000),
           code: z.string().optional(),
+          returnedItems: returnedItems.optional(),
         })
         .parse(b);
       const user = await currentUser();
@@ -1106,12 +1148,15 @@ export async function POST(
         : undefined;
       await changeOrder(
         { ...d, status: "CANCELLED" },
-        {
-          id: user?.id ?? "guest",
-          label: user ? "Khách hàng" : "Khách mua không tài khoản",
-          role: user ? "CUSTOMER" : "GUEST",
-          accessToken: access,
-        },
+        user
+          ? {
+              id: user.id, label: "Khách hàng", role: user.role,
+              permissionVersion: user.permissionVersion, accessToken: access,
+            }
+          : {
+              id: "guest", label: "Khách mua không tài khoản",
+              role: "GUEST", accessToken: access,
+            },
       );
       await refreshOrderViews(d.id);
       return ok({ message: "Đã hủy đơn và hoàn tồn kho." });
@@ -1201,7 +1246,14 @@ export async function POST(
         .parse(b);
       rateLimit("contact:" + req.headers.get("x-forwarded-for"));
       const author = await currentUser();
-      await db.inquiry.create({ data: { ...data, userId: author?.id } });
+      await orderTransaction(async (tx) => {
+        if (author) await requireCurrentAccount(tx, author);
+        const inquiry = await tx.inquiry.create({ data: { ...data, userId: author?.id } });
+        await operationalAudit(
+          tx, author?.id ?? "guest", "CONTACT_CREATED", "INQUIRY", inquiry.id,
+          null, { authenticated: !!author }, "Gửi lời nhắn đến cửa hàng",
+        );
+      });
       return ok({
         message: "Lời nhắn đã được gửi đến cửa hàng.",
       });
@@ -1260,7 +1312,7 @@ export async function POST(
     }
     if (action.startsWith("admin/shipping/")) {
       const user = await requireUser(true);
-      const actor = { id: user.id, label: user.email, role: user.role };
+      const actor = { id: user.id, label: user.email, role: user.role, permissionVersion: user.permissionVersion };
       const operation = action.slice("admin/shipping/".length);
       let shipmentId: string;
       if (operation === "create") {
@@ -1352,11 +1404,6 @@ export async function POST(
     if (action.startsWith("admin/")) {
       const admin = await requireUser(true);
       const target = action.slice(6);
-      const beforeSnapshot = await adminSnapshot(
-        db,
-        target,
-        String(b.id ?? b.variantId ?? b.productId ?? ""),
-      );
       let id = "";
       if (target === "media-delete") {
         id = await deleteMediaAsset(b, admin);
@@ -1522,6 +1569,7 @@ export async function POST(
             paid: z.boolean().optional(),
             reason: z.string().max(1000).optional(),
             reference: z.string().max(200).optional(),
+            returnedItems: returnedItems.optional(),
           })
           .parse(b);
         id = d.id;
@@ -1529,6 +1577,7 @@ export async function POST(
           id: admin.id,
           label: admin.email,
           role: admin.role,
+          permissionVersion: admin.permissionVersion,
         });
         await refreshOrderViews(id);
       } else if (target === "category") {
@@ -1551,40 +1600,6 @@ export async function POST(
       if (target === "product") await refreshSearch([id]);
       if (target === "collection" || target === "category")
         await refreshSearch();
-      if (
-        ![
-          "order",
-          "stock",
-          "variant",
-          "coupon",
-          "settings",
-          "product",
-          "inventory-movement",
-          "category",
-          "collection",
-          "banner",
-          "inquiry",
-          "customer",
-          "color",
-          "outfit",
-          "size-chart",
-          "media",
-          "media-delete",
-          "publication",
-        ].includes(target)
-      )
-        await operationalAudit(
-          db,
-          admin.id,
-          target.toUpperCase(),
-          target.toUpperCase(),
-          id,
-          beforeSnapshot,
-          await adminSnapshot(db, target, id),
-          typeof b.reason === "string"
-            ? b.reason.slice(0, 1000)
-            : "Cập nhật nội bộ",
-        );
       return ok({ message: "Đã lưu thay đổi.", id });
     }
     return NextResponse.json({ error: "Không tìm thấy." }, { status: 404 });

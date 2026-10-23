@@ -1,7 +1,7 @@
 import { sampleChart } from "../../src/lib/sizing";
 import assert from "node:assert/strict";
 import { randomUUID, randomBytes, createHash } from "node:crypto";
-import { writeFile, readdir, readFile, unlink, stat } from "node:fs/promises";
+import { mkdir, writeFile, readdir, readFile, unlink, stat } from "node:fs/promises";
 import { hash, compare } from "bcryptjs";
 import { PrismaClient } from "@prisma/client";
 import ExcelJS from "exceljs";
@@ -27,6 +27,7 @@ class Client {
   constructor(
     public id: string,
     public token: string,
+    public permissionVersion: number,
   ) {}
   async req(path: string, data?: unknown) {
     const response = await fetch(base + path, {
@@ -55,7 +56,7 @@ class Client {
 async function actor(role = "CUSTOMER") {
   const id = randomUUID(),
     token = randomBytes(32).toString("hex");
-  await db.user.create({
+  const user = await db.user.create({
     data: {
       id,
       role,
@@ -72,7 +73,7 @@ async function actor(role = "CUSTOMER") {
       expiresAt: new Date(Date.now() + 3600000),
     },
   });
-  return new Client(id, token);
+  return new Client(id, token, user.permissionVersion);
 }
 const admin = await actor("ADMIN"),
   seller = await actor("SELLER"),
@@ -839,7 +840,7 @@ await run(
 await run(
   "BA-AUTH-02 register validates input and never accepts a privileged role",
   async () => {
-    const c = new Client(randomUUID(), "");
+    const c = new Client(randomUUID(), "", 0);
     const email = randomUUID() + "@acceptance.local",
       password = randomBytes(16).toString("hex");
     await rejected(
@@ -906,6 +907,14 @@ await run(
         expiresAt: new Date(Date.now() + 3600000),
       },
     });
+    const otherToken = randomBytes(32).toString("hex");
+    await db.passwordReset.create({
+      data: {
+        email: user.email,
+        tokenHash: createHash("sha256").update(otherToken).digest("hex"),
+        expiresAt: new Date(Date.now() + 3600000),
+      },
+    });
     const result = await Promise.all([
       c.post("reset", { resetToken: token, password }),
       c.post("reset", { resetToken: token, password }),
@@ -919,6 +928,9 @@ await run(
       ),
     );
     await rejected(c.post("reset", { resetToken: token, password }));
+    await rejected(c.post("reset", { resetToken: otherToken, password }));
+    assert.equal(await db.passwordReset.count({ where: { email: user.email, used: false } }), 0);
+    assert.equal((await db.user.findUniqueOrThrow({ where: { id: c.id } })).permissionVersion, user.permissionVersion + 1);
   },
 );
 await run("BA-AUTH-04 expired reset cannot change password", async () => {
@@ -952,6 +964,14 @@ await run(
       where: { id: c.id },
       data: { passwordHash: await hash(password, 10) },
     });
+    const user = await db.user.findUniqueOrThrow({ where: { id: c.id } });
+    const recovery = await db.passwordReset.create({
+      data: {
+        email: user.email,
+        tokenHash: createHash("sha256").update(randomUUID()).digest("hex"),
+        expiresAt: new Date(Date.now() + 3600000),
+      },
+    });
     await failAudit("PASSWORD_CHANGED", () =>
       rejected(
         c.post("password", {
@@ -967,6 +987,7 @@ await run(
       ),
     );
     assert.equal(await db.session.count({ where: { userId: c.id } }), 1);
+    assert.equal((await db.passwordReset.findUniqueOrThrow({ where: { id: recovery.id } })).used, false);
     await ok(
       c.post("password", {
         oldPassword: password,
@@ -974,6 +995,7 @@ await run(
       }),
     );
     assert.equal(await db.session.count({ where: { userId: c.id } }), 0);
+    assert.equal((await db.passwordReset.findUniqueOrThrow({ where: { id: recovery.id } })).used, true);
   },
 );
 await run(
@@ -1477,6 +1499,12 @@ await run(
   "BA-FEEDBACK-04 support thread ownership reply and audit rollback",
   async () => {
     const c = await actor();
+    await failAudit("CONTACT_CREATED", () =>
+      rejected(c.post("contact", {
+        name: "Khách kiểm thử", email: "support@acceptance.local",
+        message: "Nội dung phải được rollback cùng audit", subject: "Audit rollback",
+      })).then(() => {}));
+    assert.equal(await db.inquiry.count({ where: { userId: c.id } }), 0);
     await ok(
       c.post("contact", {
         name: "Khách kiểm thử",
@@ -1518,6 +1546,28 @@ await run(
       await db.inquiryReply.count({ where: { inquiryId: inquiry.id } }),
       2,
     );
+    const message = {
+      eventKey: randomUUID(), content: "Khách mở cuộc trao đổi mới",
+      subject: "Trao đổi về sản phẩm",
+    };
+    const created = await ok(c.req("/api/support/chat", message));
+    const replay = await ok(c.req("/api/support/chat", message));
+    assert.equal(replay.id, created.id);
+    assert.equal(await db.inquiry.count({ where: { id: message.eventKey } }), 1);
+    await rejected(c.req("/api/support/chat", { ...message, subject: "Nội dung yêu cầu khác" }));
+    await rejected(other.req("/api/support/chat?id=" + created.id));
+    assert.equal(await db.auditLog.count({
+      where: { action: "SUPPORT_THREAD_CREATED", resourceType: "INQUIRY", targetId: created.id },
+    }), 1);
+    const failedKey = randomUUID();
+    await failAudit("SUPPORT_THREAD_CREATED", () =>
+      rejected(c.req("/api/support/chat", { ...message, eventKey: failedKey })).then(() => {}));
+    assert.equal(await db.inquiry.count({ where: { id: failedKey } }), 0);
+    await failAudit("SUPPORT_THREAD_READ", () =>
+      rejected(seller.req("/api/support/chat", { operation: "read", id: created.id })).then(() => {}));
+    assert.equal((await db.inquiry.findUniqueOrThrow({ where: { id: created.id } })).status, "NEW");
+    await ok(seller.req("/api/support/chat", { operation: "read", id: created.id }));
+    assert.equal((await db.inquiry.findUniqueOrThrow({ where: { id: created.id } })).status, "READ");
   },
 );
 await run(
@@ -1834,6 +1884,7 @@ await run(
     assert.equal(await db.user.count({ where: { email } }), 0);
   },
 );
+await mkdir("verification/business-acceptance", { recursive: true });
 await writeFile(
   "verification/business-acceptance/business-results.json",
   JSON.stringify({ database, results }, null, 2),

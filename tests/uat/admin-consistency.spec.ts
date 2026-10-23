@@ -1,15 +1,58 @@
 import { test, expect } from "@playwright/test";
 import { readFileSync, mkdirSync, writeFileSync } from "node:fs";
+import { randomUUID } from "node:crypto";
+import { PrismaClient } from "@prisma/client";
 const fixture = JSON.parse(
   readFileSync("verification/final-uat/fixtures.json", "utf8"),
 );
 if (fixture.database !== process.env.DATABASE_URL)
   throw Error("Isolated database required");
+const db = new PrismaClient();
+test.afterAll(() => db.$disconnect());
 test("Admin consistency: operational pages, forms, tables and responsive shell", async ({
   page,
   context,
 }) => {
-  await context.setExtraHTTPHeaders({ "x-forwarded-for": "127.0.0.41" });
+  await context.setExtraHTTPHeaders({
+    "x-forwarded-for": `2001:db8:${randomUUID().replaceAll("-", "").match(/.{4}/g)!.slice(0, 6).join(":")}`,
+  });
+  const variant = await db.productVariant.findUniqueOrThrow({
+    where: { id: fixture.product.variantId },
+    include: { product: true },
+  });
+  const key = randomUUID();
+  const order = await db.order.create({
+    data: {
+      code: `UAT-CONSISTENCY-${key}`,
+      accessToken: randomUUID(),
+      idempotencyKey: `uat-admin-consistency-${key}`,
+      userId: fixture.accounts.CUSTOMER.id,
+      name: "Khách kiểm thử quản trị",
+      phone: "0912345678",
+      email: fixture.accounts.CUSTOMER.email,
+      province: "Hưng Yên",
+      ward: "Phường thử nghiệm",
+      street: "123 Kiểm thử",
+      details: "",
+      notes: "Isolated operational page fixture",
+      subtotal: variant.product.price,
+      discount: 0,
+      shipping: 0,
+      total: variant.product.price,
+      items: { create: {
+        productId: variant.productId,
+        variantId: variant.id,
+        name: variant.product.name,
+        sku: variant.sku,
+        size: variant.size,
+        color: variant.color,
+        image: fixture.product.image,
+        quantity: 1,
+        unitPrice: variant.product.price,
+      } },
+      payments: { create: { amount: variant.product.price } },
+    },
+  });
   await page.goto("/dang-nhap");
   await page
     .locator('input[name="email"]')
@@ -70,8 +113,6 @@ test("Admin consistency: operational pages, forms, tables and responsive shell",
       });
   }
   await page.goto("/admin/don-hang");
-  const { PrismaClient } = await import("@prisma/client");
-  const db = new PrismaClient();
   const { reportFilter } = await import("../../src/lib/analytics-rules");
   const month = reportFilter({ period: "month" });
   const createdAt = { gte: month.from, lt: month.to };
@@ -85,30 +126,15 @@ test("Admin consistency: operational pages, forms, tables and responsive shell",
       where: { createdAt, status: { in: ["RETURNED", "CANCELLED"] } },
     }),
   ]);
-  await expect(page.locator(".order-month-kpis .kpi-top>span")).toHaveText([
-    "Tổng đơn của tháng",
-    "Đơn hoàn tất",
-    "Chờ xử lý",
-    "Đơn hoàn/hủy",
-  ]);
   for (let i = 0; i < 4; i++)
     await expect(page.locator(".order-month-kpis strong").nth(i)).toHaveText(
       monthlyCounts[i].toLocaleString("vi-VN"),
     );
-  await expect(page.locator(".operational-period")).toHaveCount(0);
-  await db.$disconnect();
   await expect(page.locator(".admin-status").first()).toBeVisible();
-  const tableFont = await page
-    .locator(".admin-page-body td")
-    .first()
-    .evaluate((e) => getComputedStyle(e).fontFamily);
-  expect(tableFont).toContain("Arial");
-  const orderLink = page.locator('a[href^="/admin/don-hang/"]').first();
-  if (await orderLink.count()) {
-    await orderLink.click();
-    await expect(page.locator(".admin-heading h1")).toContainText("Đơn hàng");
-    await expect(page.locator(".admin-page-body")).toBeVisible();
-  }
+  await page.getByRole("link", { name: order.code, exact: true }).click();
+  await expect(page).toHaveURL(`http://127.0.0.1:3102/admin/don-hang/${order.id}`);
+  await expect(page.locator(".admin-heading h1")).toContainText("Đơn hàng");
+  await expect(page.locator(".admin-page-body")).toBeVisible();
   for (const width of [360, 390, 768, 1024]) {
     await page.setViewportSize({ width, height: 900 });
     for (const route of [

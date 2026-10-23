@@ -1,669 +1,771 @@
 erDiagram
-  Account {
-    string id PK
-    string userId FK
-    string provider
-    string providerAccountId
+  %% 01 — Tài khoản & địa chỉ
+  User {
+    string id PK "TEXT; NOT NULL"
+    string name "TEXT; NOT NULL"
+    string email UK "TEXT; NOT NULL"
+    string phone "TEXT; NOT NULL"
+    string passwordHash "TEXT; NOT NULL"
+    string role "TEXT; NOT NULL"
+    int permissionVersion "INTEGER; NOT NULL"
+    datetime lastLoginAt "DATETIME; nullable"
+    boolean active "BOOLEAN; NOT NULL"
+    datetime createdAt "DATETIME; NOT NULL"
+    datetime updatedAt "DATETIME; NOT NULL"
   }
-  User ||--o{ Account : "userId → id"
+  Account {
+    string id PK "TEXT; NOT NULL"
+    string userId FK "TEXT; NOT NULL"
+    string provider "TEXT; NOT NULL"
+    string providerAccountId UK "TEXT; NOT NULL"
+  }
+  User ||..o{ Account : "userId → id"
+  Session {
+    string id PK "TEXT; NOT NULL"
+    int permissionVersion "INTEGER; NOT NULL"
+    string tokenHash UK "TEXT; NOT NULL"
+    string userId FK "TEXT; NOT NULL"
+    datetime expiresAt "DATETIME; NOT NULL"
+    datetime createdAt "DATETIME; NOT NULL"
+  }
+  User ||..o{ Session : "userId → id"
   PasswordReset {
-    string id PK
-    string tokenHash
-    string email
-    datetime expiresAt
-    string used
+    string id PK "TEXT; NOT NULL"
+    string tokenHash UK "TEXT; NOT NULL"
+    string email "TEXT; NOT NULL"
+    datetime expiresAt "DATETIME; NOT NULL"
+    boolean used "BOOLEAN; NOT NULL"
   }
   Address {
-    string id PK
-    string userId FK
-    string name
-    string phone
-    string province
-    string ward
-    string street
-    string details
-    datetime createdAt
-    datetime updatedAt
+    boolean isDefault "BOOLEAN; NOT NULL"
+    string countryCode "TEXT; NOT NULL"
+    string postalCode "TEXT; NOT NULL"
+    string id PK "TEXT; NOT NULL"
+    string userId FK "TEXT; NOT NULL"
+    string name "TEXT; NOT NULL"
+    string phone "TEXT; NOT NULL"
+    string province "TEXT; NOT NULL"
+    string ward "TEXT; NOT NULL"
+    string street "TEXT; NOT NULL"
+    string details "TEXT; NOT NULL"
+    datetime createdAt "DATETIME; NOT NULL"
+    datetime updatedAt "DATETIME; NOT NULL"
   }
-  User ||--o{ Address : "userId → id"
+  User ||..o{ Address : "userId → id"
+  ShopperPreference {
+    string id PK "TEXT; NOT NULL"
+    string userId FK, UK "TEXT; nullable"
+    string guestKey UK "TEXT; nullable"
+    string language "TEXT; NOT NULL"
+    string region "TEXT; NOT NULL"
+    string currency "TEXT; NOT NULL"
+    datetime updatedAt "DATETIME; NOT NULL"
+  }
+  User |o..o| ShopperPreference : "userId → id"
+  %% 02 — Danh mục & sản phẩm
+  Category {
+    string id PK "TEXT; NOT NULL"
+    string name "TEXT; NOT NULL"
+    string slug UK "TEXT; NOT NULL"
+    string description "TEXT; NOT NULL"
+    string image "TEXT; NOT NULL"
+    datetime createdAt "DATETIME; NOT NULL"
+    datetime updatedAt "DATETIME; NOT NULL"
+    string parentId FK "TEXT; nullable"
+    boolean active "BOOLEAN; NOT NULL"
+    int sortOrder "INTEGER; NOT NULL"
+  }
+  Category |o..o{ Category : "parentId → id"
+  Product {
+    string id PK "TEXT; NOT NULL"
+    string name "TEXT; NOT NULL"
+    string slug UK "TEXT; NOT NULL"
+    string sku UK "TEXT; NOT NULL"
+    string description "TEXT; NOT NULL"
+    string material "TEXT; NOT NULL"
+    string style "TEXT; NOT NULL"
+    string fit "TEXT; NOT NULL"
+    string occasion "TEXT; NOT NULL"
+    int price "INTEGER; NOT NULL"
+    int salePrice "INTEGER; nullable"
+    boolean active "BOOLEAN; NOT NULL"
+    boolean featured "BOOLEAN; NOT NULL"
+    boolean isNew "BOOLEAN; NOT NULL"
+    string searchText "TEXT; NOT NULL"
+    string categoryId FK "TEXT; NOT NULL"
+    string subcategoryId FK "TEXT; nullable"
+    string sleeveType "TEXT; NOT NULL"
+    string length "TEXT; NOT NULL"
+    string styleTags "TEXT; NOT NULL"
+    datetime createdAt "DATETIME; NOT NULL"
+    datetime updatedAt "DATETIME; NOT NULL"
+    string details "TEXT; NOT NULL"
+    string care "TEXT; NOT NULL"
+    string styling "TEXT; NOT NULL"
+    string fitClass "TEXT; NOT NULL"
+    boolean stretchVerified "BOOLEAN; NOT NULL"
+    float stretchAllowance "REAL; NOT NULL"
+    int enrichmentVersion "INTEGER; NOT NULL"
+    string publicationStatus "TEXT; NOT NULL"
+    boolean merchandiseVerified "BOOLEAN; NOT NULL"
+  }
+  Category |o..o{ Product : "subcategoryId → id"
+  Category ||..o{ Product : "categoryId → id"
+  ProductVariant {
+    string id PK "TEXT; NOT NULL"
+    string productId FK "TEXT; NOT NULL"
+    string sku UK "TEXT; NOT NULL"
+    string size "TEXT; NOT NULL"
+    string color "TEXT; NOT NULL"
+    string colorHex "TEXT; NOT NULL"
+    string colorId FK "TEXT; nullable"
+    int stock "INTEGER; NOT NULL"
+    string stockOrigin "TEXT; NOT NULL"
+    int priceOverride "INTEGER; nullable"
+    datetime updatedAt "DATETIME; NOT NULL"
+  }
+  %% ProductVariant UNIQUE (productId, size, color)
+  Product ||..o{ ProductVariant : "productId → id"
+  ProductColor |o..o{ ProductVariant : "colorId → id"
+  ProductColor {
+    boolean active "BOOLEAN; NOT NULL"
+    string id PK "TEXT; NOT NULL"
+    string productId FK "TEXT; NOT NULL"
+    string name "TEXT; NOT NULL"
+    string hex "TEXT; NOT NULL"
+    int position "INTEGER; NOT NULL"
+  }
+  %% ProductColor UNIQUE (productId, name)
+  Product ||..o{ ProductColor : "productId → id"
   Collection {
-    string id PK
-    string name
-    string slug
-    string description
-    string image
-    datetime createdAt
-    datetime updatedAt
+    string id PK "TEXT; NOT NULL"
+    string name "TEXT; NOT NULL"
+    string slug UK "TEXT; NOT NULL"
+    string description "TEXT; NOT NULL"
+    string image "TEXT; NOT NULL"
+    datetime createdAt "DATETIME; NOT NULL"
+    datetime updatedAt "DATETIME; NOT NULL"
   }
   CollectionProduct {
-    string collectionId PK, FK
-    string productId PK, FK
+    string collectionId PK, FK "TEXT; NOT NULL"
+    string productId PK, FK "TEXT; NOT NULL"
   }
-  Product ||--o{ CollectionProduct : "productId → id"
-  Collection ||--o{ CollectionProduct : "collectionId → id"
-  Wishlist {
-    string id PK
-    string userId FK
+  %% CollectionProduct UNIQUE (collectionId, productId)
+  Product ||..o{ CollectionProduct : "productId → id"
+  Collection ||..o{ CollectionProduct : "collectionId → id"
+  SizeChart {
+    string id PK "TEXT; NOT NULL"
+    string categoryId FK, UK "TEXT; nullable"
+    string productId FK, UK "TEXT; nullable"
+    string kind "TEXT; NOT NULL"
+    string notes "TEXT; NOT NULL"
+    string rowsJson "TEXT; NOT NULL"
+    string matrixJson "TEXT; NOT NULL"
+    datetime updatedAt "DATETIME; NOT NULL"
   }
-  User ||--o| Wishlist : "userId → id"
-  WishlistItem {
-    string id PK
-    string wishlistId FK
-    string productId FK
+  Product |o..o| SizeChart : "productId → id"
+  Category |o..o| SizeChart : "categoryId → id"
+  %% 03 — Hình ảnh & phối đồ
+  MediaAsset {
+    string id PK "TEXT; NOT NULL"
+    string localPath UK "TEXT; NOT NULL"
+    string originalSourceUrl "TEXT; NOT NULL"
+    string creator "TEXT; NOT NULL"
+    string licenseType "TEXT; NOT NULL"
+    string licenseReference "TEXT; NOT NULL"
+    datetime retrievedAt "DATETIME; NOT NULL"
+    string authorizedUse "TEXT; NOT NULL"
+    string role "TEXT; NOT NULL"
+    string reviewStatus "TEXT; NOT NULL"
+    string verificationNotes "TEXT; NOT NULL"
+    boolean garmentVerified "BOOLEAN; NOT NULL"
+    datetime reviewedAt "DATETIME; nullable"
+    string productId FK "TEXT; nullable"
+    string colorId FK "TEXT; nullable"
+    float focalX "REAL; NOT NULL"
+    float focalY "REAL; NOT NULL"
   }
-  Product ||--o{ WishlistItem : "productId → id"
-  Wishlist ||--o{ WishlistItem : "wishlistId → id"
+  ProductColor |o..o{ MediaAsset : "colorId → id"
+  Product |o..o{ MediaAsset : "productId → id"
+  ProductImage {
+    string id PK "TEXT; NOT NULL"
+    string productId FK "TEXT; NOT NULL"
+    string url "TEXT; NOT NULL"
+    string alt "TEXT; NOT NULL"
+    int position "INTEGER; NOT NULL"
+    string mediaAssetId FK "TEXT; nullable"
+  }
+  Product ||..o{ ProductImage : "productId → id"
+  MediaAsset |o..o{ ProductImage : "mediaAssetId → id"
+  ColorImage {
+    string id PK "TEXT; NOT NULL"
+    string colorId FK "TEXT; NOT NULL"
+    string url "TEXT; NOT NULL"
+    string alt "TEXT; NOT NULL"
+    int position "INTEGER; NOT NULL"
+    string mediaAssetId FK "TEXT; nullable"
+  }
+  MediaAsset |o..o{ ColorImage : "mediaAssetId → id"
+  ProductColor ||..o{ ColorImage : "colorId → id"
+  OutfitCombination {
+    string id PK "TEXT; NOT NULL"
+    string colorId FK "TEXT; NOT NULL"
+    string title "TEXT; NOT NULL"
+    int position "INTEGER; NOT NULL"
+  }
+  ProductColor ||..o{ OutfitCombination : "colorId → id"
+  OutfitItem {
+    string id PK "TEXT; NOT NULL"
+    string outfitId FK "TEXT; NOT NULL"
+    string productId FK "TEXT; NOT NULL"
+    string colorId FK "TEXT; NOT NULL"
+  }
+  %% OutfitItem UNIQUE (outfitId, productId)
+  ProductColor ||..o{ OutfitItem : "colorId → id"
+  Product ||..o{ OutfitItem : "productId → id"
+  OutfitCombination ||..o{ OutfitItem : "outfitId → id"
+  %% 04 — Giỏ hàng & ưu đãi
   Cart {
-    string id PK
-    string userId FK
-    string guestToken
-    datetime createdAt
-    datetime updatedAt
+    string id PK "TEXT; NOT NULL"
+    string userId FK, UK "TEXT; nullable"
+    string guestToken UK "TEXT; nullable"
+    datetime createdAt "DATETIME; NOT NULL"
+    datetime updatedAt "DATETIME; NOT NULL"
   }
-  User |o--o| Cart : "userId → id"
+  User |o..o| Cart : "userId → id"
   CartItem {
-    string id PK
-    string cartId FK
-    string variantId FK
-    int quantity
+    string id PK "TEXT; NOT NULL"
+    string cartId FK "TEXT; NOT NULL"
+    string variantId FK "TEXT; NOT NULL"
+    int quantity "INTEGER; NOT NULL"
   }
-  ProductVariant ||--o{ CartItem : "variantId → id"
-  Cart ||--o{ CartItem : "cartId → id"
-  Order {
-    string id PK
-    string code
-    string accessToken
-    string idempotencyKey
-    string userId FK
-    string name
-    string phone
-    string email
-    string province
-    string ward
-    string street
-    string details
-    string notes
-    string status
-    string paymentStatus
-    int subtotal
-    int discount
-    int shipping
-    int total
-    datetime createdAt
-    datetime updatedAt
-    string shippingStatus
-    string shippingReference
+  %% CartItem UNIQUE (cartId, variantId)
+  ProductVariant ||..o{ CartItem : "variantId → id"
+  Cart ||..o{ CartItem : "cartId → id"
+  Wishlist {
+    string id PK "TEXT; NOT NULL"
+    string userId FK, UK "TEXT; NOT NULL"
   }
-  User |o--o{ Order : "userId → id"
-  OrderItem {
-    string id PK
-    string orderId FK
-    string productId FK
-    string variantId FK
-    string name
-    string sku
-    string size
-    string color
-    string image
-    int quantity
-    int unitPrice
+  User ||..o| Wishlist : "userId → id"
+  WishlistItem {
+    string id PK "TEXT; NOT NULL"
+    string wishlistId FK "TEXT; NOT NULL"
+    string productId FK "TEXT; NOT NULL"
   }
-  ProductVariant ||--o{ OrderItem : "variantId → id"
-  Product ||--o{ OrderItem : "productId → id"
-  Order ||--o{ OrderItem : "orderId → id"
-  OrderStatusHistory {
-    string id PK
-    string orderId FK
-    string status
-    string note
-    datetime createdAt
-    string previousStatus
-    string actorId
-    string actorLabel
-    string event
-  }
-  Order ||--o{ OrderStatusHistory : "orderId → id"
-  Payment {
-    string id PK
-    string orderId FK
-    string method
-    int amount
-    string status
-    datetime createdAt
-    datetime collectedAt
-    string collectedBy
-    string collectionReference
-  }
-  Order ||--o{ Payment : "orderId → id"
-  InventoryMovement {
-    string id PK
-    string variantId FK
-    int delta
-    string reason
-    datetime createdAt
-    string orderId
-    string actorId
-    string kind
-    datetime occurredAt
-    string supplier
-    string notes
-    string eventKey
-  }
-  ProductVariant ||--o{ InventoryMovement : "variantId → id"
+  %% WishlistItem UNIQUE (wishlistId, productId)
+  Product ||..o{ WishlistItem : "productId → id"
+  Wishlist ||..o{ WishlistItem : "wishlistId → id"
   Coupon {
-    string id PK
-    string code
-    string type
-    int value
-    int minimum
-    int maximum
-    datetime expiresAt
-    int usageLimit
-    int used
-    string active
+    datetime startsAt "DATETIME; nullable"
+    string id PK "TEXT; NOT NULL"
+    string code UK "TEXT; NOT NULL"
+    string type "TEXT; NOT NULL"
+    int value "INTEGER; NOT NULL"
+    int minimum "INTEGER; NOT NULL"
+    int maximum "INTEGER; nullable"
+    datetime expiresAt "DATETIME; NOT NULL"
+    int usageLimit "INTEGER; NOT NULL"
+    int used "INTEGER; NOT NULL"
+    boolean active "BOOLEAN; NOT NULL"
   }
   CouponRedemption {
-    string id PK
-    string couponId FK
-    string orderId FK
+    string id PK "TEXT; NOT NULL"
+    string couponId FK "TEXT; NOT NULL"
+    string orderId FK, UK "TEXT; NOT NULL"
   }
-  Order ||--o| CouponRedemption : "orderId → id"
-  Coupon ||--o{ CouponRedemption : "couponId → id"
-  Banner {
-    string id PK
-    string title
-    string subtitle
-    string image
-    string href
-    string active
-    datetime createdAt
-    datetime updatedAt
+  Order ||..o| CouponRedemption : "orderId → id"
+  Coupon ||..o{ CouponRedemption : "couponId → id"
+  %% 05 — Đơn hàng & thanh toán
+  Order {
+    string packingHoldReason "TEXT; nullable"
+    string assignedTo "TEXT; nullable"
+    string priority "TEXT; NOT NULL"
+    boolean packingRequired "BOOLEAN; NOT NULL"
+    datetime packedAt "DATETIME; nullable"
+    string packedBy "TEXT; nullable"
+    string countryCode "TEXT; NOT NULL"
+    string postalCode "TEXT; NOT NULL"
+    string id PK "TEXT; NOT NULL"
+    string code UK "TEXT; NOT NULL"
+    string accessToken UK "TEXT; NOT NULL"
+    string idempotencyKey UK "TEXT; NOT NULL"
+    string userId FK "TEXT; nullable"
+    string name "TEXT; NOT NULL"
+    string phone "TEXT; NOT NULL"
+    string email "TEXT; NOT NULL"
+    string province "TEXT; NOT NULL"
+    string ward "TEXT; NOT NULL"
+    string street "TEXT; NOT NULL"
+    string details "TEXT; NOT NULL"
+    string notes "TEXT; NOT NULL"
+    string status "TEXT; NOT NULL"
+    string paymentStatus "TEXT; NOT NULL"
+    string shippingStatus "TEXT; NOT NULL"
+    string shippingReference "TEXT; nullable"
+    int subtotal "INTEGER; NOT NULL"
+    int discount "INTEGER; NOT NULL"
+    int shipping "INTEGER; NOT NULL"
+    int total "INTEGER; NOT NULL"
+    datetime createdAt "DATETIME; NOT NULL"
+    datetime updatedAt "DATETIME; NOT NULL"
   }
-  StoreSetting {
-    string key PK
-    string value
-    datetime updatedAt
+  User |o..o{ Order : "userId → id"
+  OrderItem {
+    int originalQuantity "INTEGER; nullable"
+    string id PK "TEXT; NOT NULL"
+    string orderId FK "TEXT; NOT NULL"
+    string productId FK "TEXT; NOT NULL"
+    string variantId FK "TEXT; NOT NULL"
+    string name "TEXT; NOT NULL"
+    string sku "TEXT; NOT NULL"
+    string size "TEXT; NOT NULL"
+    string color "TEXT; NOT NULL"
+    string image "TEXT; NOT NULL"
+    int quantity "INTEGER; NOT NULL"
+    int unitPrice "INTEGER; NOT NULL"
   }
-  Newsletter {
-    string id PK
-    string email
-    datetime createdAt
+  ProductVariant ||..o{ OrderItem : "variantId → id"
+  Product ||..o{ OrderItem : "productId → id"
+  Order ||..o{ OrderItem : "orderId → id"
+  Payment {
+    datetime collectedAt "DATETIME; nullable"
+    string collectedBy "TEXT; nullable"
+    string collectionReference "TEXT; nullable"
+    string id PK "TEXT; NOT NULL"
+    string orderId FK "TEXT; NOT NULL"
+    string method "TEXT; NOT NULL"
+    int amount "INTEGER; NOT NULL"
+    string status "TEXT; NOT NULL"
+    datetime createdAt "DATETIME; NOT NULL"
   }
-  Inquiry {
-    string id PK
-    string name
-    string email
-    string phone
-    string subject
-    string message
-    string status
-    datetime createdAt
-    datetime updatedAt
+  Order ||..o{ Payment : "orderId → id"
+  OrderStatusHistory {
+    string previousStatus "TEXT; nullable"
+    string actorId "TEXT; nullable"
+    string actorLabel "TEXT; nullable"
+    string event "TEXT; NOT NULL"
+    string id PK "TEXT; NOT NULL"
+    string orderId FK "TEXT; NOT NULL"
+    string status "TEXT; NOT NULL"
+    string note "TEXT; NOT NULL"
+    datetime createdAt "DATETIME; NOT NULL"
   }
-  Category {
-    string id PK
-    string name
-    string slug
-    string description
-    string image
-    datetime createdAt
-    datetime updatedAt
-    string parentId FK
-    string active
-    int sortOrder
-  }
-  Category |o--o{ Category : "parentId → id"
-  ProductColor {
-    string id PK
-    string productId FK
-    string name
-    string hex
-    int position
-    string active
-  }
-  Product ||--o{ ProductColor : "productId → id"
-  OutfitCombination {
-    string id PK
-    string colorId FK
-    string title
-    int position
-  }
-  ProductColor ||--o{ OutfitCombination : "colorId → id"
-  OutfitItem {
-    string id PK
-    string outfitId FK
-    string productId FK
-    string colorId FK
-  }
-  ProductColor ||--o{ OutfitItem : "colorId → id"
-  Product ||--o{ OutfitItem : "productId → id"
-  OutfitCombination ||--o{ OutfitItem : "outfitId → id"
-  SizeChart {
-    string id PK
-    string categoryId FK
-    string productId FK
-    string kind
-    string notes
-    string rowsJson
-    string matrixJson
-    datetime updatedAt
-  }
-  Product |o--o| SizeChart : "productId → id"
-  Category |o--o| SizeChart : "categoryId → id"
-  MediaAsset {
-    string id PK
-    string localPath
-    string originalSourceUrl
-    string creator
-    string licenseType
-    string licenseReference
-    datetime retrievedAt
-    string authorizedUse
-    string role
-    string reviewStatus
-    string verificationNotes
-    string garmentVerified
-    datetime reviewedAt
-    string productId FK
-    string colorId FK
-    string focalX
-    string focalY
-  }
-  ProductColor |o--o{ MediaAsset : "colorId → id"
-  Product |o--o{ MediaAsset : "productId → id"
-  ColorImage {
-    string id PK
-    string colorId FK
-    string url
-    string alt
-    int position
-    string mediaAssetId FK
-  }
-  MediaAsset |o--o{ ColorImage : "mediaAssetId → id"
-  ProductColor ||--o{ ColorImage : "colorId → id"
-  Product {
-    string id PK
-    string name
-    string slug
-    string sku
-    string description
-    string material
-    string style
-    string fit
-    string occasion
-    int price
-    int salePrice
-    string active
-    string featured
-    string isNew
-    string searchText
-    string categoryId FK
-    string subcategoryId FK
-    string sleeveType
-    string length
-    string styleTags
-    datetime createdAt
-    datetime updatedAt
-    string details
-    string care
-    string styling
-    string fitClass
-    string stretchVerified
-    string stretchAllowance
-    int enrichmentVersion
-    string publicationStatus
-    string merchandiseVerified
-  }
-  Category |o--o{ Product : "subcategoryId → id"
-  Category ||--o{ Product : "categoryId → id"
-  ProductImage {
-    string id PK
-    string productId FK
-    string url
-    string alt
-    int position
-    string mediaAssetId FK
-  }
-  Product ||--o{ ProductImage : "productId → id"
-  MediaAsset |o--o{ ProductImage : "mediaAssetId → id"
-  ProductVariant {
-    string id PK
-    string productId FK
-    string sku
-    string size
-    string color
-    string colorHex
-    string colorId FK
-    int stock
-    string stockOrigin
-    int priceOverride
-    datetime updatedAt
-  }
-  Product ||--o{ ProductVariant : "productId → id"
-  ProductColor |o--o{ ProductVariant : "colorId → id"
-  ShipmentEvent {
-    string id PK
-    string shipmentId FK
-    string previousStatus
-    string status
-    string actorId
-    string source
-    string reason
-    datetime createdAt
-    string disposition
-    string providerEventKey
-    string providerEventType
-    string providerPayload
-    string providerStatus
-    datetime providerTimestamp
-  }
-  Shipment ||--o{ ShipmentEvent : "shipmentId → id"
-  DeliveryAttempt {
-    string id PK
-    string shipmentId FK
-    string reasonCode
-    string note
-    string actorId
-    datetime createdAt
-  }
-  Shipment ||--o{ DeliveryAttempt : "shipmentId → id"
-  CODCollection {
-    string id PK
-    string shipmentId FK
-    string eventKey
-    string provider
-    string reference
-    int amount
-    string evidence
-    datetime occurredAt
-    string actorId
-    string correctsId FK
-    datetime createdAt
-  }
-  CODCollection |o--o{ CODCollection : "correctsId → id"
-  Shipment ||--o{ CODCollection : "shipmentId → id"
-  CODRemittance {
-    string id PK
-    string shipmentId FK
-    string eventKey
-    string provider
-    string reference
-    int amount
-    string evidence
-    datetime occurredAt
-    string actorId
-    string correctsId FK
-    datetime createdAt
-  }
-  CODRemittance |o--o{ CODRemittance : "correctsId → id"
-  Shipment ||--o{ CODRemittance : "shipmentId → id"
-  CODReconciliation {
-    string id PK
-    string shipmentId FK
-    string eventKey
-    string action
-    string previousStatus
-    string status
-    int expected
-    int collected
-    int remitted
-    int outstanding
-    string note
-    string actorId
-    datetime createdAt
-  }
-  Shipment ||--o{ CODReconciliation : "shipmentId → id"
+  Order ||..o{ OrderStatusHistory : "orderId → id"
+  %% 06 — Giao nhận & đối soát COD
   Shipment {
-    int lengthCm
-    int widthCm
-    int heightCm
-    int insuredValue
-    string providerClientRef
-    int providerShopId
-    string providerCode
-    string providerSyncStatus
-    string providerVerification
-    datetime providerSubmittedAt
-    datetime providerLastSyncedAt
-    datetime providerLastEventAt
-    string providerCorrelationId
-    string providerRequestDigest
-    string providerErrorCode
-    datetime providerErrorAt
-    string id PK
-    string orderId FK
-    string paymentId FK
-    string reference
-    string provider
-    string carrierReference
-    string status
-    int shippingFee
-    int expectedCOD
-    int collectedCOD
-    int remittedCOD
-    int outstandingCOD
-    string reconciliationStatus
-    datetime reconciledAt
-    string reconciledBy
-    string reconciliationNote
-    string discrepancyNote
-    int version
-    string recipientName
-    string recipientPhone
-    string recipientAddress
-    string parcelDescription
-    int weightGrams
-    int parcelCount
-    string createdBy
-    datetime createdAt
-    datetime updatedAt
+    int lengthCm "INTEGER; nullable"
+    int widthCm "INTEGER; nullable"
+    int heightCm "INTEGER; nullable"
+    int insuredValue "INTEGER; NOT NULL"
+    string providerClientRef UK "TEXT; nullable"
+    int providerShopId "INTEGER; nullable"
+    string providerCode UK "TEXT; nullable"
+    string providerSyncStatus "TEXT; NOT NULL"
+    string providerVerification "TEXT; NOT NULL"
+    datetime providerSubmittedAt "DATETIME; nullable"
+    datetime providerLastSyncedAt "DATETIME; nullable"
+    datetime providerLastEventAt "DATETIME; nullable"
+    string providerCorrelationId "TEXT; nullable"
+    string providerRequestDigest "TEXT; nullable"
+    string providerErrorCode "TEXT; nullable"
+    datetime providerErrorAt "DATETIME; nullable"
+    string id PK "TEXT; NOT NULL"
+    string orderId FK, UK "TEXT; NOT NULL"
+    string paymentId FK, UK "TEXT; NOT NULL"
+    string reference UK "TEXT; NOT NULL"
+    string provider "TEXT; NOT NULL"
+    string carrierReference "TEXT; nullable"
+    string status "TEXT; NOT NULL"
+    int shippingFee "INTEGER; NOT NULL"
+    int expectedCOD "INTEGER; NOT NULL"
+    int collectedCOD "INTEGER; NOT NULL"
+    int remittedCOD "INTEGER; NOT NULL"
+    int outstandingCOD "INTEGER; NOT NULL"
+    string reconciliationStatus "TEXT; NOT NULL"
+    datetime reconciledAt "DATETIME; nullable"
+    string reconciledBy "TEXT; nullable"
+    string reconciliationNote "TEXT; nullable"
+    string discrepancyNote "TEXT; nullable"
+    int version "INTEGER; NOT NULL"
+    string recipientName "TEXT; NOT NULL"
+    string recipientPhone "TEXT; NOT NULL"
+    string recipientAddress "TEXT; NOT NULL"
+    string parcelDescription "TEXT; NOT NULL"
+    int weightGrams "INTEGER; NOT NULL"
+    int parcelCount "INTEGER; NOT NULL"
+    string createdBy "TEXT; NOT NULL"
+    datetime createdAt "DATETIME; NOT NULL"
+    datetime updatedAt "DATETIME; NOT NULL"
   }
-  Payment ||--o| Shipment : "paymentId → id"
-  Order ||--o| Shipment : "orderId → id"
+  Payment ||..o| Shipment : "paymentId → id"
+  Order ||..o| Shipment : "orderId → id"
+  ShipmentEvent {
+    string providerEventKey UK "TEXT; nullable"
+    string providerStatus "TEXT; nullable"
+    string providerEventType "TEXT; nullable"
+    datetime providerTimestamp "DATETIME; nullable"
+    string providerPayload "TEXT; nullable"
+    string disposition "TEXT; nullable"
+    string id PK "TEXT; NOT NULL"
+    string shipmentId FK "TEXT; NOT NULL"
+    string previousStatus "TEXT; nullable"
+    string status "TEXT; NOT NULL"
+    string actorId "TEXT; NOT NULL"
+    string source "TEXT; NOT NULL"
+    string reason "TEXT; nullable"
+    datetime createdAt "DATETIME; NOT NULL"
+  }
+  Shipment ||..o{ ShipmentEvent : "shipmentId → id"
+  DeliveryAttempt {
+    string id PK "TEXT; NOT NULL"
+    string shipmentId FK "TEXT; NOT NULL"
+    string reasonCode "TEXT; NOT NULL"
+    string note "TEXT; NOT NULL"
+    string actorId "TEXT; NOT NULL"
+    datetime createdAt "DATETIME; NOT NULL"
+  }
+  Shipment ||..o{ DeliveryAttempt : "shipmentId → id"
+  CODCollection {
+    string id PK "TEXT; NOT NULL"
+    string shipmentId FK "TEXT; NOT NULL"
+    string eventKey UK "TEXT; NOT NULL"
+    string provider "TEXT; NOT NULL"
+    string reference "TEXT; NOT NULL"
+    int amount "INTEGER; NOT NULL"
+    string evidence "TEXT; NOT NULL"
+    datetime occurredAt "DATETIME; NOT NULL"
+    string actorId "TEXT; NOT NULL"
+    string correctsId FK "TEXT; nullable"
+    datetime createdAt "DATETIME; NOT NULL"
+  }
+  %% CODCollection UNIQUE (provider, reference)
+  CODCollection |o..o{ CODCollection : "correctsId → id"
+  Shipment ||..o{ CODCollection : "shipmentId → id"
+  CODRemittance {
+    string id PK "TEXT; NOT NULL"
+    string shipmentId FK "TEXT; NOT NULL"
+    string eventKey UK "TEXT; NOT NULL"
+    string provider "TEXT; NOT NULL"
+    string reference "TEXT; NOT NULL"
+    int amount "INTEGER; NOT NULL"
+    string evidence "TEXT; NOT NULL"
+    datetime occurredAt "DATETIME; NOT NULL"
+    string actorId "TEXT; NOT NULL"
+    string correctsId FK "TEXT; nullable"
+    datetime createdAt "DATETIME; NOT NULL"
+  }
+  %% CODRemittance UNIQUE (provider, reference)
+  CODRemittance |o..o{ CODRemittance : "correctsId → id"
+  Shipment ||..o{ CODRemittance : "shipmentId → id"
+  CODReconciliation {
+    string id PK "TEXT; NOT NULL"
+    string shipmentId FK "TEXT; NOT NULL"
+    string eventKey UK "TEXT; NOT NULL"
+    string action "TEXT; NOT NULL"
+    string previousStatus "TEXT; NOT NULL"
+    string status "TEXT; NOT NULL"
+    int expected "INTEGER; NOT NULL"
+    int collected "INTEGER; NOT NULL"
+    int remitted "INTEGER; NOT NULL"
+    int outstanding "INTEGER; NOT NULL"
+    string note "TEXT; NOT NULL"
+    string actorId "TEXT; NOT NULL"
+    datetime createdAt "DATETIME; NOT NULL"
+  }
+  Shipment ||..o{ CODReconciliation : "shipmentId → id"
+  %% 07 — Đổi trả & hoàn tiền
   ReturnRequest {
-    string id PK
-    string reference
-    string eventKey
-    string payloadHash
-    string orderId FK
-    string userId FK
-    string status
-    string resolution
-    string reason
-    string policyVersion
-    datetime deliveredAt
-    datetime deadline
-    string released
-    int version
-    datetime createdAt
-    datetime updatedAt
+    string id PK "TEXT; NOT NULL"
+    string reference UK "TEXT; NOT NULL"
+    string eventKey UK "TEXT; NOT NULL"
+    string payloadHash "TEXT; NOT NULL"
+    string orderId FK "TEXT; NOT NULL"
+    string userId FK "TEXT; NOT NULL"
+    string status "TEXT; NOT NULL"
+    string resolution "TEXT; NOT NULL"
+    string reason "TEXT; NOT NULL"
+    string policyVersion "TEXT; NOT NULL"
+    datetime deliveredAt "DATETIME; NOT NULL"
+    datetime deadline "DATETIME; NOT NULL"
+    boolean released "BOOLEAN; NOT NULL"
+    int version "INTEGER; NOT NULL"
+    datetime createdAt "DATETIME; NOT NULL"
+    datetime updatedAt "DATETIME; NOT NULL"
   }
-  User ||--o{ ReturnRequest : "userId → id"
-  Order ||--o{ ReturnRequest : "orderId → id"
+  User ||..o{ ReturnRequest : "userId → id"
+  Order ||..o{ ReturnRequest : "orderId → id"
   ReturnItem {
-    string id PK
-    string requestId FK
-    string orderItemId FK
-    int quantity
-    int amount
-    string disposition
-    string restocked
+    string id PK "TEXT; NOT NULL"
+    string requestId FK "TEXT; NOT NULL"
+    string orderItemId FK "TEXT; NOT NULL"
+    int quantity "INTEGER; NOT NULL"
+    int amount "INTEGER; NOT NULL"
+    string disposition "TEXT; nullable"
+    boolean restocked "BOOLEAN; NOT NULL"
   }
-  OrderItem ||--o{ ReturnItem : "orderItemId → id"
-  ReturnRequest ||--o{ ReturnItem : "requestId → id"
-  ReturnEvidence {
-    string id PK
-    string requestId FK
-    string mime
-    string data
-    datetime createdAt
-  }
-  ReturnRequest ||--o{ ReturnEvidence : "requestId → id"
+  %% ReturnItem UNIQUE (requestId, orderItemId)
+  OrderItem ||..o{ ReturnItem : "orderItemId → id"
+  ReturnRequest ||..o{ ReturnItem : "requestId → id"
   ReturnInspection {
-    string id PK
-    string itemId FK
-    string actorId
-    string condition
-    string notes
-    string evidence
-    datetime createdAt
+    string id PK "TEXT; NOT NULL"
+    string itemId FK "TEXT; NOT NULL"
+    string actorId "TEXT; NOT NULL"
+    string condition "TEXT; NOT NULL"
+    string notes "TEXT; NOT NULL"
+    string evidence "TEXT; NOT NULL"
+    datetime createdAt "DATETIME; NOT NULL"
   }
-  ReturnItem ||--o{ ReturnInspection : "itemId → id"
-  ReturnHistory {
-    string id PK
-    string requestId FK
-    string previousStatus
-    string status
-    string actorId
-    string reason
-    datetime createdAt
-  }
-  ReturnRequest ||--o{ ReturnHistory : "requestId → id"
+  ReturnItem ||..o{ ReturnInspection : "itemId → id"
   ExchangeItem {
-    string id PK
-    string itemId FK
-    string variantId FK
-    string sku
-    string name
-    string size
-    string color
-    int quantity
-    int unitPrice
-    string reference
-    string status
-    string stockRestored
-    string createdBy
-    datetime createdAt
+    string id PK "TEXT; NOT NULL"
+    string itemId FK, UK "TEXT; NOT NULL"
+    string variantId FK "TEXT; NOT NULL"
+    string sku "TEXT; NOT NULL"
+    string name "TEXT; NOT NULL"
+    string size "TEXT; NOT NULL"
+    string color "TEXT; NOT NULL"
+    int quantity "INTEGER; NOT NULL"
+    int unitPrice "INTEGER; NOT NULL"
+    string reference UK "TEXT; NOT NULL"
+    string status "TEXT; NOT NULL"
+    boolean stockRestored "BOOLEAN; NOT NULL"
+    string createdBy "TEXT; NOT NULL"
+    datetime createdAt "DATETIME; NOT NULL"
   }
-  ProductVariant ||--o{ ExchangeItem : "variantId → id"
-  ReturnItem ||--o| ExchangeItem : "itemId → id"
+  ProductVariant ||..o{ ExchangeItem : "variantId → id"
+  ReturnItem ||..o| ExchangeItem : "itemId → id"
+  ReturnEvidence {
+    string id PK "TEXT; NOT NULL"
+    string requestId FK "TEXT; NOT NULL"
+    string mime "TEXT; NOT NULL"
+    string data "TEXT; NOT NULL"
+    datetime createdAt "DATETIME; NOT NULL"
+  }
+  ReturnRequest ||..o{ ReturnEvidence : "requestId → id"
+  ReturnHistory {
+    string id PK "TEXT; NOT NULL"
+    string requestId FK "TEXT; NOT NULL"
+    string previousStatus "TEXT; nullable"
+    string status "TEXT; NOT NULL"
+    string actorId "TEXT; NOT NULL"
+    string reason "TEXT; NOT NULL"
+    datetime createdAt "DATETIME; NOT NULL"
+  }
+  ReturnRequest ||..o{ ReturnHistory : "requestId → id"
   MockRefund {
-    string id PK
-    string reference
-    string requestId FK
-    string orderId FK
-    string paymentId FK
-    int amount
-    int shippingAmount
-    string reason
-    string status
-    string approvalActor
-    string completionActor
-    datetime createdAt
-    datetime completedAt
+    string id PK "TEXT; NOT NULL"
+    string reference UK "TEXT; NOT NULL"
+    string requestId FK, UK "TEXT; NOT NULL"
+    string orderId FK "TEXT; NOT NULL"
+    string paymentId FK "TEXT; NOT NULL"
+    int amount "INTEGER; NOT NULL"
+    int shippingAmount "INTEGER; NOT NULL"
+    string reason "TEXT; NOT NULL"
+    string status "TEXT; NOT NULL"
+    string approvalActor "TEXT; nullable"
+    string completionActor "TEXT; nullable"
+    datetime createdAt "DATETIME; NOT NULL"
+    datetime completedAt "DATETIME; nullable"
   }
-  Payment ||--o{ MockRefund : "paymentId → id"
-  Order ||--o{ MockRefund : "orderId → id"
-  ReturnRequest ||--o| MockRefund : "requestId → id"
-  AuditLog {
-    string resourceType
-    string result
-    string beforeJson
-    string afterJson
-    string reason
-    string id PK
-    string actorId
-    string action
-    string targetId
-    string detail
-    datetime createdAt
+  Payment ||..o{ MockRefund : "paymentId → id"
+  Order ||..o{ MockRefund : "orderId → id"
+  ReturnRequest ||..o| MockRefund : "requestId → id"
+  %% 08 — Kho & giá vốn
+  InventoryMovement {
+    string kind "TEXT; NOT NULL"
+    datetime occurredAt "DATETIME; nullable"
+    string supplier "TEXT; nullable"
+    string notes "TEXT; nullable"
+    string eventKey UK "TEXT; nullable"
+    string orderId "TEXT; nullable"
+    string actorId "TEXT; nullable"
+    string id PK "TEXT; NOT NULL"
+    string variantId FK "TEXT; NOT NULL"
+    int delta "INTEGER; NOT NULL"
+    string reason "TEXT; NOT NULL"
+    datetime createdAt "DATETIME; NOT NULL"
   }
-  Session {
-    string id PK
-    int permissionVersion
-    string tokenHash
-    string userId FK
-    datetime expiresAt
-    datetime createdAt
+  ProductVariant ||..o{ InventoryMovement : "variantId → id"
+  ProductCostHistory {
+    string id PK "TEXT; NOT NULL"
+    string productId FK "TEXT; NOT NULL"
+    string variantId FK "TEXT; nullable"
+    int unitCost "INTEGER; NOT NULL"
+    string source "TEXT; NOT NULL"
+    datetime effectiveFrom "DATETIME; NOT NULL"
+    string createdBy "TEXT; NOT NULL"
+    datetime createdAt "DATETIME; NOT NULL"
   }
-  User ||--o{ Session : "userId → id"
-  User {
-    string id PK
-    string name
-    string email
-    string phone
-    string passwordHash
-    string role
-    int permissionVersion
-    datetime lastLoginAt
-    string active
-    datetime createdAt
-    datetime updatedAt
+  ProductVariant |o..o{ ProductCostHistory : "variantId → id"
+  Product ||..o{ ProductCostHistory : "productId → id"
+  Stocktake {
+    string id PK "TEXT; NOT NULL"
+    string actorId FK "TEXT; NOT NULL"
+    string eventKey UK "TEXT; NOT NULL"
+    string status "TEXT; NOT NULL"
+    string reason "TEXT; NOT NULL"
+    string approvedBy "TEXT; nullable"
+    datetime approvedAt "DATETIME; nullable"
+    datetime createdAt "DATETIME; NOT NULL"
   }
+  User ||..o{ Stocktake : "actorId → id"
+  StocktakeLine {
+    string id PK "TEXT; NOT NULL"
+    string stocktakeId FK "TEXT; NOT NULL"
+    string variantId FK "TEXT; NOT NULL"
+    int bookStock "INTEGER; NOT NULL"
+    int countedStock "INTEGER; NOT NULL"
+    int damagedStock "INTEGER; NOT NULL"
+  }
+  %% StocktakeLine UNIQUE (stocktakeId, variantId)
+  ProductVariant ||..o{ StocktakeLine : "variantId → id"
+  Stocktake ||..o{ StocktakeLine : "stocktakeId → id"
+  %% 09 — Chăm sóc & nội dung
+  Inquiry {
+    string userId FK "TEXT; nullable"
+    string id PK "TEXT; NOT NULL"
+    string name "TEXT; NOT NULL"
+    string email "TEXT; NOT NULL"
+    string phone "TEXT; NOT NULL"
+    string subject "TEXT; NOT NULL"
+    string message "TEXT; NOT NULL"
+    string status "TEXT; NOT NULL"
+    datetime createdAt "DATETIME; NOT NULL"
+    datetime updatedAt "DATETIME; NOT NULL"
+  }
+  User |o..o{ Inquiry : "userId → id"
+  InquiryReply {
+    string id PK "TEXT; NOT NULL"
+    string inquiryId FK "TEXT; NOT NULL"
+    string actorId FK "TEXT; NOT NULL"
+    string eventKey UK "TEXT; NOT NULL"
+    string content "TEXT; NOT NULL"
+    datetime createdAt "DATETIME; NOT NULL"
+  }
+  User ||..o{ InquiryReply : "actorId → id"
+  Inquiry ||..o{ InquiryReply : "inquiryId → id"
+  ProductReview {
+    string id PK "TEXT; NOT NULL"
+    string userId FK "TEXT; NOT NULL"
+    string orderId FK "TEXT; NOT NULL"
+    string productId FK "TEXT; NOT NULL"
+    int rating "INTEGER; NOT NULL"
+    string comment "TEXT; NOT NULL"
+    boolean hidden "BOOLEAN; NOT NULL"
+    datetime createdAt "DATETIME; NOT NULL"
+  }
+  %% ProductReview UNIQUE (userId, orderId, productId)
+  Product ||..o{ ProductReview : "productId → id"
+  Order ||..o{ ProductReview : "orderId → id"
+  User ||..o{ ProductReview : "userId → id"
+  ReviewReply {
+    string id PK "TEXT; NOT NULL"
+    string reviewId FK "TEXT; NOT NULL"
+    string actorId FK "TEXT; NOT NULL"
+    string eventKey UK "TEXT; NOT NULL"
+    string content "TEXT; NOT NULL"
+    datetime createdAt "DATETIME; NOT NULL"
+  }
+  User ||..o{ ReviewReply : "actorId → id"
+  ProductReview ||..o{ ReviewReply : "reviewId → id"
+  Newsletter {
+    string id PK "TEXT; NOT NULL"
+    string email UK "TEXT; NOT NULL"
+    datetime createdAt "DATETIME; NOT NULL"
+  }
+  Banner {
+    string id PK "TEXT; NOT NULL"
+    string title "TEXT; NOT NULL"
+    string subtitle "TEXT; NOT NULL"
+    string image "TEXT; NOT NULL"
+    string href "TEXT; NOT NULL"
+    boolean active "BOOLEAN; NOT NULL"
+    datetime createdAt "DATETIME; NOT NULL"
+    datetime updatedAt "DATETIME; NOT NULL"
+  }
+  %% 10 — Hành vi & phân tích
   VisitorSession {
-    string id PK
-    string keyHash
-    datetime startedAt
-    datetime lastSeenAt
-    datetime expiresAt
-    string source
-    string medium
-    string campaign
-    string content
-    string term
+    string id PK "TEXT; NOT NULL"
+    string keyHash UK "TEXT; NOT NULL"
+    datetime startedAt "DATETIME; NOT NULL"
+    datetime lastSeenAt "DATETIME; NOT NULL"
+    datetime expiresAt "DATETIME; NOT NULL"
+    string source "TEXT; NOT NULL"
+    string medium "TEXT; NOT NULL"
+    string campaign "TEXT; NOT NULL"
+    string content "TEXT; NOT NULL"
+    string term "TEXT; NOT NULL"
   }
   AnalyticsEvent {
-    string id PK
-    string eventKey
-    string visitorId FK
-    string type
-    string productId
-    string authenticated
-    datetime createdAt
-    string metadataJson
+    string id PK "TEXT; NOT NULL"
+    string eventKey UK "TEXT; NOT NULL"
+    string visitorId FK "TEXT; NOT NULL"
+    string type "TEXT; NOT NULL"
+    string productId "TEXT; nullable"
+    boolean authenticated "BOOLEAN; NOT NULL"
+    datetime createdAt "DATETIME; NOT NULL"
+    string metadataJson "TEXT; NOT NULL"
   }
-  VisitorSession ||--o{ AnalyticsEvent : "visitorId → id"
-  CartAnalyticsCycle {
-    string id PK
-    string cartId FK
-    datetime firstSeenAt
-    datetime lastActivityAt
-    string orderId FK
-    datetime convertedAt
-    string snapshotJson
-  }
-  Order |o--o| CartAnalyticsCycle : "orderId → id"
-  Cart ||--o| CartAnalyticsCycle : "cartId → id"
+  VisitorSession ||..o{ AnalyticsEvent : "visitorId → id"
   OrderAttribution {
-    string orderId PK, FK
-    string visitorId FK
-    datetime capturedAt
-    string source
-    string medium
-    string campaign
-    string content
-    string term
+    string orderId PK, FK "TEXT; NOT NULL"
+    string visitorId FK "TEXT; nullable"
+    datetime capturedAt "DATETIME; NOT NULL"
+    string source "TEXT; NOT NULL"
+    string medium "TEXT; NOT NULL"
+    string campaign "TEXT; NOT NULL"
+    string content "TEXT; NOT NULL"
+    string term "TEXT; NOT NULL"
   }
-  VisitorSession |o--o{ OrderAttribution : "visitorId → id"
-  Order ||--o| OrderAttribution : "orderId → id"
-  ProductCostHistory {
-    string id PK
-    string productId FK
-    string variantId FK
-    int unitCost
-    string source
-    datetime effectiveFrom
-    string createdBy
-    datetime createdAt
+  VisitorSession |o..o{ OrderAttribution : "visitorId → id"
+  Order ||..o| OrderAttribution : "orderId → id"
+  CartAnalyticsCycle {
+    string id PK "TEXT; NOT NULL"
+    string cartId FK "TEXT; NOT NULL"
+    datetime firstSeenAt "DATETIME; NOT NULL"
+    datetime lastActivityAt "DATETIME; NOT NULL"
+    string orderId FK, UK "TEXT; nullable"
+    datetime convertedAt "DATETIME; nullable"
+    string snapshotJson "TEXT; NOT NULL"
   }
-  ProductVariant |o--o{ ProductCostHistory : "variantId → id"
-  Product ||--o{ ProductCostHistory : "productId → id"
+  Order |o..o| CartAnalyticsCycle : "orderId → id"
+  Cart ||..o{ CartAnalyticsCycle : "cartId → id"
   OrderLineAnalytics {
-    string orderItemId PK, FK
-    int netAmount
-    int unitCost
-    string costSource
-    datetime costCapturedAt
+    string orderItemId PK, FK "TEXT; NOT NULL"
+    int netAmount "INTEGER; NOT NULL"
+    int unitCost "INTEGER; nullable"
+    string costSource "TEXT; nullable"
+    datetime costCapturedAt "DATETIME; nullable"
   }
-  OrderItem ||--o| OrderLineAnalytics : "orderItemId → id"
+  OrderItem ||..o| OrderLineAnalytics : "orderItemId → id"
+  %% 11 — Quản trị & nguồn dữ liệu
+  AuditLog {
+    string resourceType "TEXT; NOT NULL"
+    string result "TEXT; NOT NULL"
+    string beforeJson "TEXT; nullable"
+    string afterJson "TEXT; nullable"
+    string reason "TEXT; nullable"
+    string id PK "TEXT; NOT NULL"
+    string actorId "TEXT; NOT NULL"
+    string action "TEXT; NOT NULL"
+    string targetId "TEXT; NOT NULL"
+    string detail "TEXT; NOT NULL"
+    datetime createdAt "DATETIME; NOT NULL"
+  }
+  StoreSetting {
+    string key PK "TEXT; NOT NULL"
+    string value "TEXT; NOT NULL"
+    datetime updatedAt "DATETIME; NOT NULL"
+  }
   SyntheticBatch {
-    string id PK
-    datetime createdAt
-    string manifest
+    string id PK "TEXT; NOT NULL"
+    datetime createdAt "DATETIME; NOT NULL"
+    string manifest "TEXT; NOT NULL"
   }
   SyntheticRecord {
-    string id PK
-    string batchId
-    string entity
-    string recordId
+    string id PK "TEXT; NOT NULL"
+    string batchId "TEXT; NOT NULL"
+    string entity "TEXT; NOT NULL"
+    string recordId "TEXT; NOT NULL"
   }
+  %% SyntheticRecord UNIQUE (entity, recordId)
