@@ -1,5 +1,7 @@
 # HÀ NHI FASHION
 
+**Languages:** **English** | [Tiếng Việt](README.vi.md)
+
 A local-first fashion commerce application and business-analysis case study covering the customer purchase journey, store operations, inventory control, returns, and financial reconciliation.
 
 The project connects **business requirements, role permissions, state transitions, data constraints, implementation, and executable verification**. It is intended for a BA/IT portfolio and hands-on evaluation—not as a claim of production deployment or real payment processing.
